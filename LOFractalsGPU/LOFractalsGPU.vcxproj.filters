@@ -1,0 +1,95 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Shaders">
+      <UniqueIdentifier>{a629010b-5fca-4075-8e7a-b92b55e22f18}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="3rd party">
+      <UniqueIdentifier>{455bd2ae-0d9e-4707-bb1a-641076cc14d7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shaders\StateTransform">
+      <UniqueIdentifier>{992e5b42-fac6-4296-97b7-128632441a10}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shaders\ClearBoard">
+      <UniqueIdentifier>{c556da24-d14e-4c5f-8836-8473baea47b1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shaders\Compare">
+      <UniqueIdentifier>{e3a76de0-997d-4e4e-97cc-b3acd07a9116}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shaders\Downscale">
+      <UniqueIdentifier>{d7512c24-9135-4ec2-bcd9-0b8aa87e227e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shaders\NextStep">
+      <UniqueIdentifier>{1baa414c-38ba-470d-9b15-af8e7384945b}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="LOFractalsGPU.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="FractalGen.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Util.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="3rd party\WICTextureLoader.cpp">
+      <Filter>3rd party</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="Shaders\FinalStateTransformCS.hlsl">
+      <Filter>Shaders\StateTransform</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\InitialStateTransformCS.hlsl">
+      <Filter>Shaders\StateTransform</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\Clear4CornersCS.hlsl">
+      <Filter>Shaders\ClearBoard</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\CompareBoardsFinalCS.hlsl">
+      <Filter>Shaders\Compare</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\CompareBoardsShrinkCS.hlsl">
+      <Filter>Shaders\Compare</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\CompareBoardsStartCS.hlsl">
+      <Filter>Shaders\Compare</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DownscaleBigPicturePS.hlsl">
+      <Filter>Shaders\Downscale</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DownscaleBigPictureVS.hlsl">
+      <Filter>Shaders\Downscale</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\StabilityNextStepCS.hlsl">
+      <Filter>Shaders\NextStep</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\StabilityNextStepClickRuleCS.hlsl">
+      <Filter>Shaders\NextStep</Filter>
+    </FxCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="FractalGen.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Util.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="3rd party\WICTextureLoader.h">
+      <Filter>3rd party</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>
