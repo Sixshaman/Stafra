@@ -51,6 +51,9 @@
     <ClCompile Include="PNGSaver.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="EqualityChecker.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Shaders\FinalStateTransformCS.hlsl">
@@ -95,6 +98,9 @@
       <Filter>3rd party</Filter>
     </ClInclude>
     <ClInclude Include="PNGSaver.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="EqualityChecker.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

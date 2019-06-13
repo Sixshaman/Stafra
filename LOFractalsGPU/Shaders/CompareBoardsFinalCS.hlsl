@@ -4,8 +4,7 @@
 
 cbuffer cbParams: register(b0)
 {
-	uint2 gBoardSize:    packoffset(c0);
-	uint2 gRealTileSize: packoffset(c0.z);
+	uint2 gRealTileSize: packoffset(c0);
 }
 
 Texture2D<uint> gTile: register(t0);

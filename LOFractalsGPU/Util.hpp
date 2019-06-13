@@ -1,5 +1,7 @@
 #pragma once
+
 #include <Windows.h>
+#include <d3d11.h>
 #include <string>
 
 class DXException
@@ -27,3 +29,18 @@ private:
 	}                                                    \
 }
 #endif
+
+const std::wstring GetShaderPath();
+
+template<typename CBufType>
+inline void UpdateBuffer(ID3D11Buffer* destBuf, CBufType& srcBuf, ID3D11DeviceContext* dc)
+{
+	D3D11_MAPPED_SUBRESOURCE mappedbuffer;
+	ThrowIfFailed(dc->Map(destBuf, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedbuffer));
+
+	CBufType* data = reinterpret_cast<CBufType*>(mappedbuffer.pData);
+
+	memcpy(data, &srcBuf, sizeof(CBufType));
+
+	dc->Unmap(destBuf, 0);
+}

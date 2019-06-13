@@ -10,14 +10,13 @@
 #include <string>
 #include <vector>
 
-struct CBParamsStruct
-{
-	DirectX::XMUINT2 BoardSize;
-	DirectX::XMUINT2 RealTileSize;
-};
-
 class FractalGen
 {
+	struct CBParamsStruct
+	{
+		DirectX::XMUINT2 BoardSize;
+	};
+
 public:
 	FractalGen(uint32_t pow2Size);
 	~FractalGen();
@@ -31,10 +30,8 @@ private:
 
 	void InitTextures();
 	void StabilityNextStep();
-	bool CompareWithInitialState();
 
-	void     CopyStabilityTextureData(std::vector<uint8_t>& stabilityData);
-	uint32_t GetEqualityBufferData();
+	void CopyStabilityTextureData(std::vector<uint8_t>& stabilityData);
 
 	void CreateDefaultInitialBoard();
 	bool LoadInitialState();
@@ -65,15 +62,6 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>  mInitialBoardSRV;
 	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> mInitialBoardUAV;
 
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>  mPrevEqualitySRV;
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>  mNextEqualitySRV;
-	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> mPrevEqualityUAV;
-	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> mNextEqualityUAV;
-
-	Microsoft::WRL::ComPtr<ID3D11Buffer>               mEqualityBuffer;
-	Microsoft::WRL::ComPtr<ID3D11Buffer>               mEqualityBufferCopy;
-	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView>  mEqualityBufferUAV;
-
 	//For the final downscaling
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>  mFinalStateSRV;
 	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> mFinalStateUAV;
@@ -83,9 +71,6 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11ComputeShader> mClear4CornersShader;
 	Microsoft::WRL::ComPtr<ID3D11ComputeShader> mInitialStateTransformShader;
 	Microsoft::WRL::ComPtr<ID3D11ComputeShader> mFinalStateTransformShader;
-	Microsoft::WRL::ComPtr<ID3D11ComputeShader> mCompareBoardsStartShader;
-	Microsoft::WRL::ComPtr<ID3D11ComputeShader> mCompareBoardsShrinkShader;
-	Microsoft::WRL::ComPtr<ID3D11ComputeShader> mCompareBoardsFinalShader;
 	Microsoft::WRL::ComPtr<ID3D11ComputeShader> mStabilityNextStepShader;
 	Microsoft::WRL::ComPtr<ID3D11VertexShader>  mDownscaleVertexShader;
 	Microsoft::WRL::ComPtr<ID3D11PixelShader>   mDownscalePixelShader;

@@ -2,7 +2,7 @@
 
 PngSaver::FileHandle::FileHandle(const std::string& filename): mFile(nullptr)
 {
-	fopen_s(&mFile, filename.c_str(), "wb");
+	errno_t fileOpenErr = fopen_s(&mFile, filename.c_str(), "wb");
 }
 
 PngSaver::FileHandle::~FileHandle()
@@ -20,7 +20,7 @@ FILE* PngSaver::FileHandle::GetFilePointer() const
 
 bool PngSaver::FileHandle::operator!() const
 {
-	return mFile != nullptr;
+	return mFile == nullptr;
 }
 
 //==================================================================================================================================================
@@ -98,5 +98,5 @@ void PngSaver::SavePngImage(const std::string& filename, size_t width, size_t he
 
 bool PngSaver::operator!() const
 {
-	return mPngStruct != nullptr && mPngInfo != nullptr;
+	return mPngStruct == nullptr || mPngInfo == nullptr;
 }

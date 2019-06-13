@@ -23,3 +23,12 @@ HRESULT DXException::ToHR() const
 {
 	return mErrorCode;
 }
+
+const std::wstring GetShaderPath()
+{
+#if defined(DEBUG) || defined(_DEBUG)
+	return LR"(Shaders\Debug\)";
+#else
+	return LR"(Shaders\Release\)";
+#endif
+}
