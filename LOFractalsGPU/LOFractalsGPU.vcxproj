@@ -156,6 +156,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="3rd party\WICTextureLoader.cpp" />
+    <ClCompile Include="Downscaler.cpp" />
     <ClCompile Include="EqualityChecker.cpp" />
     <ClCompile Include="FractalGen.cpp" />
     <ClCompile Include="InitialState.cpp" />
@@ -293,6 +294,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="3rd party\WICTextureLoader.h" />
+    <ClInclude Include="Downscaler.hpp" />
     <ClInclude Include="EqualityChecker.hpp" />
     <ClInclude Include="FractalGen.hpp" />
     <ClInclude Include="InitialState.hpp" />

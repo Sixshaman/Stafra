@@ -9,6 +9,8 @@
 #include <cstdint>
 #include <string>
 #include <vector>
+#include <memory>
+#include "Downscaler.hpp"
 
 class FractalGen
 {
@@ -26,18 +28,11 @@ private:
 	void InitTextures();
 	void StabilityNextStep();
 
-	void CopyStabilityTextureData(std::vector<uint8_t>& stabilityData);
-
 	void CheckDeviceLost();
-
-	void DownscalePicture(uint32_t newWidth);
 
 private:
 	Microsoft::WRL::ComPtr<ID3D11Device>        mDevice;
 	Microsoft::WRL::ComPtr<ID3D11DeviceContext> mDeviceContext;
-
-	Microsoft::WRL::ComPtr<ID3D11Texture2D> mDownscaledStabilityTex;
-	Microsoft::WRL::ComPtr<ID3D11Texture2D> mDownscaledStabilityTexCopy;
 
 	//Ping-pong in the "Next stability" shader
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>  mPrevStabilitySRV;
@@ -54,20 +49,9 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>  mInitialBoardSRV;
 	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> mInitialBoardUAV;
 
-	//For the final downscaling
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>  mFinalStateSRV;
-	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> mFinalStateUAV;
-
-	Microsoft::WRL::ComPtr<ID3D11RenderTargetView> mDownscaledStateRTV;
-
-	Microsoft::WRL::ComPtr<ID3D11ComputeShader> mFinalStateTransformShader;
 	Microsoft::WRL::ComPtr<ID3D11ComputeShader> mStabilityNextStepShader;
-	Microsoft::WRL::ComPtr<ID3D11VertexShader>  mDownscaleVertexShader;
-	Microsoft::WRL::ComPtr<ID3D11PixelShader>   mDownscalePixelShader;
 
-	Microsoft::WRL::ComPtr<ID3D11SamplerState> mBestSamplerEver;
-
-	D3D11_VIEWPORT mViewport;
+	std::unique_ptr<Downscaler> mDownscaler;
 
 	uint32_t mSizeLo;
 };
