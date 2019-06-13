@@ -103,7 +103,7 @@ void FractalGen::SaveFractalImage(const std::string& filename)
 	}
 
 	pngSaver.SavePngImage(filename, downscaledSize, downscaledSize, rowPitch, stabilityData);
-	std::cout << "Yay!" << std::endl;
+	std::cout << "Yaaay!" << std::endl;
 }
 
 void FractalGen::CreateTextures()
