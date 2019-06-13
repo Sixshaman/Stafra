@@ -158,6 +158,7 @@
     <ClCompile Include="3rd party\WICTextureLoader.cpp" />
     <ClCompile Include="EqualityChecker.cpp" />
     <ClCompile Include="FractalGen.cpp" />
+    <ClCompile Include="InitialState.cpp" />
     <ClCompile Include="LOFractalsGPU.cpp" />
     <ClCompile Include="PNGSaver.cpp" />
     <ClCompile Include="Util.cpp" />
@@ -294,6 +295,7 @@
     <ClInclude Include="3rd party\WICTextureLoader.h" />
     <ClInclude Include="EqualityChecker.hpp" />
     <ClInclude Include="FractalGen.hpp" />
+    <ClInclude Include="InitialState.hpp" />
     <ClInclude Include="PNGSaver.hpp" />
     <ClInclude Include="Util.hpp" />
   </ItemGroup>

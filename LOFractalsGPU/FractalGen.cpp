@@ -7,9 +7,9 @@
 #include <algorithm>
 #include <libpng16/png.h>
 #include <sstream>
-#include "3rd party/WICTextureLoader.h"
 #include "EqualityChecker.hpp"
 #include "PNGSaver.hpp"
+#include "InitialState.hpp"
 
 static const uint32_t downscaledSize = 1024;
 
@@ -35,12 +35,11 @@ FractalGen::~FractalGen()
 {
 }
 
-void FractalGen::ComputeFractal()
+void FractalGen::ComputeFractal(bool saveVideoFrames)
 {
-	uint32_t solutionPeriod = (mSizeLo + 1) / 2; //True for any normal Lights Out puzzle of size 2^n - 1
-
 	InitTextures();
 
+	uint32_t solutionPeriod = (mSizeLo + 1) / 2; //True for any normal Lights Out puzzle of size 2^n - 1
 	for (uint32_t i = 0; i < solutionPeriod; i++)
 	{
 		std::ostringstream namestr;
@@ -53,7 +52,10 @@ void FractalGen::ComputeFractal()
 
 		CheckDeviceLost();
 
-		SaveFractalImage("DiffStabil\\Stabl" + namestr.str() + ".png");
+		if(saveVideoFrames)
+		{
+			SaveFractalImage("DiffStabil\\Stabl" + namestr.str() + ".png");
+		}
 	}
 
 	std::cout << "Ensuring equality...";
@@ -227,12 +229,6 @@ void FractalGen::CreateShaderData()
 {
 	Microsoft::WRL::ComPtr<ID3DBlob> shaderBlob;
 
-	ThrowIfFailed(D3DReadFileToBlob((GetShaderPath() + L"Clear4CornersCS.cso").c_str(), shaderBlob.GetAddressOf()));
-	ThrowIfFailed(mDevice->CreateComputeShader(shaderBlob->GetBufferPointer(), shaderBlob->GetBufferSize(), nullptr, mClear4CornersShader.GetAddressOf()));
-
-	ThrowIfFailed(D3DReadFileToBlob((GetShaderPath() + L"InitialStateTransformCS.cso").c_str(), shaderBlob.GetAddressOf()));
-	ThrowIfFailed(mDevice->CreateComputeShader(shaderBlob->GetBufferPointer(), shaderBlob->GetBufferSize(), nullptr, mInitialStateTransformShader.GetAddressOf()));
-
 	ThrowIfFailed(D3DReadFileToBlob((GetShaderPath() + L"FinalStateTransformCS.cso").c_str(), shaderBlob.GetAddressOf()));
 	ThrowIfFailed(mDevice->CreateComputeShader(shaderBlob->GetBufferPointer(), shaderBlob->GetBufferSize(), nullptr, mFinalStateTransformShader.GetAddressOf()));
 
@@ -264,24 +260,6 @@ void FractalGen::CreateShaderData()
 
 	D3D11_VIEWPORT viewports[] = {mViewport};
 	mDeviceContext->RSSetViewports(1, viewports);
-
-	D3D11_BUFFER_DESC cbDesc;
-	cbDesc.Usage               = D3D11_USAGE_DYNAMIC;
-	cbDesc.ByteWidth           = (sizeof(CBParamsStruct) + 0xff) & (~0xff);
-	cbDesc.BindFlags           = D3D11_BIND_CONSTANT_BUFFER;
-	cbDesc.CPUAccessFlags      = D3D11_CPU_ACCESS_WRITE;
-	cbDesc.MiscFlags           = 0;
-	cbDesc.StructureByteStride = 0;
-
-	CBParamsStruct initData;
-	initData.BoardSize = DirectX::XMUINT2(mSizeLo, mSizeLo);
-
-	D3D11_SUBRESOURCE_DATA cbData;
-	cbData.pSysMem          = &initData;
-	cbData.SysMemPitch      = 0;
-	cbData.SysMemSlicePitch = 0;
-
-	ThrowIfFailed(mDevice->CreateBuffer(&cbDesc, &cbData, &mCBufferParams));
 }
 
 void FractalGen::InitTextures()
@@ -291,28 +269,27 @@ void FractalGen::InitTextures()
 	UINT clearVal[] = {1, 1, 1, 1};
 	mDeviceContext->ClearUnorderedAccessViewUint(mCurrStabilityUAV.Get(), clearVal);
 
-	//Check if initial state file exists and has correct data; if not, fall back to the default state
-	DWORD fileAttribs = GetFileAttributes("InitialState.png");
-	if(fileAttribs == INVALID_FILE_ATTRIBUTES || fileAttribs & FILE_ATTRIBUTE_DIRECTORY)
+	uint32_t newWidth  = 0;
+	uint32_t newHeight = 0;
+
+	InitialState is(mDevice.Get());
+	if(is.LoadFromFile(mDevice.Get(), mDeviceContext.Get(), L"InitialState.png", mInitialBoardUAV.Get(), newWidth, newHeight) == LoadError::LOAD_SUCCESS)
 	{
-		std::cout << "InitialState.png not found. Default \"4 corners\" state will be used." << std::endl;
-		CreateDefaultInitialBoard();
+		std::cout << "Initial state file loaded!";
 	}
 	else
 	{
-		std::cout << "Initial state file found! Trying to load...";
-
-		bool loadRes = LoadInitialState();
-		if(!loadRes)
-		{
-			std::cout << "ERROR! Falling back to default \"4 corners\" state..." << std::endl;
-			CreateDefaultInitialBoard();
-		}
-		else
-		{
-			std::cout << "Yay!" << std::endl;
-		}
+		std::cout << "Error loading InitialState.png. Default \"4 corners\" state will be used." << std::endl;
+		is.CreateDefault(mDeviceContext.Get(), mInitialBoardUAV.Get(), mSizeLo, mSizeLo);
 	}
+
+	Microsoft::WRL::ComPtr<ID3D11Texture2D> initialBoardTex;
+	Microsoft::WRL::ComPtr<ID3D11Texture2D> currBoardTex;
+
+	mInitialBoardSRV->GetResource(reinterpret_cast<ID3D11Resource**>(initialBoardTex.GetAddressOf()));
+	mCurrBoardSRV->GetResource(reinterpret_cast<ID3D11Resource**>(currBoardTex.GetAddressOf()));
+
+	mDeviceContext->CopyResource(currBoardTex.Get(), initialBoardTex.Get());
 
 	std::swap(mCurrStabilitySRV, mPrevStabilitySRV);
 	std::swap(mCurrStabilityUAV, mPrevStabilityUAV);
@@ -362,92 +339,6 @@ void FractalGen::CopyStabilityTextureData(std::vector<uint8_t>& stabilityData)
 
 	stabilityData.resize(downscaledData.size());
 	std::transform(downscaledData.begin(), downscaledData.end(), stabilityData.begin(), [](float val){return (uint8_t)(val * 255.0f);});
-}
-
-void FractalGen::CreateDefaultInitialBoard()
-{
-	mCBufferParamsCopy.BoardSize.x = mSizeLo;
-	mCBufferParamsCopy.BoardSize.y = mSizeLo;
-	UpdateBuffer(mCBufferParams.Get(), mCBufferParamsCopy, mDeviceContext.Get());
-
-	ID3D11Buffer* clear4CornersCbuffers[] = { mCBufferParams.Get() };
-	mDeviceContext->CSSetConstantBuffers(0, 1, clear4CornersCbuffers);
-
-	ID3D11UnorderedAccessView* clear4CornersInitUAVs[] = { mInitialBoardUAV.Get() };
-	mDeviceContext->CSSetUnorderedAccessViews(0, 1, clear4CornersInitUAVs, nullptr);
-
-	mDeviceContext->CSSetShader(mClear4CornersShader.Get(), nullptr, 0);
-	mDeviceContext->Dispatch((uint32_t)(ceilf(mSizeLo / 32.0f)), (uint32_t)(ceilf(mSizeLo / 32.0f)), 1);
-
-	ID3D11UnorderedAccessView* clear4CornersUAVs[] = { mCurrBoardUAV.Get() };
-	mDeviceContext->CSSetUnorderedAccessViews(0, 1, clear4CornersUAVs, nullptr);
-
-	mDeviceContext->CSSetShader(mClear4CornersShader.Get(), nullptr, 0);
-	mDeviceContext->Dispatch((uint32_t)(ceilf(mSizeLo / 32.0f)), (uint32_t)(ceilf(mSizeLo / 32.0f)), 1);
-
-	ID3D11Buffer*          nullCbuffers[] = { nullptr };
-	ID3D11UnorderedAccessView* nullUAVs[] = { nullptr };
-
-	mDeviceContext->CSSetConstantBuffers(0, 1, nullCbuffers);
-	mDeviceContext->CSSetUnorderedAccessViews(0, 1, nullUAVs, nullptr);
-	mDeviceContext->CSSetShader(nullptr, nullptr, 0);
-}
-
-bool FractalGen::LoadInitialState()
-{
-	ThrowIfFailed(CoInitializeEx(nullptr, COINIT_MULTITHREADED));
-
-	//Attempt to load the initial state
-	Microsoft::WRL::ComPtr<ID3D11Texture2D>          initialTex;
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> initialStateSRV;
-	HRESULT hr = DirectX::CreateWICTextureFromFile(mDevice.Get(), L"InitialState.png", reinterpret_cast<ID3D11Resource**>(initialTex.GetAddressOf()), initialStateSRV.GetAddressOf());
-	if(FAILED(hr))
-	{
-		return false;
-	}
-
-	D3D11_TEXTURE2D_DESC texDesc;
-	initialTex->GetDesc(&texDesc);
-
-	if(texDesc.Width != texDesc.Height)
-	{
-		std::cout << "Wrong size!" << " ";
-		return false;
-	}
-
-	if(((texDesc.Width + 1) & texDesc.Width) != 0) //Check if texDesc.Width is power of 2 minus 1
-	{
-		std::cout << "Wrong size!" << " ";
-		return false;
-	}
-
-	std::cout << "Good! Changing board size...";
-	mSizeLo = texDesc.Width; //Previous one doesn't matter anymore
-
-	//Create the initial board from the initial state
-	ID3D11ShaderResourceView* initialStateTransformSRVs[] = { initialStateSRV.Get() };
-	mDeviceContext->CSSetShaderResources(0, 1, initialStateTransformSRVs);
-
-	ID3D11UnorderedAccessView* initialStateTransformUAVs[] = { mInitialBoardUAV.Get() };
-	mDeviceContext->CSSetUnorderedAccessViews(0, 1, initialStateTransformUAVs, nullptr);
-
-	mDeviceContext->CSSetShader(mInitialStateTransformShader.Get(), nullptr, 0);
-	mDeviceContext->Dispatch((uint32_t)(ceilf(mSizeLo / 32.0f)), (uint32_t)(ceilf(mSizeLo / 32.0f)), 1);
-
-	ID3D11UnorderedAccessView* initialTransformUAVs[] = { mCurrBoardUAV.Get() };
-	mDeviceContext->CSSetUnorderedAccessViews(0, 1, initialTransformUAVs, nullptr);
-
-	mDeviceContext->CSSetShader(mInitialStateTransformShader.Get(), nullptr, 0);
-	mDeviceContext->Dispatch((uint32_t)(ceilf(mSizeLo / 32.0f)), (uint32_t)(ceilf(mSizeLo / 32.0f)), 1);
-
-	ID3D11ShaderResourceView*  nullSRVs[] = { nullptr };
-	ID3D11UnorderedAccessView* nullUAVs[] = { nullptr };
-
-	mDeviceContext->CSSetShaderResources(0, 1, nullSRVs);
-	mDeviceContext->CSSetUnorderedAccessViews(0, 1, nullUAVs, nullptr);
-	mDeviceContext->CSSetShader(nullptr, nullptr, 0);
-
-	return true;
 }
 
 void FractalGen::CheckDeviceLost()

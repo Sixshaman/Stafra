@@ -10,6 +10,15 @@ int main(int argc, char* argv[])
 	size_t powSize = 3;
 	std::cout << "Enter pow size(2-14): ";
 	std::cin  >> powSize;
+
+	char saveVFramesOpt = '\0';
+	do
+	{
+		std::cout << "Save video frames? Y/N? ";
+		std::cin  >> saveVFramesOpt;
+	} while(!strchr("YyNn", saveVFramesOpt));
+
+	bool saveFrames = (saveVFramesOpt == 'Y' || saveVFramesOpt == 'y');
 	
 	if(powSize >= 15 || powSize <= 1)
 	{
@@ -20,7 +29,7 @@ int main(int argc, char* argv[])
 		try
 		{
 			FractalGen fg(powSize);
-			fg.ComputeFractal();
+			fg.ComputeFractal(saveFrames);
 			fg.SaveFractalImage("STABILITY.png");
 		}
 		catch (DXException ex)

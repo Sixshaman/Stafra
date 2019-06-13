@@ -3,7 +3,7 @@
 //http://lightstrout.com/index.php/2019/05/31/stability-fractal/
 
 #include <d3d11.h>
-#include <DirectXMath.h>
+
 #include <Windows.h>
 #include <wrl/client.h>
 #include <cstdint>
@@ -12,16 +12,11 @@
 
 class FractalGen
 {
-	struct CBParamsStruct
-	{
-		DirectX::XMUINT2 BoardSize;
-	};
-
 public:
 	FractalGen(uint32_t pow2Size);
 	~FractalGen();
 
-	void ComputeFractal();
+	void ComputeFractal(bool SaveVideoFrames);
 	void SaveFractalImage(const std::string& filename);
 
 private:
@@ -32,9 +27,6 @@ private:
 	void StabilityNextStep();
 
 	void CopyStabilityTextureData(std::vector<uint8_t>& stabilityData);
-
-	void CreateDefaultInitialBoard();
-	bool LoadInitialState();
 
 	void CheckDeviceLost();
 
@@ -68,17 +60,12 @@ private:
 
 	Microsoft::WRL::ComPtr<ID3D11RenderTargetView> mDownscaledStateRTV;
 
-	Microsoft::WRL::ComPtr<ID3D11ComputeShader> mClear4CornersShader;
-	Microsoft::WRL::ComPtr<ID3D11ComputeShader> mInitialStateTransformShader;
 	Microsoft::WRL::ComPtr<ID3D11ComputeShader> mFinalStateTransformShader;
 	Microsoft::WRL::ComPtr<ID3D11ComputeShader> mStabilityNextStepShader;
 	Microsoft::WRL::ComPtr<ID3D11VertexShader>  mDownscaleVertexShader;
 	Microsoft::WRL::ComPtr<ID3D11PixelShader>   mDownscalePixelShader;
 
 	Microsoft::WRL::ComPtr<ID3D11SamplerState> mBestSamplerEver;
-
-	Microsoft::WRL::ComPtr<ID3D11Buffer> mCBufferParams;
-	CBParamsStruct                       mCBufferParamsCopy;
 
 	D3D11_VIEWPORT mViewport;
 

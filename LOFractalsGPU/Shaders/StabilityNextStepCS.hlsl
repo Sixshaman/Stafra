@@ -13,12 +13,8 @@ void main(uint3 DTid: SV_DispatchThreadID)
 	uint rightCellState   = gPrevBoard[int2(DTid.x + 1, DTid.y    )];
 	uint topCellState     = gPrevBoard[int2(DTid.x,     DTid.y - 1)];
 	uint bottomCellState  = gPrevBoard[int2(DTid.x,     DTid.y + 1)];
-	uint leftTCellState   = gPrevBoard[int2(DTid.x - 1, DTid.y - 1)];
-	uint rightBCellState  = gPrevBoard[int2(DTid.x + 1, DTid.y + 1)];
-	uint topRCellState    = gPrevBoard[int2(DTid.x + 1, DTid.y - 1)];
-	uint bottomLCellState = gPrevBoard[int2(DTid.x - 1, DTid.y + 1)];
 
-	uint nextCellState = (thisCellState + leftCellState + rightCellState + topCellState + bottomCellState + leftTCellState + rightBCellState + topRCellState + bottomLCellState) % 2;
+	uint nextCellState = (thisCellState + leftCellState + rightCellState + topCellState + bottomCellState) % 2;
 
 	uint prevStability = gPrevStability[DTid.xy];
 	uint nextStability = (prevStability && (thisCellState == nextCellState));

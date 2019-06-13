@@ -54,6 +54,9 @@
     <ClCompile Include="EqualityChecker.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="InitialState.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Shaders\FinalStateTransformCS.hlsl">
@@ -101,6 +104,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="EqualityChecker.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="InitialState.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
