@@ -276,6 +276,8 @@ void FractalGen::InitTextures()
 	if(is.LoadFromFile(mDevice.Get(), mDeviceContext.Get(), L"InitialState.png", mInitialBoardUAV.Get(), newWidth, newHeight) == LoadError::LOAD_SUCCESS)
 	{
 		std::cout << "Initial state file loaded!";
+
+		mSizeLo = newWidth;
 	}
 	else
 	{
