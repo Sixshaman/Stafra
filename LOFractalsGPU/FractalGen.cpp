@@ -8,6 +8,7 @@
 #include <libpng16/png.h>
 #include <sstream>
 #include "3rd party/WICTextureLoader.h"
+#include "PNGSaver.hpp"
 
 static const uint32_t downscaledSize = 1024;
 
@@ -79,8 +80,6 @@ void FractalGen::ComputeFractal()
 
 void FractalGen::SaveFractalImage(const std::string& filename)
 {
-	//Libpng couldn't care less about RAII and I don't want to make a whole new class for it, so don't mind if this code is dirty (it is)
-
 	std::cout << "Data copying..." << std::endl;
 
 	//Step 0. Create downscaled image
@@ -94,68 +93,17 @@ void FractalGen::SaveFractalImage(const std::string& filename)
 	CopyStabilityTextureData(stabilityData);
 
 	uint32_t rowPitch = stabilityData.size() / downscaledSize;
-
-	//Step 3. Create fractal image rows
-	std::vector<std::vector<png_byte>> imgRows(downscaledSize);
-
-	std::vector<png_bytep> rowPointers(downscaledSize);
-	for (size_t i = 0; i < downscaledSize; i++)
+	
+	std::cout << "Actually saving...";
+	PngSaver pngSaver;
+	if(!pngSaver)
 	{
-		std::vector<png_byte> row((size_t)downscaledSize * 4);
-		for (size_t j = 0; j < downscaledSize; j++)
-		{
-			row[j * 4 + 0] = stabilityData[i * rowPitch + j];
-			row[j * 4 + 1] = 0;
-			row[j * 4 + 2] = stabilityData[i * rowPitch + j];
-			row[j * 4 + 3] = 255;
-		}
-
-		imgRows[i]     = row;
-		rowPointers[i] = &imgRows[i][0];
+		std::cout << "Error!" << std::endl;
+		return;
 	}
 
-	std::cout << "Actually saving...";
-
-	//Step 4. Initialize everything with NULL
-	FILE* pFile           = nullptr;
-	png_structp pngStruct = nullptr;
-	png_infop   pngInfo   = nullptr;
-
-	//Step 4. Create file
-	fopen_s(&pFile, filename.c_str(), "wb");
-	if(!pFile) {goto cleanup;}
-
-	//Step 4. Initialize libpng
-	pngStruct = png_create_write_struct(PNG_LIBPNG_VER_STRING, nullptr, nullptr, nullptr);
-	if(!pngStruct) {goto cleanup;}
-
-	pngInfo = png_create_info_struct(pngStruct);
-	if(!pngInfo) {goto cleanup;}
-
-	if(setjmp(png_jmpbuf(pngStruct)) != 0) {goto cleanup;}
-
-	png_init_io(pngStruct, pFile);
-
-	png_set_IHDR(pngStruct, pngInfo,
-		         downscaledSize, downscaledSize,
-		         8,
-		         PNG_COLOR_TYPE_RGBA,
-		         PNG_INTERLACE_NONE,
-		         PNG_COMPRESSION_TYPE_DEFAULT,
-		         PNG_FILTER_TYPE_DEFAULT);
-
-	//Step 6. Write fractal image
-	png_write_info(pngStruct, pngInfo);
-
-	png_write_image(pngStruct, rowPointers.data());
-	png_write_end(pngStruct, nullptr);
-
-	//Step 7. Cleanup
-cleanup:
-	if(pngStruct || pngInfo) {png_destroy_write_struct(&pngStruct, &pngInfo);}
-	if(pFile) {fclose(pFile);}
-
-	std::cout << "Yaaay!" << std::endl;
+	pngSaver.SavePngImage(filename, downscaledSize, downscaledSize, rowPitch, stabilityData);
+	std::cout << "Yay!" << std::endl;
 }
 
 void FractalGen::CreateTextures()

@@ -48,6 +48,9 @@
     <ClCompile Include="3rd party\WICTextureLoader.cpp">
       <Filter>3rd party</Filter>
     </ClCompile>
+    <ClCompile Include="PNGSaver.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Shaders\FinalStateTransformCS.hlsl">
@@ -90,6 +93,9 @@
     </ClInclude>
     <ClInclude Include="3rd party\WICTextureLoader.h">
       <Filter>3rd party</Filter>
+    </ClInclude>
+    <ClInclude Include="PNGSaver.hpp">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

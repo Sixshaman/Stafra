@@ -158,6 +158,7 @@
     <ClCompile Include="3rd party\WICTextureLoader.cpp" />
     <ClCompile Include="FractalGen.cpp" />
     <ClCompile Include="LOFractalsGPU.cpp" />
+    <ClCompile Include="PNGSaver.cpp" />
     <ClCompile Include="Util.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -291,6 +292,7 @@
   <ItemGroup>
     <ClInclude Include="3rd party\WICTextureLoader.h" />
     <ClInclude Include="FractalGen.hpp" />
+    <ClInclude Include="PNGSaver.hpp" />
     <ClInclude Include="Util.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -1,0 +1,7 @@
+﻿################################################################################
+# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
+################################################################################
+
+/.vs/LOFractalsGPU/v16
+/LOFractalsGPU/x64/Release
+/x64/Release
