@@ -162,6 +162,7 @@
     <ClCompile Include="InitialState.cpp" />
     <ClCompile Include="LOFractalsGPU.cpp" />
     <ClCompile Include="PNGSaver.cpp" />
+    <ClCompile Include="StabilityCalculator.cpp" />
     <ClCompile Include="Util.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -299,6 +300,7 @@
     <ClInclude Include="FractalGen.hpp" />
     <ClInclude Include="InitialState.hpp" />
     <ClInclude Include="PNGSaver.hpp" />
+    <ClInclude Include="StabilityCalculator.hpp" />
     <ClInclude Include="Util.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

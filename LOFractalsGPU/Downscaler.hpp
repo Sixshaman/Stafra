@@ -4,11 +4,12 @@
 #include <DirectXMath.h>
 #include <wrl/client.h>
 #include <vector>
+#include <cstdint>
 
 class Downscaler
 {
 public:
-	Downscaler(ID3D11Device* device, uint32_t downscaleWidth, uint32_t downscaleHeight);
+	Downscaler(ID3D11Device* device, uint32_t oldWidth, uint32_t oldHeight, uint32_t downscaleWidth, uint32_t downscaleHeight);
 	~Downscaler();
 
 	void DownscalePicture(ID3D11DeviceContext* dc, ID3D11ShaderResourceView* srv, uint32_t oldWidth, uint32_t oldHeight);
@@ -16,7 +17,7 @@ public:
 	void CopyDownscaledTextureData(ID3D11DeviceContext* dc, std::vector<uint8_t>& downscaledData, uint32_t& downscaledWidth, uint32_t& downscaledHeight, uint32_t& rowPitch);
 
 private:
-	void CreateTextures(ID3D11Device* device, uint32_t downscaleWidth, uint32_t downscaleHeight);
+	void CreateTextures(ID3D11Device* device, uint32_t oldWidth, uint32_t oldHeight, uint32_t downscaleWidth, uint32_t downscaleHeight);
 	void LoadShaderData(ID3D11Device* device);
 
 	void FinalStateTransform(ID3D11DeviceContext* dc, ID3D11ShaderResourceView* srv, uint32_t oldWidth, uint32_t oldHeight);

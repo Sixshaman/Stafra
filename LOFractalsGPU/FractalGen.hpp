@@ -11,6 +11,7 @@
 #include <vector>
 #include <memory>
 #include "Downscaler.hpp"
+#include "StabilityCalculator.hpp"
 
 class FractalGen
 {
@@ -22,36 +23,11 @@ public:
 	void SaveFractalImage(const std::string& filename);
 
 private:
-	void CreateTextures();
-	void CreateShaderData();
-
-	void InitTextures();
-	void StabilityNextStep();
-
-	void CheckDeviceLost();
-
-private:
 	Microsoft::WRL::ComPtr<ID3D11Device>        mDevice;
 	Microsoft::WRL::ComPtr<ID3D11DeviceContext> mDeviceContext;
 
-	//Ping-pong in the "Next stability" shader
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>  mPrevStabilitySRV;
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>  mCurrStabilitySRV;
-	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> mPrevStabilityUAV;
-	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> mCurrStabilityUAV;
-
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>  mPrevBoardSRV;
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>  mCurrBoardSRV;
-	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> mPrevBoardUAV;
-	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> mCurrBoardUAV;
-
-	//For comparison
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>  mInitialBoardSRV;
-	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> mInitialBoardUAV;
-
-	Microsoft::WRL::ComPtr<ID3D11ComputeShader> mStabilityNextStepShader;
-
-	std::unique_ptr<Downscaler> mDownscaler;
+	std::unique_ptr<Downscaler>          mDownscaler;
+	std::unique_ptr<StabilityCalculator> mStabilityCalculator;
 
 	uint32_t mSizeLo;
 };

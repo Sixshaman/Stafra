@@ -60,6 +60,9 @@
     <ClCompile Include="Downscaler.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="StabilityCalculator.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Shaders\FinalStateTransformCS.hlsl">
@@ -113,6 +116,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Downscaler.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="StabilityCalculator.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

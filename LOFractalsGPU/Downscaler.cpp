@@ -3,9 +3,9 @@
 #include <d3dcompiler.h>
 #include <algorithm>
 
-Downscaler::Downscaler(ID3D11Device* device, uint32_t downscaleWidth, uint32_t downscaleHeight): mDownscaledWidth(downscaleWidth), mDownscaledHeight(downscaleHeight)
+Downscaler::Downscaler(ID3D11Device* device, uint32_t oldWidth, uint32_t oldHeight, uint32_t downscaleWidth, uint32_t downscaleHeight): mDownscaledWidth(downscaleWidth), mDownscaledHeight(downscaleHeight)
 {
-	CreateTextures(device, downscaleWidth, downscaleHeight);
+	CreateTextures(device, oldWidth, oldHeight, downscaleWidth, downscaleHeight);
 	LoadShaderData(device);
 }
 
@@ -47,11 +47,11 @@ void Downscaler::CopyDownscaledTextureData(ID3D11DeviceContext* dc, std::vector<
 	downscaledHeight = mDownscaledHeight;
 }
 
-void Downscaler::CreateTextures(ID3D11Device* device, uint32_t downscaleWidth, uint32_t downscaleHeight)
+void Downscaler::CreateTextures(ID3D11Device* device, uint32_t oldWidth, uint32_t oldHeight, uint32_t downscaleWidth, uint32_t downscaleHeight)
 {
 	D3D11_TEXTURE2D_DESC finalPictureTexDesc;
-	finalPictureTexDesc.Width              = mDownscaledWidth;
-	finalPictureTexDesc.Height             = mDownscaledHeight;
+	finalPictureTexDesc.Width              = oldWidth;
+	finalPictureTexDesc.Height             = oldHeight;
 	finalPictureTexDesc.Format             = DXGI_FORMAT_R32_FLOAT;
 	finalPictureTexDesc.Usage              = D3D11_USAGE_DEFAULT;
 	finalPictureTexDesc.BindFlags          = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_RENDER_TARGET;
@@ -136,8 +136,7 @@ void Downscaler::LoadShaderData(ID3D11Device* device)
 	samDesc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
 	samDesc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
 	samDesc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
-	samDesc.Filter = D3D11_FILTER_ANISOTROPIC;
-	samDesc.MaxAnisotropy = 4;
+	samDesc.Filter   = D3D11_FILTER_MIN_LINEAR_MAG_POINT_MIP_LINEAR;
 
 	ThrowIfFailed(device->CreateSamplerState(&samDesc, mBestSamplerEver.GetAddressOf()));
 
