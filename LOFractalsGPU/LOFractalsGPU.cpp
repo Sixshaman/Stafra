@@ -20,7 +20,11 @@ int main(int argc, char* argv[])
 
 	bool saveFrames = (saveVFramesOpt == 'Y' || saveVFramesOpt == 'y');
 	
-	if(powSize >= 15 || powSize <= 1)
+	size_t enlonging = 1;
+	std::cout << "Enter enlonging (1-50): ";
+	std::cin >> enlonging;
+
+	if(powSize >= 15 || powSize <= 1 || enlonging >= 50 || enlonging < 1)
 	{
 		std::cout << "Not supported" << std::endl;
 	}
@@ -29,7 +33,7 @@ int main(int argc, char* argv[])
 		try
 		{
 			FractalGen fg(powSize);
-			fg.ComputeFractal(saveFrames);
+			fg.ComputeFractal(saveFrames, enlonging);
 			fg.SaveFractalImage("STABILITY.png");
 		}
 		catch (DXException ex)

@@ -27,6 +27,8 @@ public:
 	LoadError LoadFromFile(ID3D11Device* device, ID3D11DeviceContext* dc, const std::wstring& filename, ID3D11UnorderedAccessView* initialBoardUAV, uint32_t& texWidth, uint32_t& texHeight);
 	void      CreateDefault(ID3D11DeviceContext* dc, ID3D11UnorderedAccessView* initialBoardUAV, uint32_t texWidth, uint32_t texHeight);
 
+	LoadError LoadClickRuleFromFile(ID3D11Device* device, ID3D11DeviceContext* dc, const std::wstring& filename, ID3D11UnorderedAccessView* clickRuleUAV);
+
 private:
 	void LoadShaderData(ID3D11Device* device);
 

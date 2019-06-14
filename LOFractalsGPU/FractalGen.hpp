@@ -19,7 +19,7 @@ public:
 	FractalGen(uint32_t pow2Size);
 	~FractalGen();
 
-	void ComputeFractal(bool SaveVideoFrames);
+	void ComputeFractal(bool SaveVideoFrames, size_t enlonging);
 	void SaveFractalImage(const std::string& filename);
 
 private:

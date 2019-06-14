@@ -25,7 +25,7 @@ FractalGen::FractalGen(uint32_t pow2Size): mSizeLo(1)
 
 	ThrowIfFailed(mDevice->SetExceptionMode(D3D11_RAISE_FLAG_DRIVER_INTERNAL_ERROR));
 
-	mDownscaler = std::make_unique<Downscaler>(mDevice.Get(), mSizeLo, mSizeLo, 1024, 1024);
+	mDownscaler          = std::make_unique<Downscaler>(mDevice.Get(), mSizeLo, mSizeLo, 1024, 1024);
 	mStabilityCalculator = std::make_unique<StabilityCalculator>(mDevice.Get(), mSizeLo, mSizeLo);
 }
 
@@ -33,11 +33,31 @@ FractalGen::~FractalGen()
 {
 }
 
-void FractalGen::ComputeFractal(bool saveVideoFrames)
+void FractalGen::ComputeFractal(bool saveVideoFrames, size_t enlonging)
 {
-	mStabilityCalculator->InitTextures(mDevice.Get(), mDeviceContext.Get());
+	int resInit = mStabilityCalculator->InitTextures(mDevice.Get(), mDeviceContext.Get());
+
+	if(resInit & CUSTOM_INITIAL_BOARD)
+	{
+		std::cout << "Custom initial board loaded!" << std::endl;
+	}
+	else
+	{
+		std::cout << "Default initial board will be used..." << std::endl;
+	}
+
+	if(resInit & CUSTOM_CLICK_RULE)
+	{
+		std::cout << "Custom click rule loaded!" << std::endl;
+	}
+	else
+	{
+		std::cout << "Default click rule will be used..." << std::endl;
+	}
 
 	uint32_t solutionPeriod = (mSizeLo + 1) / 2; //True for any normal Lights Out puzzle of size 2^n - 1
+
+	solutionPeriod *= enlonging;
 	for (uint32_t i = 0; i < solutionPeriod; i++)
 	{
 		std::ostringstream namestr;

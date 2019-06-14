@@ -50,6 +50,31 @@ void InitialState::CreateDefault(ID3D11DeviceContext* dc, ID3D11UnorderedAccessV
 	DefaultInitialState(dc, initialBoardUAV, texWidth, texHeight);
 }
 
+LoadError InitialState::LoadClickRuleFromFile(ID3D11Device* device, ID3D11DeviceContext* dc, const std::wstring& filename, ID3D11UnorderedAccessView* clickRuleUAV)
+{
+	ThrowIfFailed(CoInitializeEx(nullptr, COINIT_MULTITHREADED));
+
+	//Attempt to load the initial state
+	Microsoft::WRL::ComPtr<ID3D11Texture2D>          clickRuleTex;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> clickruleSRV;
+	HRESULT hr = DirectX::CreateWICTextureFromFile(device, filename.c_str(), reinterpret_cast<ID3D11Resource**>(clickRuleTex.GetAddressOf()), clickruleSRV.GetAddressOf());
+	if(FAILED(hr))
+	{
+		return LoadError::ERROR_CANT_READ_FILE;
+	}
+
+	D3D11_TEXTURE2D_DESC texDesc;
+	clickRuleTex->GetDesc(&texDesc);
+
+	if(texDesc.Width != 32 || texDesc.Height != 32) //Check if texDesc.Width is power of 2 minus 1
+	{
+		return LoadError::ERROR_WRONG_SIZE;
+	}
+
+	InitialStateTransform(dc, clickruleSRV.Get(), clickRuleUAV, 32, 32);
+	return LoadError::LOAD_SUCCESS;
+}
+
 void InitialState::DefaultInitialState(ID3D11DeviceContext* dc, ID3D11UnorderedAccessView* initialBoardUAV, uint32_t width, uint32_t height)
 {
 	mCBufferParamsCopy.BoardSize.x = width;
