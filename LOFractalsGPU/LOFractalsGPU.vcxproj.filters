@@ -95,6 +95,12 @@
     <FxCompile Include="Shaders\StabilityNextStepClickRuleCS.hlsl">
       <Filter>Shaders\NextStep</Filter>
     </FxCompile>
+    <FxCompile Include="Shaders\StabilityNextStepSpawnCLICKRuLECS.hlsl">
+      <Filter>Shaders\NextStep</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\StabilityNextStepSpawnCS.hlsl">
+      <Filter>Shaders\NextStep</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="FractalGen.hpp">

@@ -20,7 +20,7 @@ void main(uint3 DTid: SV_DispatchThreadID, uint3 GTid: SV_GroupThreadID, uint Gr
 		int x = i % 32 - 15;
 		int y = i / 32 - 15;
 
-		uint cellState = gPrevBoard[int2(DTid.x + x, DTid.y + y)];
+		uint cellState = gPrevBoard[int2(DTid.x - x, DTid.y - y)];
 		sum += clickRuleDataCache[i] * cellState;
 	}
 

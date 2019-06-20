@@ -11,7 +11,7 @@
 #include "StabilityCalculator.hpp"
 #include "Downscaler.hpp"
 
-FractalGen::FractalGen(uint32_t pow2Size): mSizeLo(1)
+FractalGen::FractalGen(uint32_t pow2Size, uint32_t spawnPeriod): mSizeLo(1)
 {
 	mSizeLo = (1ull << pow2Size) - 1;
 
@@ -26,7 +26,7 @@ FractalGen::FractalGen(uint32_t pow2Size): mSizeLo(1)
 	ThrowIfFailed(mDevice->SetExceptionMode(D3D11_RAISE_FLAG_DRIVER_INTERNAL_ERROR));
 
 	mDownscaler          = std::make_unique<Downscaler>(mDevice.Get(), mSizeLo, mSizeLo, 1024, 1024);
-	mStabilityCalculator = std::make_unique<StabilityCalculator>(mDevice.Get(), mSizeLo, mSizeLo);
+	mStabilityCalculator = std::make_unique<StabilityCalculator>(mDevice.Get(), mSizeLo, mSizeLo, spawnPeriod);
 }
 
 FractalGen::~FractalGen()
@@ -70,7 +70,7 @@ void FractalGen::ComputeFractal(bool saveVideoFrames, size_t enlonging)
 
 		if(saveVideoFrames)
 		{
-			SaveFractalImage("DiffStabil\\Stabl" + namestr.str() + ".png");
+			SaveFractalImage("DiffStabil\\Stabl" + namestr.str() + ".png", true);
 		}
 	}
 
@@ -85,18 +85,25 @@ void FractalGen::ComputeFractal(bool saveVideoFrames, size_t enlonging)
 	}
 }
 
-void FractalGen::SaveFractalImage(const std::string& filename)
+void FractalGen::SaveFractalImage(const std::string& filename, bool useDownscaling)
 {
 	std::cout << "Data copying..." << std::endl;
 
-	mDownscaler->DownscalePicture(mDeviceContext.Get(), mStabilityCalculator->GetLastStabilityState(), mSizeLo, mSizeLo);
-
-	//Step 2. Copy the fractal tex data to RAM
-	uint32_t downscaledWidth  = 0;
+	uint32_t downscaledWidth = 0;
 	uint32_t downscaledHeight = 0;
-	uint32_t rowPitch         = 0;
+	uint32_t rowPitch = 0;
 	std::vector<uint8_t> stabilityData;
-	mDownscaler->CopyDownscaledTextureData(mDeviceContext.Get(), stabilityData, downscaledWidth, downscaledHeight, rowPitch);
+	if(useDownscaling)
+	{
+		mDownscaler->DownscalePicture(mDeviceContext.Get(), mStabilityCalculator->GetLastStabilityState(), mSizeLo, mSizeLo);
+		mDownscaler->CopyDownscaledTextureData(mDeviceContext.Get(), stabilityData, downscaledWidth, downscaledHeight, rowPitch);
+	}
+	else
+	{
+		Downscaler bigDownscaler(mDevice.Get(), mSizeLo, mSizeLo, mSizeLo, mSizeLo);
+		bigDownscaler.DownscalePicture(mDeviceContext.Get(), mStabilityCalculator->GetLastStabilityState(), mSizeLo, mSizeLo);
+		bigDownscaler.CopyDownscaledTextureData(mDeviceContext.Get(), stabilityData, downscaledWidth, downscaledHeight, rowPitch);
+	}
 	
 	std::cout << "Actually saving...";
 	PngSaver pngSaver;

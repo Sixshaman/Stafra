@@ -24,6 +24,10 @@ int main(int argc, char* argv[])
 	std::cout << "Enter enlonging (1-50): ";
 	std::cin >> enlonging;
 
+	uint32_t spawnperiod = 0;
+	std::cout << "Enter spawn period (0 to no spawn): ";
+	std::cin >> spawnperiod;
+
 	if(powSize >= 15 || powSize <= 1 || enlonging >= 50 || enlonging < 1)
 	{
 		std::cout << "Not supported" << std::endl;
@@ -32,7 +36,7 @@ int main(int argc, char* argv[])
 	{
 		try
 		{
-			FractalGen fg(powSize);
+			FractalGen fg(powSize, spawnperiod);
 			fg.ComputeFractal(saveFrames, enlonging);
 			fg.SaveFractalImage("STABILITY.png");
 		}

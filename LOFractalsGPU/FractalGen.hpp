@@ -16,11 +16,11 @@
 class FractalGen
 {
 public:
-	FractalGen(uint32_t pow2Size);
+	FractalGen(uint32_t pow2Size, uint32_t spawnPeriod);
 	~FractalGen();
 
 	void ComputeFractal(bool SaveVideoFrames, size_t enlonging);
-	void SaveFractalImage(const std::string& filename);
+	void SaveFractalImage(const std::string& filename, bool useDownscaling = false);
 
 private:
 	Microsoft::WRL::ComPtr<ID3D11Device>        mDevice;
