@@ -101,6 +101,9 @@
     <FxCompile Include="Shaders\StabilityNextStepSpawnCS.hlsl">
       <Filter>Shaders\NextStep</Filter>
     </FxCompile>
+    <FxCompile Include="Shaders\FinalStateTransformSmoothCS.hlsl">
+      <Filter>Shaders\StateTransform</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="FractalGen.hpp">

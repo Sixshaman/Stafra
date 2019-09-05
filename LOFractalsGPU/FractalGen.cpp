@@ -11,7 +11,7 @@
 #include "StabilityCalculator.hpp"
 #include "Downscaler.hpp"
 
-FractalGen::FractalGen(uint32_t pow2Size, uint32_t spawnPeriod): mSizeLo(1)
+FractalGen::FractalGen(uint32_t pow2Size, uint32_t spawnPeriod): mSizeLo(1), mSpawnPeriod(spawnPeriod)
 {
 	mSizeLo = (1ull << pow2Size) - 1;
 
@@ -85,7 +85,7 @@ void FractalGen::ComputeFractal(bool saveVideoFrames, size_t enlonging)
 	}
 }
 
-void FractalGen::SaveFractalImage(const std::string& filename, bool useDownscaling)
+void FractalGen::SaveFractalImage(const std::string& filename, bool useSmoothTransform, bool useDownscaling)
 {
 	std::cout << "Data copying..." << std::endl;
 
@@ -93,15 +93,22 @@ void FractalGen::SaveFractalImage(const std::string& filename, bool useDownscali
 	uint32_t downscaledHeight = 0;
 	uint32_t rowPitch = 0;
 	std::vector<uint8_t> stabilityData;
+
+	uint32_t spawnPeriod = 0;
+	if(useSmoothTransform)
+	{
+		spawnPeriod = mSpawnPeriod;
+	}
+
 	if(useDownscaling)
 	{
-		mDownscaler->DownscalePicture(mDeviceContext.Get(), mStabilityCalculator->GetLastStabilityState(), mSizeLo, mSizeLo);
+		mDownscaler->DownscalePicture(mDeviceContext.Get(), mStabilityCalculator->GetLastStabilityState(), spawnPeriod, mSizeLo, mSizeLo);
 		mDownscaler->CopyDownscaledTextureData(mDeviceContext.Get(), stabilityData, downscaledWidth, downscaledHeight, rowPitch);
 	}
 	else
 	{
 		Downscaler bigDownscaler(mDevice.Get(), mSizeLo, mSizeLo, mSizeLo, mSizeLo);
-		bigDownscaler.DownscalePicture(mDeviceContext.Get(), mStabilityCalculator->GetLastStabilityState(), mSizeLo, mSizeLo);
+		bigDownscaler.DownscalePicture(mDeviceContext.Get(), mStabilityCalculator->GetLastStabilityState(), spawnPeriod, mSizeLo, mSizeLo);
 		bigDownscaler.CopyDownscaledTextureData(mDeviceContext.Get(), stabilityData, downscaledWidth, downscaledHeight, rowPitch);
 	}
 	

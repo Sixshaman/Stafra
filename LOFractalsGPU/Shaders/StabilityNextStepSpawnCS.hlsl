@@ -28,14 +28,14 @@ void main(uint3 DTid: SV_DispatchThreadID)
 	if(thisCellState == nextCellState)
 	{
 		[flatten]
-		if(prevStability != 1)
+		if(prevStability != 1) //1 stands for "stable" and won't change until the cell state changes
 		{
-			nextStability = (prevStability + 1) % (2 + gSpawnPeriod);
+			nextStability = (prevStability + 1) % (2 + gSpawnPeriod); //2 and more stands for (steps with unchanged state) + 2
 		}
 	}
 	else
 	{
-		nextStability = 2;
+		nextStability = 2; //2 stands for "the cell state just changed"
 	}
 
 	gNextBoard[DTid.xy]     = nextCellState;

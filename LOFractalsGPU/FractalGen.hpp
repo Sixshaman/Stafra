@@ -20,7 +20,7 @@ public:
 	~FractalGen();
 
 	void ComputeFractal(bool SaveVideoFrames, size_t enlonging);
-	void SaveFractalImage(const std::string& filename, bool useDownscaling = false);
+	void SaveFractalImage(const std::string& filename, bool useSmoothTransform = true, bool useDownscaling = false);
 
 private:
 	Microsoft::WRL::ComPtr<ID3D11Device>        mDevice;
@@ -30,4 +30,5 @@ private:
 	std::unique_ptr<StabilityCalculator> mStabilityCalculator;
 
 	uint32_t mSizeLo;
+	uint32_t mSpawnPeriod;
 };

@@ -19,7 +19,7 @@ int main(int argc, char* argv[])
 	} while(!strchr("YyNn", saveVFramesOpt));
 
 	bool saveFrames = (saveVFramesOpt == 'Y' || saveVFramesOpt == 'y');
-	
+
 	size_t enlonging = 1;
 	std::cout << "Enter enlonging (1-50): ";
 	std::cin >> enlonging;
@@ -27,6 +27,19 @@ int main(int argc, char* argv[])
 	uint32_t spawnperiod = 0;
 	std::cout << "Enter spawn period (0 to no spawn): ";
 	std::cin >> spawnperiod;
+
+	bool useSmooth = false;
+	if(spawnperiod != 0)
+	{
+		char useSmoothTransform = '\0';
+		do
+		{
+			std::cout << "Use smooth transform? Y/N? ";
+			std::cin >> useSmoothTransform;
+		} while (!strchr("YyNn", useSmoothTransform));
+
+		useSmooth = (useSmoothTransform == 'Y' || useSmoothTransform == 'y');
+	}
 
 	if(powSize >= 15 || powSize <= 1 || enlonging >= 50 || enlonging < 1)
 	{
@@ -38,7 +51,7 @@ int main(int argc, char* argv[])
 		{
 			FractalGen fg(powSize, spawnperiod);
 			fg.ComputeFractal(saveFrames, enlonging);
-			fg.SaveFractalImage("STABILITY.png");
+			fg.SaveFractalImage("STABILITY.png", useSmooth);
 		}
 		catch (DXException ex)
 		{
