@@ -156,12 +156,15 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="3rd party\WICTextureLoader.cpp" />
+    <ClCompile Include="CommandLineArguments.cpp" />
     <ClCompile Include="Downscaler.cpp" />
     <ClCompile Include="EqualityChecker.cpp" />
+    <ClCompile Include="FileMgmt\FileHandle.cpp" />
+    <ClCompile Include="FileMgmt\PNGOpener.cpp" />
+    <ClCompile Include="FileMgmt\PNGSaver.cpp" />
     <ClCompile Include="FractalGen.cpp" />
     <ClCompile Include="InitialState.cpp" />
     <ClCompile Include="LOFractalsGPU.cpp" />
-    <ClCompile Include="PNGSaver.cpp" />
     <ClCompile Include="StabilityCalculator.cpp" />
     <ClCompile Include="Util.cpp" />
   </ItemGroup>
@@ -260,10 +263,11 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Compute</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">4.0</ShaderModel>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">4.0</ShaderModel>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.0</ShaderModel>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Compute</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">4.0</ShaderModel>
       <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(OutDir)Shaders\Release\%(Filename).cso</ObjectFileOutput>
+      <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Shaders\Debug\%(Filename).cso</ObjectFileOutput>
     </FxCompile>
     <FxCompile Include="Shaders\InitialStateTransformCS.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Compute</ShaderType>
@@ -320,15 +324,20 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Compute</ShaderType>
       <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(OutDir)Shaders\Release\%(Filename).cso</ObjectFileOutput>
       <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(OutDir)Shaders\Debug\%(Filename).cso</ObjectFileOutput>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.0</ShaderModel>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="3rd party\WICTextureLoader.h" />
+    <ClInclude Include="CommandLineArguments.hpp" />
     <ClInclude Include="Downscaler.hpp" />
     <ClInclude Include="EqualityChecker.hpp" />
+    <ClInclude Include="FileMgmt\FileHandle.hpp" />
+    <ClInclude Include="FileMgmt\PNGOpener.hpp" />
+    <ClInclude Include="FileMgmt\PNGSaver.hpp" />
     <ClInclude Include="FractalGen.hpp" />
     <ClInclude Include="InitialState.hpp" />
-    <ClInclude Include="PNGSaver.hpp" />
     <ClInclude Include="StabilityCalculator.hpp" />
     <ClInclude Include="Util.hpp" />
   </ItemGroup>

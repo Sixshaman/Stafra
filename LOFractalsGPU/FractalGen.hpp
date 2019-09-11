@@ -19,8 +19,21 @@ public:
 	FractalGen(uint32_t pow2Size, uint32_t spawnPeriod);
 	~FractalGen();
 
-	void ComputeFractal(bool SaveVideoFrames, size_t enlonging);
-	void SaveFractalImage(const std::string& filename, bool useSmoothTransform = true, bool useDownscaling = false);
+	void ComputeFractal(bool SaveVideoFrames, bool bUseSmoothTransform, size_t enlonging);
+	void SaveFractalImage(const std::string& filename, bool useSmoothTransform, bool useDownscaling = false);
+
+private:
+	uint32_t SolutionPeriodFromSize(size_t enlonging);
+	uint32_t SizeLoFromImageSize(const std::string& imgFilename);
+
+	std::string IntermediateStateString(size_t stIndex, size_t stateCount);
+	std::string IntermediateStateFilename(size_t stIndex, size_t stateCount);
+
+private:
+	void PrintIntermediateState(size_t intermediateStr, size_t stateCount);
+	void PrintEqualityState(bool equalityState);
+	void PrintFinishingWork();
+	void PrintErrorImageLoading();
 
 private:
 	Microsoft::WRL::ComPtr<ID3D11Device>        mDevice;

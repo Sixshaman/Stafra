@@ -1,29 +1,5 @@
 #include "PNGSaver.hpp"
-
-PngSaver::FileHandle::FileHandle(const std::string& filename): mFile(nullptr)
-{
-	errno_t fileOpenErr = fopen_s(&mFile, filename.c_str(), "wb");
-}
-
-PngSaver::FileHandle::~FileHandle()
-{
-	if(mFile) 
-	{
-		fclose(mFile);
-	}
-}
-
-FILE* PngSaver::FileHandle::GetFilePointer() const
-{
-	return mFile;
-}
-
-bool PngSaver::FileHandle::operator!() const
-{
-	return mFile == nullptr;
-}
-
-//==================================================================================================================================================
+#include "FileHandle.hpp"
 
 PngSaver::PngSaver(): mPngStruct(nullptr), mPngInfo(nullptr)
 {
@@ -74,7 +50,7 @@ void PngSaver::SavePngImage(const std::string& filename, size_t width, size_t he
 		rowPointers[i] = &imgRows[i][0];
 	}
 
-	FileHandle fout(filename);
+	FileHandle fout(filename, "wb");
 	if(!fout)
 	{
 		return;

@@ -34,6 +34,9 @@
     <Filter Include="Shaders\NextStep">
       <UniqueIdentifier>{1baa414c-38ba-470d-9b15-af8e7384945b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="FileMgmt">
+      <UniqueIdentifier>{20ea0a95-95f3-4f31-8ee6-620b04b04129}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="LOFractalsGPU.cpp">
@@ -48,9 +51,6 @@
     <ClCompile Include="3rd party\WICTextureLoader.cpp">
       <Filter>3rd party</Filter>
     </ClCompile>
-    <ClCompile Include="PNGSaver.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="EqualityChecker.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -62,6 +62,18 @@
     </ClCompile>
     <ClCompile Include="StabilityCalculator.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CommandLineArguments.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="FileMgmt\PNGSaver.cpp">
+      <Filter>FileMgmt</Filter>
+    </ClCompile>
+    <ClCompile Include="FileMgmt\FileHandle.cpp">
+      <Filter>FileMgmt</Filter>
+    </ClCompile>
+    <ClCompile Include="FileMgmt\PNGOpener.cpp">
+      <Filter>FileMgmt</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -115,9 +127,6 @@
     <ClInclude Include="3rd party\WICTextureLoader.h">
       <Filter>3rd party</Filter>
     </ClInclude>
-    <ClInclude Include="PNGSaver.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="EqualityChecker.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -129,6 +138,18 @@
     </ClInclude>
     <ClInclude Include="StabilityCalculator.hpp">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CommandLineArguments.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FileMgmt\PNGOpener.hpp">
+      <Filter>FileMgmt</Filter>
+    </ClInclude>
+    <ClInclude Include="FileMgmt\PNGSaver.hpp">
+      <Filter>FileMgmt</Filter>
+    </ClInclude>
+    <ClInclude Include="FileMgmt\FileHandle.hpp">
+      <Filter>FileMgmt</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
