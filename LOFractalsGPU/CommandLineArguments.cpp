@@ -91,7 +91,7 @@ CmdParseResult CommandLineArguments::ParseArgs()
 		}
 		else if (mCmdLineArgs[i] == "-smooth")
 		{
-			mSaveVideoFrames = true;
+			mSmoothTransform = true;
 		}
 		else if(mCmdLineArgs[i] == "-psize")
 		{
@@ -129,7 +129,7 @@ CmdParseResult CommandLineArguments::ParseArgs()
 				}
 				else
 				{
-					mPowSize = enlong;
+					mEnlonging = enlong;
 				}
 			}
 		}
@@ -143,7 +143,7 @@ CmdParseResult CommandLineArguments::ParseArgs()
 			else
 			{
 				size_t spawn = ParseInt(mCmdLineArgs[++i], gMinimumSpawn, gMaximumSpawn);
-				mPowSize     = spawn;
+				mSpawnPeriod = spawn;
 			}
 		}
 		else
