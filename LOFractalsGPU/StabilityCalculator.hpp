@@ -29,6 +29,10 @@ private:
 	void StabilityNextStepClickRule(ID3D11DeviceContext* dc);
 	void StabilityNextStepSpawn(ID3D11DeviceContext* dc);
 	void StabilityNextStepClickRuleSpawn(ID3D11DeviceContext* dc);
+	void StabilityNextStepRestricted(ID3D11DeviceContext* dc);
+	void StabilityNextStepClickRuleRestricted(ID3D11DeviceContext* dc);
+	void StabilityNextStepSpawnRestricted(ID3D11DeviceContext* dc);
+	void StabilityNextStepClickRuleSpawnRestricted(ID3D11DeviceContext* dc);
 
 private:
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>  mPrevStabilitySRV;
@@ -47,10 +51,17 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>  mClickRuleSRV;
 	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> mClickRuleUAV;
 
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>  mRestrictionSRV;
+	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> mRestrictionUAV;
+
 	Microsoft::WRL::ComPtr<ID3D11ComputeShader> mStabilityNextStepShader;
 	Microsoft::WRL::ComPtr<ID3D11ComputeShader> mStabilityNextStepClickRuleShader;
 	Microsoft::WRL::ComPtr<ID3D11ComputeShader> mStabilityNextStepSPAWNShader;
 	Microsoft::WRL::ComPtr<ID3D11ComputeShader> mStabilityNextStepSPAWNCLICKRUUUULEShader;
+	Microsoft::WRL::ComPtr<ID3D11ComputeShader> mStabilityNextStepRESTTERIVCTIONShader;
+	Microsoft::WRL::ComPtr<ID3D11ComputeShader> mStabilityNextStepClickRuleERTESTRICVTIONShader;
+	Microsoft::WRL::ComPtr<ID3D11ComputeShader> mStabilityNextStepSPAWNAAAAAAAARESTTRTICTIONShader;
+	Microsoft::WRL::ComPtr<ID3D11ComputeShader> mStabilityNextStepSPAWNCLICKRUUUULEATEWWEAFOSDFSTRESTRICTIONShader; //I'M TOO EXCITED! TOO EXCITED!!!!!!!
 
 	uint32_t mBoardWidth;
 	uint32_t mBoardHeight;
@@ -60,4 +71,5 @@ private:
 
 	uint32_t mSpawnPeriod;
 	bool     mbUseClickRule;
+	bool     mbUseRestriction;
 };

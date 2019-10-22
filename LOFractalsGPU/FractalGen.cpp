@@ -44,7 +44,7 @@ FractalGen::FractalGen(uint32_t pow2Size, uint32_t spawnPeriod): mSizeLo(1), mSp
 
 	ThrowIfFailed(mDevice->SetExceptionMode(D3D11_RAISE_FLAG_DRIVER_INTERNAL_ERROR));
 
-	mDownscaler          = std::make_unique<Downscaler>(mDevice.Get(), mSizeLo, mSizeLo, gDownscaledSize, gDownscaledSize);
+	mDownscaler          = std::make_unique<Downscaler>(mDevice.Get(), mSizeLo, mSizeLo, (uint32_t)gDownscaledSize, (uint32_t)gDownscaledSize);
 	mStabilityCalculator = std::make_unique<StabilityCalculator>(mDevice.Get(), mSizeLo, mSizeLo, spawnPeriod);
 }
 
@@ -65,7 +65,7 @@ void FractalGen::ComputeFractal(bool saveVideoFrames, bool bUseSmoothTransform, 
 		if(saveVideoFrames)
 		{
 			std::string filename = IntermediateStateFilename(i, solutionPeriod);
-			SaveFractalImage(filename, bUseSmoothTransform);
+			SaveFractalImage(filename, bUseSmoothTransform, true);
 		}
 	}
 
