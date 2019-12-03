@@ -4,7 +4,7 @@
 #include "InitialState.hpp"
 #include "EqualityChecker.hpp"
 
-StabilityCalculator::StabilityCalculator(ID3D11Device* device, uint32_t width, uint32_t height, uint32_t spawnPeriod): mBoardWidth(width), mBoardHeight(height), mbUseClickRule(false), mSpawnPeriod(spawnPeriod)
+StabilityCalculator::StabilityCalculator(ID3D11Device* device, uint32_t width, uint32_t height, uint32_t spawnPeriod): mBoardWidth(width), mBoardHeight(height), mbUseClickRule(false), mSpawnPeriod(spawnPeriod), mCurrentStep(0)
 {
 	CreateTextures(device);
 	LoadShaderData(device);
@@ -75,13 +75,13 @@ void StabilityCalculator::InitTextures(ID3D11Device* device, ID3D11DeviceContext
 		else
 		{
 			//Restriction NOT LOADED :(
-			mbUseClickRule = false;
+			mbUseRestriction = false;
 		}
 	}
 	else
 	{
 		//Restriction NOT LOADED :(
-		mbUseClickRule = false;
+		mbUseRestriction = false;
 	}
 }
 
@@ -136,6 +136,13 @@ void StabilityCalculator::StabilityNextStep(ID3D11DeviceContext* dc)
 				StabilityNextStepSpawn(dc);
 			}
 		}
+	}
+
+	mCurrentStep++;
+	if(mCurrentStep >= 10)
+	{
+		dc->Flush();
+		mCurrentStep = 0;
 	}
 }
 

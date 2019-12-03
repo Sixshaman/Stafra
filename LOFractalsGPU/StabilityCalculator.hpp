@@ -72,4 +72,6 @@ private:
 	uint32_t mSpawnPeriod;
 	bool     mbUseClickRule;
 	bool     mbUseRestriction;
+
+	uint32_t mCurrentStep; //To prevent TDR, call ID3D11DeviceContext::Flush() each 200 steps
 };

@@ -1,6 +1,6 @@
 //Single tile shrinkage
 //Creates a single boolean
-//Tile 32x32 -> A bool of "Is the whole tile of gBoard is true"
+//Tile 32x32 -> A bool of "Is the whole tile of gBoard true"
 
 cbuffer cbParams: register(b0)
 {
