@@ -36,9 +36,18 @@ HRESULT DXException::ToHR() const
 
 const std::wstring GetShaderPath()
 {
+	wchar_t path[2048];
+	GetModuleFileNameW(nullptr, path, 2048);
+
+	wchar_t drive[512];
+	wchar_t dir[1024];
+	wchar_t filename[256];
+	wchar_t ext[256];
+	_wsplitpath_s(path, drive, dir, filename, ext);
+
 #if defined(DEBUG) || defined(_DEBUG)
-	return LR"(Shaders\Debug\)";
+	return std::wstring(drive) + std::wstring(dir) + LR"(Shaders\Debug\)";
 #else
-	return LR"(Shaders\Release\)";
+	return std::wstring(drive) + std::wstring(dir) + LR"(Shaders\Release\)";
 #endif
 }
