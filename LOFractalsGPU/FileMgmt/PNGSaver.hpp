@@ -1,6 +1,6 @@
 #pragma once
 
-#include <png.h>
+#include <libpng16/png.h>
 #include <string>
 #include <vector>
 
