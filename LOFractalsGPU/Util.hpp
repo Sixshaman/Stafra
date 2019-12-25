@@ -45,6 +45,7 @@ inline void UpdateBuffer(ID3D11Buffer* destBuf, CBufType& srcBuf, ID3D11DeviceCo
 	dc->Unmap(destBuf, 0);
 }
 
-#define CUSTOM_INITIAL_BOARD   0x01
-#define CUSTOM_CLICK_RULE      0x02
-#define CUSTOM_RESTRICTION     0x04
+#define CUSTOM_INITIAL_BOARD    0x01
+#define CUSTOM_CLICK_RULE       0x02
+#define CUSTOM_CLICK_RULE_ERROR 0x04
+#define CUSTOM_RESTRICTION      0x08

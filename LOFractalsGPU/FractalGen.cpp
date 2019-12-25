@@ -16,6 +16,7 @@
 namespace
 {
 	const std::string gDefaultInitialStateLocation = "InitialState.png";
+	const std::string gDefaultClickRuleLocation    = "ClickRule.png";
 	const size_t gDefaultLoSize  = 1023;
 	const size_t gDownscaledSize = 1024;
 }
@@ -69,7 +70,16 @@ void FractalGen::ComputeFractal(bool saveVideoFrames, bool bUseSmoothTransform, 
 {
 	uint32_t solutionPeriod = SolutionPeriodFromSize(enlonging);
 
-	mStabilityCalculator->InitTextures(mDevice.Get(), mDeviceContext.Get(), mSizeLo);
+	int initTexInfo = mStabilityCalculator->InitTextures(mDevice.Get(), mDeviceContext.Get(), mSizeLo);
+	if(initTexInfo & CUSTOM_CLICK_RULE)
+	{
+		PrintCustomClickRule();
+	}
+	else if(std::filesystem::exists(gDefaultClickRuleLocation))
+	{
+		PrintErrorClickRule();
+	}
+
 	for(uint32_t i = 0; i < solutionPeriod; i++)
 	{
 		mStabilityCalculator->StabilityNextStep(mDeviceContext.Get());
@@ -203,4 +213,14 @@ void FractalGen::PrintInitialStateDimensions()
 void FractalGen::PrintDefaultInitialState()
 {
 	std::cout << "Image size not specified and no initial state found. Default 1024x1024 4 corners state will be used." << std::endl;
+}
+
+void FractalGen::PrintCustomClickRule()
+{
+	std::cout << "Custom click rule loaded! Warning: custom click rules may be slow." << std::endl;
+}
+
+void FractalGen::PrintErrorClickRule()
+{
+	std::cout << "Custom click rule loading error. Please ensure the click rule file dimensions are exactly 32x32." << std::endl;
 }

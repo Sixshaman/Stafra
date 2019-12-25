@@ -14,7 +14,7 @@ StabilityCalculator::~StabilityCalculator()
 {
 }
 
-void StabilityCalculator::InitTextures(ID3D11Device* device, ID3D11DeviceContext* dc, uint32_t sizeLO)
+int StabilityCalculator::InitTextures(ID3D11Device* device, ID3D11DeviceContext* dc, uint32_t sizeLO)
 {
 	UINT clearVal[] = {1, 1, 1, 1};
 	dc->ClearUnorderedAccessViewUint(mCurrStabilityUAV.Get(), clearVal);
@@ -83,6 +83,8 @@ void StabilityCalculator::InitTextures(ID3D11Device* device, ID3D11DeviceContext
 		//Restriction NOT LOADED :(
 		mbUseRestriction = false;
 	}
+
+	return resLoad;
 }
 
 void StabilityCalculator::StabilityNextStep(ID3D11DeviceContext* dc)

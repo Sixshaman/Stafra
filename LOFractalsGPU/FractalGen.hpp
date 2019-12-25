@@ -36,6 +36,8 @@ private:
 	void PrintErrorImageLoading();
 	void PrintInitialStateDimensions();
 	void PrintDefaultInitialState();
+	void PrintCustomClickRule();
+	void PrintErrorClickRule();
 
 private:
 	Microsoft::WRL::ComPtr<ID3D11Device>        mDevice;

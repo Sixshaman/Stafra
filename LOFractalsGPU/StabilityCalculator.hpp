@@ -15,7 +15,7 @@ public:
 	StabilityCalculator(ID3D11Device* device, uint32_t width, uint32_t height, uint32_t spawnPeriod = 0);
 	~StabilityCalculator();
 
-	void InitTextures(ID3D11Device* device, ID3D11DeviceContext* dc, uint32_t sizeLO);
+	int InitTextures(ID3D11Device* device, ID3D11DeviceContext* dc, uint32_t sizeLO);
 	void StabilityNextStep(ID3D11DeviceContext* dc);
 	bool CheckEquality(ID3D11Device* device, ID3D11DeviceContext* dc);
 
