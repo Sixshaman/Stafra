@@ -1,6 +1,6 @@
 //Tile shrinkage
 //Creates a texture of bools heavily shrinked
-//Tile 32x32 -> A bool of "Is the whole tile of gBoard is true"
+//Tile 32x32 -> A bool of "Is the whole tile of gBoard true"
 
 cbuffer cbParams: register(b0)
 {

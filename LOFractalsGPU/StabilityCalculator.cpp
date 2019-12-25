@@ -4,7 +4,7 @@
 #include "InitialState.hpp"
 #include "EqualityChecker.hpp"
 
-StabilityCalculator::StabilityCalculator(ID3D11Device* device, uint32_t width, uint32_t height): mBoardWidth(width), mBoardHeight(height), mbUseClickRule(false)
+StabilityCalculator::StabilityCalculator(ID3D11Device* device, uint32_t width, uint32_t height, uint32_t spawnPeriod): mBoardWidth(width), mBoardHeight(height), mbUseClickRule(false), mSpawnPeriod(spawnPeriod), mCurrentStep(0)
 {
 	CreateTextures(device);
 	LoadShaderData(device);
@@ -14,7 +14,7 @@ StabilityCalculator::~StabilityCalculator()
 {
 }
 
-int StabilityCalculator::InitTextures(ID3D11Device* device, ID3D11DeviceContext* dc)
+void StabilityCalculator::InitTextures(ID3D11Device* device, ID3D11DeviceContext* dc, uint32_t sizeLO)
 {
 	UINT clearVal[] = {1, 1, 1, 1};
 	dc->ClearUnorderedAccessViewUint(mCurrStabilityUAV.Get(), clearVal);
@@ -50,8 +50,6 @@ int StabilityCalculator::InitTextures(ID3D11Device* device, ID3D11DeviceContext*
 	std::swap(mCurrBoardSRV,     mPrevBoardSRV);
 	std::swap(mCurrBoardUAV,     mPrevBoardUAV);
 
-	uint32_t clickRuleWidth  = 0;
-	uint32_t clickRuleHeight = 0;
 	if(is.LoadClickRuleFromFile(device, dc, L"ClickRule.png", mClickRuleUAV.Get()) == LoadError::LOAD_SUCCESS)
 	{
 		//Click rule loaded!
@@ -64,18 +62,87 @@ int StabilityCalculator::InitTextures(ID3D11Device* device, ID3D11DeviceContext*
 		mbUseClickRule = false;
 	}
 
-	return resLoad;
+	uint32_t restrictionWidth  = 0;
+	uint32_t restrictionHeight = 0;
+	if(is.LoadFromFile(device, dc, L"RESTRICTION.png", mRestrictionUAV.Get(), restrictionWidth, restrictionHeight) == LoadError::LOAD_SUCCESS)
+	{
+		if(mBoardWidth == restrictionWidth && mBoardHeight == restrictionHeight) //Only if the board and the restriction sizes are equal
+		{
+			//RESTRIIIIIIIIIIIICTION loaded!
+			mbUseRestriction = true;
+			resLoad |= CUSTOM_RESTRICTION;
+		}
+		else
+		{
+			//Restriction NOT LOADED :(
+			mbUseRestriction = false;
+		}
+	}
+	else
+	{
+		//Restriction NOT LOADED :(
+		mbUseRestriction = false;
+	}
 }
 
 void StabilityCalculator::StabilityNextStep(ID3D11DeviceContext* dc)
 {
 	if(mbUseClickRule)
 	{
-		StabilityNextStepClickRule(dc);
+		if(mbUseRestriction)
+		{
+			if(mSpawnPeriod == 0)
+			{
+				StabilityNextStepClickRuleRestricted(dc);
+			}
+			else
+			{
+				StabilityNextStepClickRuleSpawnRestricted(dc);
+			}
+		}
+		else
+		{
+			if(mSpawnPeriod == 0)
+			{
+				StabilityNextStepClickRule(dc);
+			}
+			else
+			{
+				StabilityNextStepClickRuleSpawn(dc);
+			}
+		}
 	}
 	else
 	{
-		StabilityNextStepNormal(dc);
+		if(mbUseRestriction)
+		{
+			if(mSpawnPeriod == 0)
+			{
+				StabilityNextStepRestricted(dc);
+			}
+			else
+			{
+				StabilityNextStepSpawnRestricted(dc);
+			}
+		}
+		else
+		{
+			if (mSpawnPeriod == 0)
+			{
+				StabilityNextStepNormal(dc);
+			}
+			else
+			{
+				StabilityNextStepSpawn(dc);
+			}
+		}
+	}
+
+	mCurrentStep++;
+	if(mCurrentStep >= 1)
+	{
+		dc->Flush();
+		mCurrentStep = 0;
 	}
 }
 
@@ -111,7 +178,9 @@ void StabilityCalculator::CreateTextures(ID3D11Device* device)
 	Microsoft::WRL::ComPtr<ID3D11Texture2D> prevBoardTex = nullptr;
 	Microsoft::WRL::ComPtr<ID3D11Texture2D> currBoardTex = nullptr;
 
-	Microsoft::WRL::ComPtr<ID3D11Texture2D> initialBoardTex = nullptr; //For comparison
+	Microsoft::WRL::ComPtr<ID3D11Texture2D> initialBoardTex = nullptr; //For comparison with end state
+
+	Microsoft::WRL::ComPtr<ID3D11Texture2D> restrictionTex = nullptr; //For comparison
 
 	ThrowIfFailed(device->CreateTexture2D(&boardTexDesc, nullptr, prevStabilityTex.GetAddressOf()));
 	ThrowIfFailed(device->CreateTexture2D(&boardTexDesc, nullptr, currStabilityTex.GetAddressOf()));
@@ -120,6 +189,8 @@ void StabilityCalculator::CreateTextures(ID3D11Device* device)
 	ThrowIfFailed(device->CreateTexture2D(&boardTexDesc, nullptr, currBoardTex.GetAddressOf()));
 
 	ThrowIfFailed(device->CreateTexture2D(&boardTexDesc, nullptr, initialBoardTex.GetAddressOf()));
+
+	ThrowIfFailed(device->CreateTexture2D(&boardTexDesc, nullptr, restrictionTex.GetAddressOf()));
 
 	D3D11_SHADER_RESOURCE_VIEW_DESC boardSrvDesc;
 	boardSrvDesc.Format                    = DXGI_FORMAT_R8_UINT;
@@ -135,6 +206,8 @@ void StabilityCalculator::CreateTextures(ID3D11Device* device)
 
 	ThrowIfFailed(device->CreateShaderResourceView(initialBoardTex.Get(), &boardSrvDesc, mInitialBoardSRV.GetAddressOf()));
 
+	ThrowIfFailed(device->CreateShaderResourceView(restrictionTex.Get(), &boardSrvDesc, mRestrictionSRV.GetAddressOf()));
+
 	D3D11_UNORDERED_ACCESS_VIEW_DESC boardUavDesc;
 	boardUavDesc.Format             = DXGI_FORMAT_R8_UINT;
 	boardUavDesc.ViewDimension      = D3D11_UAV_DIMENSION_TEXTURE2D;
@@ -147,6 +220,8 @@ void StabilityCalculator::CreateTextures(ID3D11Device* device)
 	ThrowIfFailed(device->CreateUnorderedAccessView(currBoardTex.Get(), &boardUavDesc, mCurrBoardUAV.GetAddressOf()));
 
 	ThrowIfFailed(device->CreateUnorderedAccessView(initialBoardTex.Get(), &boardUavDesc, mInitialBoardUAV.GetAddressOf()));
+
+	ThrowIfFailed(device->CreateUnorderedAccessView(restrictionTex.Get(), &boardUavDesc, mRestrictionUAV.GetAddressOf()));
 
 	D3D11_TEXTURE2D_DESC clickRuleTexDesc;
 	clickRuleTexDesc.Width              = 32;
@@ -178,6 +253,24 @@ void StabilityCalculator::CreateTextures(ID3D11Device* device)
 	clickRuleUavDesc.Texture2D.MipSlice = 0;
 
 	ThrowIfFailed(device->CreateUnorderedAccessView(clickRuleTex.Get(), &clickRuleUavDesc, mClickRuleUAV.GetAddressOf()));
+
+	D3D11_BUFFER_DESC cbDesc;
+	cbDesc.Usage               = D3D11_USAGE_DYNAMIC;
+	cbDesc.ByteWidth           = (sizeof(CBParamsStruct) + 0xff) & (~0xff);
+	cbDesc.BindFlags           = D3D11_BIND_CONSTANT_BUFFER;
+	cbDesc.CPUAccessFlags      = D3D11_CPU_ACCESS_WRITE;
+	cbDesc.MiscFlags           = 0;
+	cbDesc.StructureByteStride = 0;
+
+	CBParamsStruct initData;
+	initData.SpawnPeriod = 0;
+
+	D3D11_SUBRESOURCE_DATA cbData;
+	cbData.pSysMem          = &initData;
+	cbData.SysMemPitch      = 0;
+	cbData.SysMemSlicePitch = 0;
+
+	ThrowIfFailed(device->CreateBuffer(&cbDesc, &cbData, &mCBufferParams));
 }
 
 void StabilityCalculator::LoadShaderData(ID3D11Device* device)
@@ -186,9 +279,35 @@ void StabilityCalculator::LoadShaderData(ID3D11Device* device)
 
 	ThrowIfFailed(D3DReadFileToBlob((GetShaderPath() + L"StabilityNextStepCS.cso").c_str(), shaderBlob.GetAddressOf()));
 	ThrowIfFailed(device->CreateComputeShader(shaderBlob->GetBufferPointer(), shaderBlob->GetBufferSize(), nullptr, mStabilityNextStepShader.GetAddressOf()));
+	shaderBlob.Reset();
 
 	ThrowIfFailed(D3DReadFileToBlob((GetShaderPath() + L"StabilityNextStepClickRuleCS.cso").c_str(), shaderBlob.GetAddressOf()));
 	ThrowIfFailed(device->CreateComputeShader(shaderBlob->GetBufferPointer(), shaderBlob->GetBufferSize(), nullptr, mStabilityNextStepClickRuleShader.GetAddressOf()));
+	shaderBlob.Reset();
+
+	ThrowIfFailed(D3DReadFileToBlob((GetShaderPath() + L"StabilityNextStepSpawnCS.cso").c_str(), shaderBlob.GetAddressOf()));
+	ThrowIfFailed(device->CreateComputeShader(shaderBlob->GetBufferPointer(), shaderBlob->GetBufferSize(), nullptr, mStabilityNextStepSPAWNShader.GetAddressOf()));
+	shaderBlob.Reset();
+
+	ThrowIfFailed(D3DReadFileToBlob((GetShaderPath() + L"StabilityNextStepSpawnCLICKRuLECS.cso").c_str(), shaderBlob.GetAddressOf()));
+	ThrowIfFailed(device->CreateComputeShader(shaderBlob->GetBufferPointer(), shaderBlob->GetBufferSize(), nullptr, mStabilityNextStepSPAWNCLICKRUUUULEShader.GetAddressOf()));
+	shaderBlob.Reset();
+
+	ThrowIfFailed(D3DReadFileToBlob((GetShaderPath() + L"StabilityNextStepRESTRICTEDCS.cso").c_str(), shaderBlob.GetAddressOf()));
+	ThrowIfFailed(device->CreateComputeShader(shaderBlob->GetBufferPointer(), shaderBlob->GetBufferSize(), nullptr, mStabilityNextStepRESTTERIVCTIONShader.GetAddressOf()));
+	shaderBlob.Reset();
+
+	ThrowIfFailed(D3DReadFileToBlob((GetShaderPath() + L"StabilityNextStepClickRuleRESTRICTEDCS.cso").c_str(), shaderBlob.GetAddressOf()));
+	ThrowIfFailed(device->CreateComputeShader(shaderBlob->GetBufferPointer(), shaderBlob->GetBufferSize(), nullptr, mStabilityNextStepClickRuleERTESTRICVTIONShader.GetAddressOf()));
+	shaderBlob.Reset();
+
+	ThrowIfFailed(D3DReadFileToBlob((GetShaderPath() + L"StabilityNextStepSpawnRESTRICTEDCS.cso").c_str(), shaderBlob.GetAddressOf()));
+	ThrowIfFailed(device->CreateComputeShader(shaderBlob->GetBufferPointer(), shaderBlob->GetBufferSize(), nullptr, mStabilityNextStepSPAWNAAAAAAAARESTTRTICTIONShader.GetAddressOf()));
+	shaderBlob.Reset();
+
+	ThrowIfFailed(D3DReadFileToBlob((GetShaderPath() + L"StabilityNextStepSpawnCLICKRuLERESTRICTEDCS.cso").c_str(), shaderBlob.GetAddressOf()));
+	ThrowIfFailed(device->CreateComputeShader(shaderBlob->GetBufferPointer(), shaderBlob->GetBufferSize(), nullptr, mStabilityNextStepSPAWNCLICKRUUUULEATEWWEAFOSDFSTRESTRICTIONShader.GetAddressOf()));
+	shaderBlob.Reset();
 }
 
 void StabilityCalculator::StabilityNextStepNormal(ID3D11DeviceContext* dc)
@@ -230,6 +349,178 @@ void StabilityCalculator::StabilityNextStepClickRule(ID3D11DeviceContext* dc)
 	ID3D11UnorderedAccessView* nullUAVs[] = { nullptr, nullptr };
 
 	dc->CSSetShaderResources(0, 3, nullSRVs);
+	dc->CSSetUnorderedAccessViews(0, 2, nullUAVs, nullptr);
+	dc->CSSetShader(nullptr, nullptr, 0);
+
+	std::swap(mCurrStabilitySRV, mPrevStabilitySRV);
+	std::swap(mCurrStabilityUAV, mPrevStabilityUAV);
+	std::swap(mCurrBoardSRV,     mPrevBoardSRV);
+	std::swap(mCurrBoardUAV,     mPrevBoardUAV);
+}
+
+void StabilityCalculator::StabilityNextStepSpawn(ID3D11DeviceContext* dc)
+{
+	mCBufferParamsCopy.SpawnPeriod = mSpawnPeriod;
+	UpdateBuffer(mCBufferParams.Get(), mCBufferParamsCopy, dc);
+
+	ID3D11Buffer*          stabilityNextStepSpawnCBuffers[] = { mCBufferParams.Get() };
+	ID3D11ShaderResourceView*  stabilityNextStepSpawnSRVs[] = { mPrevBoardSRV.Get(), mPrevStabilitySRV.Get() };
+	ID3D11UnorderedAccessView* stabilityNextStepSpawnUAVs[] = { mCurrBoardUAV.Get(), mCurrStabilityUAV.Get() };
+
+	dc->CSSetConstantBuffers(0, 1, stabilityNextStepSpawnCBuffers);
+	dc->CSSetShaderResources(0, 2, stabilityNextStepSpawnSRVs);
+	dc->CSSetUnorderedAccessViews(0, 2, stabilityNextStepSpawnUAVs, nullptr);
+
+	dc->CSSetShader(mStabilityNextStepSPAWNShader.Get(), nullptr, 0);
+	dc->Dispatch((uint32_t)(ceilf(mBoardWidth / 32.0f)), (uint32_t)(ceilf(mBoardHeight / 32.0f)), 1);
+
+	ID3D11Buffer*          nullCBuffers[] = { nullptr };
+	ID3D11ShaderResourceView*  nullSRVs[] = { nullptr, nullptr };
+	ID3D11UnorderedAccessView* nullUAVs[] = { nullptr, nullptr };
+
+	dc->CSSetConstantBuffers(0, 1, nullCBuffers);
+	dc->CSSetShaderResources(0, 2, nullSRVs);
+	dc->CSSetUnorderedAccessViews(0, 2, nullUAVs, nullptr);
+	dc->CSSetShader(nullptr, nullptr, 0);
+
+	std::swap(mCurrStabilitySRV, mPrevStabilitySRV);
+	std::swap(mCurrStabilityUAV, mPrevStabilityUAV);
+	std::swap(mCurrBoardSRV,     mPrevBoardSRV);
+	std::swap(mCurrBoardUAV,     mPrevBoardUAV);
+}
+
+void StabilityCalculator::StabilityNextStepClickRuleSpawn(ID3D11DeviceContext* dc)
+{
+	mCBufferParamsCopy.SpawnPeriod = mSpawnPeriod;
+	UpdateBuffer(mCBufferParams.Get(), mCBufferParamsCopy, dc);
+
+	ID3D11Buffer*              stabilityNextStepSpawnClickRuleCBuffers[] = { mCBufferParams.Get() };
+	ID3D11ShaderResourceView*  stabilityNextStepSpawnClickRuleSRVs[]     = { mPrevBoardSRV.Get(), mPrevStabilitySRV.Get(), mClickRuleSRV.Get() };
+	ID3D11UnorderedAccessView* stabilityNextStepSpawnClickRuleUAVs[]     = { mCurrBoardUAV.Get(), mCurrStabilityUAV.Get() };
+
+	dc->CSSetConstantBuffers(0, 1, stabilityNextStepSpawnClickRuleCBuffers);
+	dc->CSSetShaderResources(0, 3, stabilityNextStepSpawnClickRuleSRVs);
+	dc->CSSetUnorderedAccessViews(0, 2, stabilityNextStepSpawnClickRuleUAVs, nullptr);
+
+	dc->CSSetShader(mStabilityNextStepSPAWNCLICKRUUUULEShader.Get(), nullptr, 0);
+	dc->Dispatch((uint32_t)(ceilf(mBoardWidth / 32.0f)), (uint32_t)(ceilf(mBoardHeight / 32.0f)), 1);
+
+	ID3D11Buffer*          nullCBuffers[] = { nullptr};
+	ID3D11ShaderResourceView*  nullSRVs[] = { nullptr, nullptr, nullptr };
+	ID3D11UnorderedAccessView* nullUAVs[] = { nullptr, nullptr };
+
+	dc->CSSetConstantBuffers(0, 1, nullCBuffers);
+	dc->CSSetShaderResources(0, 3, nullSRVs);
+	dc->CSSetUnorderedAccessViews(0, 2, nullUAVs, nullptr);
+	dc->CSSetShader(nullptr, nullptr, 0);
+
+	std::swap(mCurrStabilitySRV, mPrevStabilitySRV);
+	std::swap(mCurrStabilityUAV, mPrevStabilityUAV);
+	std::swap(mCurrBoardSRV,     mPrevBoardSRV);
+	std::swap(mCurrBoardUAV,     mPrevBoardUAV);
+}
+
+void StabilityCalculator::StabilityNextStepRestricted(ID3D11DeviceContext* dc)
+{
+	ID3D11ShaderResourceView*  stabilityNextStepSRVs[] = { mPrevBoardSRV.Get(), mPrevStabilitySRV.Get(), mRestrictionSRV.Get() };
+	ID3D11UnorderedAccessView* stabilityNextStepUAVs[] = { mCurrBoardUAV.Get(), mCurrStabilityUAV.Get() };
+
+	dc->CSSetShaderResources(0, 3, stabilityNextStepSRVs);
+	dc->CSSetUnorderedAccessViews(0, 2, stabilityNextStepUAVs, nullptr);
+
+	dc->CSSetShader(mStabilityNextStepRESTTERIVCTIONShader.Get(), nullptr, 0);
+	dc->Dispatch((uint32_t)(ceilf(mBoardWidth / 32.0f)), (uint32_t)(ceilf(mBoardHeight / 32.0f)), 1);
+
+	ID3D11ShaderResourceView*  nullSRVs[] = { nullptr, nullptr, nullptr };
+	ID3D11UnorderedAccessView* nullUAVs[] = { nullptr, nullptr };
+
+	dc->CSSetShaderResources(0, 3, nullSRVs);
+	dc->CSSetUnorderedAccessViews(0, 2, nullUAVs, nullptr);
+	dc->CSSetShader(nullptr, nullptr, 0);
+
+	std::swap(mCurrStabilitySRV, mPrevStabilitySRV);
+	std::swap(mCurrStabilityUAV, mPrevStabilityUAV);
+	std::swap(mCurrBoardSRV,     mPrevBoardSRV);
+	std::swap(mCurrBoardUAV,     mPrevBoardUAV);
+}
+
+void StabilityCalculator::StabilityNextStepClickRuleRestricted(ID3D11DeviceContext* dc)
+{
+	ID3D11ShaderResourceView*  stabilityNextStepClickRuleSRVs[] = { mPrevBoardSRV.Get(), mPrevStabilitySRV.Get(), mClickRuleSRV.Get(), mRestrictionSRV.Get() };
+	ID3D11UnorderedAccessView* stabilityNextStepClickRuleUAVs[] = { mCurrBoardUAV.Get(), mCurrStabilityUAV.Get() };
+
+	dc->CSSetShaderResources(0, 4, stabilityNextStepClickRuleSRVs);
+	dc->CSSetUnorderedAccessViews(0, 2, stabilityNextStepClickRuleUAVs, nullptr);
+
+	dc->CSSetShader(mStabilityNextStepClickRuleERTESTRICVTIONShader.Get(), nullptr, 0);
+	dc->Dispatch((uint32_t)(ceilf(mBoardWidth / 32.0f)), (uint32_t)(ceilf(mBoardHeight / 32.0f)), 1);
+
+	ID3D11ShaderResourceView*  nullSRVs[] = { nullptr, nullptr, nullptr, nullptr };
+	ID3D11UnorderedAccessView* nullUAVs[] = { nullptr, nullptr };
+
+	dc->CSSetShaderResources(0, 4, nullSRVs);
+	dc->CSSetUnorderedAccessViews(0, 2, nullUAVs, nullptr);
+	dc->CSSetShader(nullptr, nullptr, 0);
+
+	std::swap(mCurrStabilitySRV, mPrevStabilitySRV);
+	std::swap(mCurrStabilityUAV, mPrevStabilityUAV);
+	std::swap(mCurrBoardSRV,     mPrevBoardSRV);
+	std::swap(mCurrBoardUAV,     mPrevBoardUAV);
+}
+
+void StabilityCalculator::StabilityNextStepSpawnRestricted(ID3D11DeviceContext* dc)
+{
+	mCBufferParamsCopy.SpawnPeriod = mSpawnPeriod;
+	UpdateBuffer(mCBufferParams.Get(), mCBufferParamsCopy, dc);
+
+	ID3D11Buffer*          stabilityNextStepSpawnCBuffers[] = { mCBufferParams.Get() };
+	ID3D11ShaderResourceView*  stabilityNextStepSpawnSRVs[] = { mPrevBoardSRV.Get(), mPrevStabilitySRV.Get(), mRestrictionSRV.Get() };
+	ID3D11UnorderedAccessView* stabilityNextStepSpawnUAVs[] = { mCurrBoardUAV.Get(), mCurrStabilityUAV.Get() };
+
+	dc->CSSetConstantBuffers(0, 1, stabilityNextStepSpawnCBuffers);
+	dc->CSSetShaderResources(0, 3, stabilityNextStepSpawnSRVs);
+	dc->CSSetUnorderedAccessViews(0, 2, stabilityNextStepSpawnUAVs, nullptr);
+
+	dc->CSSetShader(mStabilityNextStepSPAWNAAAAAAAARESTTRTICTIONShader.Get(), nullptr, 0);
+	dc->Dispatch((uint32_t)(ceilf(mBoardWidth / 32.0f)), (uint32_t)(ceilf(mBoardHeight / 32.0f)), 1);
+
+	ID3D11Buffer*          nullCBuffers[] = { nullptr };
+	ID3D11ShaderResourceView*  nullSRVs[] = { nullptr, nullptr, nullptr };
+	ID3D11UnorderedAccessView* nullUAVs[] = { nullptr, nullptr };
+
+	dc->CSSetConstantBuffers(0, 1, nullCBuffers);
+	dc->CSSetShaderResources(0, 3, nullSRVs);
+	dc->CSSetUnorderedAccessViews(0, 2, nullUAVs, nullptr);
+	dc->CSSetShader(nullptr, nullptr, 0);
+
+	std::swap(mCurrStabilitySRV, mPrevStabilitySRV);
+	std::swap(mCurrStabilityUAV, mPrevStabilityUAV);
+	std::swap(mCurrBoardSRV,     mPrevBoardSRV);
+	std::swap(mCurrBoardUAV,     mPrevBoardUAV);
+}
+
+void StabilityCalculator::StabilityNextStepClickRuleSpawnRestricted(ID3D11DeviceContext* dc)
+{
+	mCBufferParamsCopy.SpawnPeriod = mSpawnPeriod;
+	UpdateBuffer(mCBufferParams.Get(), mCBufferParamsCopy, dc);
+
+	ID3D11Buffer*              stabilityNextStepSpawnClickRuleCBuffers[] = { mCBufferParams.Get() };
+	ID3D11ShaderResourceView*  stabilityNextStepSpawnClickRuleSRVs[]     = { mPrevBoardSRV.Get(), mPrevStabilitySRV.Get(), mClickRuleSRV.Get(), mRestrictionSRV.Get() };
+	ID3D11UnorderedAccessView* stabilityNextStepSpawnClickRuleUAVs[]     = { mCurrBoardUAV.Get(), mCurrStabilityUAV.Get() };
+
+	dc->CSSetConstantBuffers(0, 1, stabilityNextStepSpawnClickRuleCBuffers);
+	dc->CSSetShaderResources(0, 4, stabilityNextStepSpawnClickRuleSRVs);
+	dc->CSSetUnorderedAccessViews(0, 2, stabilityNextStepSpawnClickRuleUAVs, nullptr);
+
+	dc->CSSetShader(mStabilityNextStepSPAWNCLICKRUUUULEATEWWEAFOSDFSTRESTRICTIONShader.Get(), nullptr, 0);
+	dc->Dispatch((uint32_t)(ceilf(mBoardWidth / 32.0f)), (uint32_t)(ceilf(mBoardHeight / 32.0f)), 1);
+
+	ID3D11Buffer*          nullCBuffers[] = { nullptr};
+	ID3D11ShaderResourceView*  nullSRVs[] = { nullptr, nullptr, nullptr, nullptr };
+	ID3D11UnorderedAccessView* nullUAVs[] = { nullptr, nullptr };
+
+	dc->CSSetConstantBuffers(0, 1, nullCBuffers);
+	dc->CSSetShaderResources(0, 4, nullSRVs);
 	dc->CSSetUnorderedAccessViews(0, 2, nullUAVs, nullptr);
 	dc->CSSetShader(nullptr, nullptr, 0);
 

@@ -1,31 +1,11 @@
 #pragma once
 
-#include <cstdio>
 #include <png.h>
 #include <string>
 #include <vector>
 
-class PngSaver
+class PngSaver //This class is needed to save PNG data to file
 {
-	class FileHandle
-	{
-	public:
-		FileHandle(const std::string& filename);
-		~FileHandle();
-	
-		FileHandle(const FileHandle&)           = delete;
-		FileHandle operator=(const FileHandle&) = delete;
-
-		FileHandle(const FileHandle&&)           = delete;
-		FileHandle operator=(const FileHandle&&) = delete;
-
-		FILE* GetFilePointer() const;
-		bool operator!()       const;
-
-	private:
-		FILE* mFile;
-	};
-
 public:
 	PngSaver();
 	~PngSaver();

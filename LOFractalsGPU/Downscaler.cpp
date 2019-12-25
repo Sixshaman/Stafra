@@ -13,9 +13,16 @@ Downscaler::~Downscaler()
 {
 }
 
-void Downscaler::DownscalePicture(ID3D11DeviceContext* dc, ID3D11ShaderResourceView* srv, uint32_t oldWidth, uint32_t oldHeight)
+void Downscaler::DownscalePicture(ID3D11DeviceContext* dc, ID3D11ShaderResourceView* srv, uint32_t spawnPeriod, uint32_t oldWidth, uint32_t oldHeight)
 {
-	FinalStateTransform(dc, srv, oldWidth, oldHeight);
+	if(spawnPeriod == 0)
+	{
+		FinalStateTransform(dc, srv, oldWidth, oldHeight);
+	}
+	else
+	{
+		FinalStateTransformSmooth(dc, srv, spawnPeriod, oldWidth, oldHeight);
+	}
 
 	dc->GenerateMips(mFinalStateSRV.Get());
 
@@ -125,6 +132,9 @@ void Downscaler::LoadShaderData(ID3D11Device* device)
 	ThrowIfFailed(D3DReadFileToBlob((GetShaderPath() + L"FinalStateTransformCS.cso").c_str(), shaderBlob.GetAddressOf()));
 	ThrowIfFailed(device->CreateComputeShader(shaderBlob->GetBufferPointer(), shaderBlob->GetBufferSize(), nullptr, mFinalStateTransformShader.GetAddressOf()));
 
+	ThrowIfFailed(D3DReadFileToBlob((GetShaderPath() + L"FinalStateTransformSmoothCS.cso").c_str(), shaderBlob.GetAddressOf()));
+	ThrowIfFailed(device->CreateComputeShader(shaderBlob->GetBufferPointer(), shaderBlob->GetBufferSize(), nullptr, mFinalStateTransformSmoothShader.GetAddressOf()));
+
 	ThrowIfFailed(D3DReadFileToBlob((GetShaderPath() + L"DownscaleBigPictureVS.cso").c_str(), shaderBlob.GetAddressOf()));
 	ThrowIfFailed(device->CreateVertexShader(shaderBlob->GetBufferPointer(), shaderBlob->GetBufferSize(), nullptr, mDownscaleVertexShader.GetAddressOf()));
 
@@ -139,6 +149,24 @@ void Downscaler::LoadShaderData(ID3D11Device* device)
 	samDesc.Filter   = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
 
 	ThrowIfFailed(device->CreateSamplerState(&samDesc, mBestSamplerEver.GetAddressOf()));
+
+	D3D11_BUFFER_DESC cbDesc;
+	cbDesc.Usage               = D3D11_USAGE_DYNAMIC;
+	cbDesc.ByteWidth           = (sizeof(CBParamsStruct) + 0xff) & (~0xff);
+	cbDesc.BindFlags           = D3D11_BIND_CONSTANT_BUFFER;
+	cbDesc.CPUAccessFlags      = D3D11_CPU_ACCESS_WRITE;
+	cbDesc.MiscFlags           = 0;
+	cbDesc.StructureByteStride = 0;
+
+	CBParamsStruct initData;
+	initData.SpawnPeriod = 0;
+
+	D3D11_SUBRESOURCE_DATA cbData;
+	cbData.pSysMem          = &initData;
+	cbData.SysMemPitch      = 0;
+	cbData.SysMemSlicePitch = 0;
+
+	ThrowIfFailed(device->CreateBuffer(&cbDesc, &cbData, &mCBufferParams));
 
 	mDownscaleViewport.TopLeftX = 0.0f;
 	mDownscaleViewport.TopLeftY = 0.0f;
@@ -162,6 +190,32 @@ void Downscaler::FinalStateTransform(ID3D11DeviceContext* dc, ID3D11ShaderResour
 	ID3D11ShaderResourceView*  nullSRVs[] = { nullptr };
 	ID3D11UnorderedAccessView* nullUAVs[] = { nullptr };
 
+	dc->CSSetShaderResources(0, 1, nullSRVs);
+	dc->CSSetUnorderedAccessViews(0, 1, nullUAVs, nullptr);
+	dc->CSSetShader(nullptr, nullptr, 0);
+}
+
+void Downscaler::FinalStateTransformSmooth(ID3D11DeviceContext* dc, ID3D11ShaderResourceView* srv, uint32_t spawnPeriod, uint32_t oldWidth, uint32_t oldHeight)
+{
+	mCBufferParamsCopy.SpawnPeriod = spawnPeriod;
+	UpdateBuffer(mCBufferParams.Get(), mCBufferParamsCopy, dc);
+
+	ID3D11Buffer*              finalStateTransformCbuffers[] = {mCBufferParams.Get()};
+	ID3D11ShaderResourceView*  finalStateTransformSRVs[]     = { srv };
+	ID3D11UnorderedAccessView* finalStateTransformUAVs[]     = { mFinalStateUAV.Get() };
+
+	dc->CSSetConstantBuffers(0, 1, finalStateTransformCbuffers);
+	dc->CSSetShaderResources(0, 1, finalStateTransformSRVs);
+	dc->CSSetUnorderedAccessViews(0, 1, finalStateTransformUAVs, nullptr);
+
+	dc->CSSetShader(mFinalStateTransformSmoothShader.Get(), nullptr, 0);
+	dc->Dispatch((uint32_t)(ceilf(oldWidth / 32.0f)), (uint32_t)(ceilf(oldHeight / 32.0f)), 1);
+
+	ID3D11Buffer*          nullCBuffers[] = { nullptr };
+	ID3D11ShaderResourceView*  nullSRVs[] = { nullptr };
+	ID3D11UnorderedAccessView* nullUAVs[] = { nullptr };
+
+	dc->CSSetConstantBuffers(0, 1, nullCBuffers);
 	dc->CSSetShaderResources(0, 1, nullSRVs);
 	dc->CSSetUnorderedAccessViews(0, 1, nullUAVs, nullptr);
 	dc->CSSetShader(nullptr, nullptr, 0);

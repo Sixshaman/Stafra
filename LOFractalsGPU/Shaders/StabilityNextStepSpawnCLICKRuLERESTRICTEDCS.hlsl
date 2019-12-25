@@ -1,6 +1,12 @@
+cbuffer cbSpawnParams
+{
+	uint gSpawnPeriod;
+};
+
 Texture2D<uint> gPrevBoard:     register(t0);
 Texture2D<uint> gPrevStability: register(t1);
 Texture2D<uint> gClickRule:     register(t2);
+Texture2D<uint> gRestriction:   register(t3);
 
 RWTexture2D<uint> gNextBoard:     register(u0);
 RWTexture2D<uint> gNextStability: register(u1);
@@ -20,7 +26,9 @@ void main(uint3 DTid: SV_DispatchThreadID, uint3 GTid: SV_GroupThreadID, uint Gr
 		int x = i % 32 - 15;
 		int y = i / 32 - 15;
 
-		uint cellState = gPrevBoard[int2(DTid.x - x, DTid.y - y)];
+		int2 cellPos = int2(DTid.x - x, DTid.y - y);
+
+		uint cellState = gPrevBoard[cellPos] * gRestriction[cellPos];
 		sum += clickRuleDataCache[i] * cellState;
 	}
 
@@ -29,7 +37,21 @@ void main(uint3 DTid: SV_DispatchThreadID, uint3 GTid: SV_GroupThreadID, uint Gr
 	uint nextCellState = sum % 2;
 
 	uint prevStability = gPrevStability[DTid.xy];
-	uint nextStability = (prevStability && (thisCellState == nextCellState));
+	uint nextStability = prevStability;
+	
+	[flatten]
+	if(thisCellState == nextCellState && gRestriction[DTid.xy] != 0)
+	{
+		[flatten]
+		if(prevStability != 1)
+		{
+			nextStability = (prevStability + 1) % (2 + gSpawnPeriod);
+		}
+	}
+	else
+	{
+		nextStability = 2;
+	}
 
 	gNextBoard[DTid.xy]     = nextCellState;
 	gNextStability[DTid.xy] = nextStability;

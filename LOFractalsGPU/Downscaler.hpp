@@ -8,11 +8,16 @@
 
 class Downscaler
 {
+	struct CBParamsStruct
+	{
+		uint32_t SpawnPeriod;
+	};
+
 public:
 	Downscaler(ID3D11Device* device, uint32_t oldWidth, uint32_t oldHeight, uint32_t downscaleWidth, uint32_t downscaleHeight);
 	~Downscaler();
 
-	void DownscalePicture(ID3D11DeviceContext* dc, ID3D11ShaderResourceView* srv, uint32_t oldWidth, uint32_t oldHeight);
+	void DownscalePicture(ID3D11DeviceContext* dc, ID3D11ShaderResourceView* srv, uint32_t spawnPeriod, uint32_t oldWidth, uint32_t oldHeight);
 
 	void CopyDownscaledTextureData(ID3D11DeviceContext* dc, std::vector<uint8_t>& downscaledData, uint32_t& downscaledWidth, uint32_t& downscaledHeight, uint32_t& rowPitch);
 
@@ -21,6 +26,7 @@ private:
 	void LoadShaderData(ID3D11Device* device);
 
 	void FinalStateTransform(ID3D11DeviceContext* dc, ID3D11ShaderResourceView* srv, uint32_t oldWidth, uint32_t oldHeight);
+	void FinalStateTransformSmooth(ID3D11DeviceContext* dc, ID3D11ShaderResourceView* srv, uint32_t spawnPeriod, uint32_t oldWidth, uint32_t oldHeight);
 	void ActualDownscaling(ID3D11DeviceContext* dc);
 
 private:
@@ -33,12 +39,16 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11RenderTargetView> mDownscaledStateRTV;
 
 	Microsoft::WRL::ComPtr<ID3D11ComputeShader> mFinalStateTransformShader;
+	Microsoft::WRL::ComPtr<ID3D11ComputeShader> mFinalStateTransformSmoothShader;
 	Microsoft::WRL::ComPtr<ID3D11VertexShader>  mDownscaleVertexShader;
 	Microsoft::WRL::ComPtr<ID3D11PixelShader>   mDownscalePixelShader;
 
 	Microsoft::WRL::ComPtr<ID3D11SamplerState> mBestSamplerEver;
 
 	D3D11_VIEWPORT mDownscaleViewport;
+
+	Microsoft::WRL::ComPtr<ID3D11Buffer> mCBufferParams;
+	CBParamsStruct                       mCBufferParamsCopy;
 
 	uint32_t mDownscaledWidth;
 	uint32_t mDownscaledHeight;
