@@ -11,6 +11,7 @@
 #include "FileMgmt/PNGOpener.hpp"
 #include "StabilityCalculator.hpp"
 #include "Downscaler.hpp"
+#include <filesystem>
 
 namespace
 {
@@ -23,10 +24,22 @@ FractalGen::FractalGen(uint32_t pow2Size, uint32_t spawnPeriod): mSizeLo(1), mSp
 {
 	if(pow2Size == 0)
 	{
-		mSizeLo = SizeLoFromImageSize(gDefaultInitialStateLocation);
-		if(mSizeLo == 0)
+		if(std::filesystem::exists(gDefaultInitialStateLocation))
+		{
+			mSizeLo = SizeLoFromImageSize(gDefaultInitialStateLocation);
+			if (mSizeLo == 0)
+			{
+				mSizeLo = gDefaultLoSize;
+			}
+			else
+			{
+				PrintInitialStateDimensions();
+			}
+		}
+		else
 		{
 			mSizeLo = gDefaultLoSize;
+			PrintDefaultInitialState();
 		}
 	}
 	else
@@ -129,7 +142,6 @@ uint32_t FractalGen::SizeLoFromImageSize(const std::string& imgFilename)
 
 	if(width != height) //Only square images allowed
 	{
-		PrintErrorImageLoading();
 		return 0;
 	}
 
@@ -181,4 +193,14 @@ void FractalGen::PrintFinishingWork()
 void FractalGen::PrintErrorImageLoading()
 {
 	std::cout << "Incorrect initial state file. Acceptable files are .pngs with sizes (2^k - 1) x (2^k - 1)" << std::endl;
+}
+
+void FractalGen::PrintInitialStateDimensions()
+{
+	std::cout << "Found initial state! Size: " << mSizeLo << " x " << mSizeLo << std::endl;
+}
+
+void FractalGen::PrintDefaultInitialState()
+{
+	std::cout << "Image size not specified and no initial state found. Default 1024x1024 4 corners state will be used." << std::endl;
 }

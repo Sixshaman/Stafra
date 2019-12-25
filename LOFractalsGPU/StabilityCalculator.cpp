@@ -139,7 +139,7 @@ void StabilityCalculator::StabilityNextStep(ID3D11DeviceContext* dc)
 	}
 
 	mCurrentStep++;
-	if(mCurrentStep >= 10)
+	if(mCurrentStep >= 1)
 	{
 		dc->Flush();
 		mCurrentStep = 0;

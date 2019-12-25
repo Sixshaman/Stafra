@@ -34,6 +34,8 @@ private:
 	void PrintEqualityState(bool equalityState);
 	void PrintFinishingWork();
 	void PrintErrorImageLoading();
+	void PrintInitialStateDimensions();
+	void PrintDefaultInitialState();
 
 private:
 	Microsoft::WRL::ComPtr<ID3D11Device>        mDevice;

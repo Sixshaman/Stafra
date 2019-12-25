@@ -3,7 +3,7 @@
 
 PngOpener::PngOpener(): mPngStruct(nullptr), mPngInfo(nullptr)
 {
-	mPngStruct = png_create_write_struct(PNG_LIBPNG_VER_STRING, nullptr, nullptr, nullptr);
+	mPngStruct = png_create_read_struct(PNG_LIBPNG_VER_STRING, nullptr, nullptr, nullptr);
 	if (mPngStruct)
 	{
 		mPngInfo = png_create_info_struct(mPngStruct);
@@ -11,13 +11,13 @@ PngOpener::PngOpener(): mPngStruct(nullptr), mPngInfo(nullptr)
 
 	if(!mPngInfo || !mPngStruct || setjmp(png_jmpbuf(mPngStruct)) != 0)
 	{
-		png_destroy_write_struct(&mPngStruct, &mPngInfo);
+		png_destroy_read_struct(&mPngStruct, &mPngInfo, nullptr);
 	}
 }
 
 PngOpener::~PngOpener()
 {
-	png_destroy_write_struct(&mPngStruct, &mPngInfo);
+	png_destroy_read_struct(&mPngStruct, &mPngInfo, nullptr);
 }
 
 bool PngOpener::GetImageSize(const std::string& filename, size_t& width, size_t& height)
