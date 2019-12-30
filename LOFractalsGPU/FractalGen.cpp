@@ -60,6 +60,16 @@ FractalGen::FractalGen(uint32_t pow2Size, uint32_t spawnPeriod): mSizeLo(1), mSp
 
 	mDownscaler          = std::make_unique<Downscaler>(mDevice.Get(), mSizeLo, mSizeLo, (uint32_t)gDownscaledSize, (uint32_t)gDownscaledSize);
 	mStabilityCalculator = std::make_unique<StabilityCalculator>(mDevice.Get(), mSizeLo, mSizeLo, spawnPeriod);
+
+	int initTexInfo = mStabilityCalculator->InitTextures(mDevice.Get(), mDeviceContext.Get(), mSizeLo);
+	if(initTexInfo & CUSTOM_CLICK_RULE)
+	{
+		PrintCustomClickRule();
+	}
+	else if (std::filesystem::exists(gDefaultClickRuleLocation))
+	{
+		PrintErrorClickRule();
+	}
 }
 
 FractalGen::~FractalGen()
@@ -69,17 +79,6 @@ FractalGen::~FractalGen()
 void FractalGen::ComputeFractal(bool saveVideoFrames, bool bUseSmoothTransform, size_t enlonging)
 {
 	uint32_t solutionPeriod = SolutionPeriodFromSize(enlonging);
-
-	int initTexInfo = mStabilityCalculator->InitTextures(mDevice.Get(), mDeviceContext.Get(), mSizeLo);
-	if(initTexInfo & CUSTOM_CLICK_RULE)
-	{
-		PrintCustomClickRule();
-	}
-	else if(std::filesystem::exists(gDefaultClickRuleLocation))
-	{
-		PrintErrorClickRule();
-	}
-
 	for(uint32_t i = 0; i < solutionPeriod; i++)
 	{
 		mStabilityCalculator->StabilityNextStep(mDeviceContext.Get());
