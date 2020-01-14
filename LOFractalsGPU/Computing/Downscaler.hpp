@@ -3,8 +3,14 @@
 #include <d3d11.h>
 #include <DirectXMath.h>
 #include <wrl/client.h>
-#include <vector>
 #include <cstdint>
+
+/*
+The class for downscaling a picture.
+Input:               ID3D11ShaderResourceView containing floating-point texel values and downscaled width and height
+Output:              ID3D11ShaderResourceView containing (downscaled width) x (downscaled height) image
+Possible expansions: None ATM
+*/
 
 class Downscaler
 {
@@ -14,41 +20,30 @@ class Downscaler
 	};
 
 public:
-	Downscaler(ID3D11Device* device, uint32_t oldWidth, uint32_t oldHeight, uint32_t downscaleWidth, uint32_t downscaleHeight);
+	Downscaler(ID3D11Device* device);
 	~Downscaler();
 
-	void DownscalePicture(ID3D11DeviceContext* dc, ID3D11ShaderResourceView* srv, uint32_t spawnPeriod, uint32_t oldWidth, uint32_t oldHeight);
+	void PrepareForDownscaling(ID3D11Device* device, uint32_t downscaleWidth, uint32_t downscaleHeight);
+	void DownscalePicture(ID3D11DeviceContext* dc, ID3D11ShaderResourceView* srv);
 
-	void CopyDownscaledTextureData(ID3D11DeviceContext* dc, std::vector<uint8_t>& downscaledData, uint32_t& downscaledWidth, uint32_t& downscaledHeight, uint32_t& rowPitch);
+	ID3D11ShaderResourceView* GetDownscaledSRV() const;
 
 private:
-	void CreateTextures(ID3D11Device* device, uint32_t oldWidth, uint32_t oldHeight, uint32_t downscaleWidth, uint32_t downscaleHeight);
+	void ReinitTextures(ID3D11Device* device, uint32_t downscaleWidth, uint32_t downscaleHeight);
 	void LoadShaderData(ID3D11Device* device);
 
-	void FinalStateTransform(ID3D11DeviceContext* dc, ID3D11ShaderResourceView* srv, uint32_t oldWidth, uint32_t oldHeight);
-	void FinalStateTransformSmooth(ID3D11DeviceContext* dc, ID3D11ShaderResourceView* srv, uint32_t spawnPeriod, uint32_t oldWidth, uint32_t oldHeight);
-	void ActualDownscaling(ID3D11DeviceContext* dc);
+	void ActualDownscaling(ID3D11DeviceContext* dc, ID3D11ShaderResourceView* srv);
 
 private:
-	Microsoft::WRL::ComPtr<ID3D11Texture2D> mDownscaledStabilityTex;
-	Microsoft::WRL::ComPtr<ID3D11Texture2D> mDownscaledStabilityTexCopy;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> mDownscaledStateSRV;
+	Microsoft::WRL::ComPtr<ID3D11RenderTargetView>   mDownscaledStateRTV;
 
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>  mFinalStateSRV;
-	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> mFinalStateUAV;
-
-	Microsoft::WRL::ComPtr<ID3D11RenderTargetView> mDownscaledStateRTV;
-
-	Microsoft::WRL::ComPtr<ID3D11ComputeShader> mFinalStateTransformShader;
-	Microsoft::WRL::ComPtr<ID3D11ComputeShader> mFinalStateTransformSmoothShader;
-	Microsoft::WRL::ComPtr<ID3D11VertexShader>  mDownscaleVertexShader;
-	Microsoft::WRL::ComPtr<ID3D11PixelShader>   mDownscalePixelShader;
+	Microsoft::WRL::ComPtr<ID3D11VertexShader> mDownscaleVertexShader;
+	Microsoft::WRL::ComPtr<ID3D11PixelShader>  mDownscalePixelShader;
 
 	Microsoft::WRL::ComPtr<ID3D11SamplerState> mBestSamplerEver;
 
 	D3D11_VIEWPORT mDownscaleViewport;
-
-	Microsoft::WRL::ComPtr<ID3D11Buffer> mCBufferParams;
-	CBParamsStruct                       mCBufferParamsCopy;
 
 	uint32_t mDownscaledWidth;
 	uint32_t mDownscaledHeight;

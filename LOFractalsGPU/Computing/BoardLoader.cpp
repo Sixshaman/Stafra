@@ -1,20 +1,23 @@
-#include "InitialState.hpp"
-#include "Util.hpp"
-#include <d3dcompiler.h>
-#include "3rd party/WICTextureLoader.h"
+#include "BoardLoader.hpp"
+#include "..\Util.hpp"
+#include "..\3rd party/WICTextureLoader.h"
 
-InitialState::InitialState(ID3D11Device* device)
+BoardLoader::BoardLoader(ID3D11Device* device)
 {
 	LoadShaderData(device);
-}
-
-InitialState::~InitialState()
-{
-}
-
-LoadError InitialState::LoadFromFile(ID3D11Device* device, ID3D11DeviceContext* dc, const std::wstring& filename, ID3D11UnorderedAccessView* initialBoardUAV, uint32_t& texWidth, uint32_t& texHeight)
-{
 	ThrowIfFailed(CoInitializeEx(nullptr, COINIT_MULTITHREADED));
+}
+
+BoardLoader::~BoardLoader()
+{
+}
+
+LoadError BoardLoader::LoadBoardFromFile(ID3D11Device* device, ID3D11DeviceContext* dc, const std::wstring& filename, ID3D11Texture2D** outBoardTex)
+{
+	if(!device || !dc || !outBoardTex || *outBoardTex != nullptr)
+	{
+		return LoadError::ERROR_INVALID_ARGUMENT;
+	}
 
 	//Attempt to load the initial state
 	Microsoft::WRL::ComPtr<ID3D11Texture2D>          initialTex;
@@ -28,31 +31,58 @@ LoadError InitialState::LoadFromFile(ID3D11Device* device, ID3D11DeviceContext* 
 	D3D11_TEXTURE2D_DESC texDesc;
 	initialTex->GetDesc(&texDesc);
 
-	if(((texDesc.Width + 1) & texDesc.Width) != 0) //Check if texDesc.Width is power of 2 minus 1
+	if(texDesc.Width != texDesc.Height               //Check if board is a square
+	|| ((texDesc.Width  + 1) & texDesc.Width)  != 0  //Check if texDesc.Width is power of 2 minus 1
+	|| ((texDesc.Height + 1) & texDesc.Height) != 0) //Check if texDesc.Width is power of 2 minus 1
 	{
 		return LoadError::ERROR_WRONG_SIZE;
 	}
 
-	if(((texDesc.Height + 1) & texDesc.Height) != 0) //Check if texDesc.Width is power of 2 minus 1
-	{
-		return LoadError::ERROR_WRONG_SIZE;
-	}
+	uint32_t texWidth  = texDesc.Width;
+	uint32_t texHeight = texDesc.Height;
 
-	texWidth  = texDesc.Width;
-	texHeight = texDesc.Height;
+	D3D11_TEXTURE2D_DESC boardTexDesc;
+	boardTexDesc.Width              = texWidth;
+	boardTexDesc.Height             = texHeight;
+	boardTexDesc.Format             = DXGI_FORMAT_R8_UINT;
+	boardTexDesc.Usage              = D3D11_USAGE_DEFAULT;
+	boardTexDesc.BindFlags          = D3D11_BIND_UNORDERED_ACCESS;
+	boardTexDesc.CPUAccessFlags     = 0;
+	boardTexDesc.ArraySize          = 1;
+	boardTexDesc.MipLevels          = 1;
+	boardTexDesc.SampleDesc.Count   = 1;
+	boardTexDesc.SampleDesc.Quality = 0;
+	boardTexDesc.MiscFlags          = 0;
 
-	InitialStateTransform(dc, initialStateSRV.Get(), initialBoardUAV, texWidth, texHeight);
+	Microsoft::WRL::ComPtr<ID3D11Texture2D> boardTex = nullptr;
+	ThrowIfFailed(device->CreateTexture2D(&boardTexDesc, nullptr, boardTex.GetAddressOf()));
+
+	D3D11_UNORDERED_ACCESS_VIEW_DESC uavDesc;
+	uavDesc.Format             = DXGI_FORMAT_R8_UINT;
+	uavDesc.ViewDimension      = D3D11_UAV_DIMENSION_TEXTURE2D;
+	uavDesc.Texture2D.MipSlice = 0;
+
+	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> boardUAV = nullptr;
+	ThrowIfFailed(device->CreateUnorderedAccessView(boardTex.Get(), &uavDesc, boardUAV.GetAddressOf()));
+
+	InitialStateTransform(dc, initialStateSRV.Get(), boardUAV.Get(), texWidth, texHeight);
+
+	D3D11_TEXTURE2D_DESC outBoardTexDesc;
+	memcpy_s(&outBoardTexDesc, sizeof(D3D11_TEXTURE2D_DESC), &boardTexDesc, sizeof(D3D11_TEXTURE2D_DESC));
+	outBoardTexDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE; //No UAVs for the loaded board
+
+	ThrowIfFailed(device->CreateTexture2D(&outBoardTexDesc, nullptr, outBoardTex));
+	dc->CopyResource(*outBoardTex, boardTex.Get());
+
 	return LoadError::LOAD_SUCCESS;
 }
 
-void InitialState::CreateDefault(ID3D11DeviceContext* dc, ID3D11UnorderedAccessView* initialBoardUAV, uint32_t texWidth, uint32_t texHeight)
+LoadError BoardLoader::LoadClickRuleFromFile(ID3D11Device* device, ID3D11DeviceContext* dc, const std::wstring& filename, ID3D11Texture2D** outClickRuleTex)
 {
-	DefaultInitialState(dc, initialBoardUAV, texWidth, texHeight);
-}
-
-LoadError InitialState::LoadClickRuleFromFile(ID3D11Device* device, ID3D11DeviceContext* dc, const std::wstring& filename, ID3D11UnorderedAccessView* clickRuleUAV)
-{
-	ThrowIfFailed(CoInitializeEx(nullptr, COINIT_MULTITHREADED));
+	if(!device || !dc || !outClickRuleTex || *outClickRuleTex != nullptr)
+	{
+		return LoadError::ERROR_INVALID_ARGUMENT;
+	}
 
 	//Attempt to load the initial state
 	Microsoft::WRL::ComPtr<ID3D11Texture2D>          clickRuleTex;
@@ -66,39 +96,49 @@ LoadError InitialState::LoadClickRuleFromFile(ID3D11Device* device, ID3D11Device
 	D3D11_TEXTURE2D_DESC texDesc;
 	clickRuleTex->GetDesc(&texDesc);
 
-	if(texDesc.Width != 32 || texDesc.Height != 32) //Check if texDesc.Width is power of 2 minus 1
+	if(texDesc.Width != 32 || texDesc.Height != 32) //Acceptable click rule sizes: 32x32
 	{
 		return LoadError::ERROR_WRONG_SIZE;
 	}
 
-	InitialStateTransform(dc, clickruleSRV.Get(), clickRuleUAV, 32, 32);
+	D3D11_TEXTURE2D_DESC clickRuleTexDesc;
+	clickRuleTexDesc.Width              = 32;
+	clickRuleTexDesc.Height             = 32;
+	clickRuleTexDesc.Format             = DXGI_FORMAT_R8_UINT;
+	clickRuleTexDesc.Usage              = D3D11_USAGE_DEFAULT;
+	clickRuleTexDesc.BindFlags          = D3D11_BIND_UNORDERED_ACCESS;
+	clickRuleTexDesc.CPUAccessFlags     = 0;
+	clickRuleTexDesc.ArraySize          = 1;
+	clickRuleTexDesc.MipLevels          = 1;
+	clickRuleTexDesc.SampleDesc.Count   = 1;
+	clickRuleTexDesc.SampleDesc.Quality = 0;
+	clickRuleTexDesc.MiscFlags          = 0;
+
+	Microsoft::WRL::ComPtr<ID3D11Texture2D> clickRuleTransformedTex;
+	ThrowIfFailed(device->CreateTexture2D(&clickRuleTexDesc, nullptr, clickRuleTransformedTex.GetAddressOf()));
+
+	D3D11_UNORDERED_ACCESS_VIEW_DESC uavDesc;
+	uavDesc.Format             = DXGI_FORMAT_R8_UINT;
+	uavDesc.ViewDimension      = D3D11_UAV_DIMENSION_TEXTURE2D;
+	uavDesc.Texture2D.MipSlice = 0;
+
+	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> clickRuleUAV = nullptr;
+	ThrowIfFailed(device->CreateUnorderedAccessView(clickRuleTransformedTex.Get(), &uavDesc, clickRuleUAV.GetAddressOf()));
+
+	InitialStateTransform(dc, clickruleSRV.Get(), clickRuleUAV.Get(), 32, 32);
+
+	//Out click rule should only be bindable as SRV
+	D3D11_TEXTURE2D_DESC outClickRuleTexDesc;
+	memcpy_s(&outClickRuleTexDesc, sizeof(D3D11_TEXTURE2D_DESC), &clickRuleTexDesc, sizeof(D3D11_TEXTURE2D_DESC));
+	outClickRuleTexDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+
+	ThrowIfFailed(device->CreateTexture2D(&outClickRuleTexDesc, nullptr, outClickRuleTex));
+	dc->CopyResource(*outClickRuleTex, clickRuleTransformedTex.Get());
+
 	return LoadError::LOAD_SUCCESS;
 }
 
-void InitialState::DefaultInitialState(ID3D11DeviceContext* dc, ID3D11UnorderedAccessView* initialBoardUAV, uint32_t width, uint32_t height)
-{
-	mCBufferParamsCopy.BoardSize.x = width;
-	mCBufferParamsCopy.BoardSize.y = height;
-	UpdateBuffer(mCBufferParams.Get(), mCBufferParamsCopy, dc);
-
-	ID3D11Buffer* clear4CornersCbuffers[] = { mCBufferParams.Get() };
-	dc->CSSetConstantBuffers(0, 1, clear4CornersCbuffers);
-
-	ID3D11UnorderedAccessView* clear4CornersInitUAVs[] = { initialBoardUAV };
-	dc->CSSetUnorderedAccessViews(0, 1, clear4CornersInitUAVs, nullptr);
-
-	dc->CSSetShader(mClear4CornersShader.Get(), nullptr, 0);
-	dc->Dispatch((uint32_t)(ceilf(width / 32.0f)), (uint32_t)(ceilf(height / 32.0f)), 1);
-
-	ID3D11Buffer*          nullCbuffers[] = { nullptr };
-	ID3D11UnorderedAccessView* nullUAVs[] = { nullptr };
-
-	dc->CSSetConstantBuffers(0, 1, nullCbuffers);
-	dc->CSSetUnorderedAccessViews(0, 1, nullUAVs, nullptr);
-	dc->CSSetShader(nullptr, nullptr, 0);
-}
-
-void InitialState::InitialStateTransform(ID3D11DeviceContext* dc, ID3D11ShaderResourceView* initialStateSRV, ID3D11UnorderedAccessView* initialBoardUAV, uint32_t width, uint32_t height)
+void BoardLoader::InitialStateTransform(ID3D11DeviceContext* dc, ID3D11ShaderResourceView* initialStateSRV, ID3D11UnorderedAccessView* initialBoardUAV, uint32_t width, uint32_t height)
 {
 	ID3D11ShaderResourceView* initialStateTransformSRVs[] = { initialStateSRV };
 	dc->CSSetShaderResources(0, 1, initialStateTransformSRVs);
@@ -117,31 +157,8 @@ void InitialState::InitialStateTransform(ID3D11DeviceContext* dc, ID3D11ShaderRe
 	dc->CSSetShader(nullptr, nullptr, 0);
 }
 
-void InitialState::LoadShaderData(ID3D11Device* device)
+void BoardLoader::LoadShaderData(ID3D11Device* device)
 {
-	Microsoft::WRL::ComPtr<ID3DBlob> shaderBlob;
-
-	ThrowIfFailed(D3DReadFileToBlob((GetShaderPath() + L"Clear4CornersCS.cso").c_str(), shaderBlob.GetAddressOf()));
-	ThrowIfFailed(device->CreateComputeShader(shaderBlob->GetBufferPointer(), shaderBlob->GetBufferSize(), nullptr, mClear4CornersShader.GetAddressOf()));
-
-	ThrowIfFailed(D3DReadFileToBlob((GetShaderPath() + L"InitialStateTransformCS.cso").c_str(), shaderBlob.GetAddressOf()));
-	ThrowIfFailed(device->CreateComputeShader(shaderBlob->GetBufferPointer(), shaderBlob->GetBufferSize(), nullptr, mInitialStateTransformShader.GetAddressOf()));
-
-	D3D11_BUFFER_DESC cbDesc;
-	cbDesc.Usage               = D3D11_USAGE_DYNAMIC;
-	cbDesc.ByteWidth           = (sizeof(CBParamsStruct) + 0xff) & (~0xff);
-	cbDesc.BindFlags           = D3D11_BIND_CONSTANT_BUFFER;
-	cbDesc.CPUAccessFlags      = D3D11_CPU_ACCESS_WRITE;
-	cbDesc.MiscFlags           = 0;
-	cbDesc.StructureByteStride = 0;
-
-	CBParamsStruct initData;
-	initData.BoardSize = DirectX::XMUINT2(0, 0);
-
-	D3D11_SUBRESOURCE_DATA cbData;
-	cbData.pSysMem          = &initData;
-	cbData.SysMemPitch      = 0;
-	cbData.SysMemSlicePitch = 0;
-
-	ThrowIfFailed(device->CreateBuffer(&cbDesc, &cbData, &mCBufferParams));
+	const std::wstring shaderDir = Utils::GetShaderPath();
+	ThrowIfFailed(Utils::LoadShaderFromFile(device, shaderDir + L"InitialStateTransformCS.cso", mInitialStateTransformShader.GetAddressOf()));
 }

@@ -16,19 +16,19 @@ enum class CmdParseResult
 class CommandLineArguments
 {
 public:
-	CommandLineArguments(int argc, char* argv[]);
+	CommandLineArguments(const std::string& cmdLine);
 	~CommandLineArguments();
 
 	CmdParseResult ParseArgs();
 
-	std::string GetHelpMessage();
-	std::string GetErrorMessage(CmdParseResult parseRes);
+	std::string GetHelpMessage()                         const;
+	std::string GetErrorMessage(CmdParseResult parseRes) const;
 
-	size_t PowSize();
-	size_t Enlonging();
-	size_t SpawnPeriod();
-	bool   SaveVideoFrames();
-	bool   SmoothTransform();
+	size_t PowSize()         const;
+	size_t Enlonging()       const;
+	size_t SpawnPeriod()     const;
+	bool   SaveVideoFrames() const;
+	bool   SmoothTransform() const;
 
 private:
 	size_t ParseInt(std::string intStr, size_t min, size_t max);

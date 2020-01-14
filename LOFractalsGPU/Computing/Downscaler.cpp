@@ -1,11 +1,9 @@
 #include "Downscaler.hpp"
-#include "Util.hpp"
+#include "../Util.hpp"
 #include <d3dcompiler.h>
-#include <algorithm>
 
-Downscaler::Downscaler(ID3D11Device* device, uint32_t oldWidth, uint32_t oldHeight, uint32_t downscaleWidth, uint32_t downscaleHeight): mDownscaledWidth(downscaleWidth), mDownscaledHeight(downscaleHeight)
+Downscaler::Downscaler(ID3D11Device* device): mDownscaledWidth(1024), mDownscaledHeight(1024)
 {
-	CreateTextures(device, oldWidth, oldHeight, downscaleWidth, downscaleHeight);
 	LoadShaderData(device);
 }
 
@@ -13,86 +11,41 @@ Downscaler::~Downscaler()
 {
 }
 
-void Downscaler::DownscalePicture(ID3D11DeviceContext* dc, ID3D11ShaderResourceView* srv, uint32_t spawnPeriod, uint32_t oldWidth, uint32_t oldHeight)
+void Downscaler::PrepareForDownscaling(ID3D11Device* device, uint32_t downscaleWidth, uint32_t downscaleHeight)
 {
-	if(spawnPeriod == 0)
-	{
-		FinalStateTransform(dc, srv, oldWidth, oldHeight);
-	}
-	else
-	{
-		FinalStateTransformSmooth(dc, srv, spawnPeriod, oldWidth, oldHeight);
-	}
+	mDownscaledWidth  = downscaleWidth;
+	mDownscaledHeight = downscaleHeight;
+	ReinitTextures(device, downscaleWidth, downscaleHeight);
 
-	dc->GenerateMips(mFinalStateSRV.Get());
-
-	ActualDownscaling(dc);
+	mDownscaleViewport.TopLeftX = 0.0f;
+	mDownscaleViewport.TopLeftY = 0.0f;
+	mDownscaleViewport.Width    = (float)downscaleWidth;
+	mDownscaleViewport.Height   = (float)downscaleHeight;
+	mDownscaleViewport.MinDepth = 0.0f;
+	mDownscaleViewport.MaxDepth = 1.0f;
 }
 
-void Downscaler::CopyDownscaledTextureData(ID3D11DeviceContext* dc, std::vector<uint8_t>& downscaledData, uint32_t& downscaledWidth, uint32_t& downscaledHeight, uint32_t& rowPitch)
+void Downscaler::DownscalePicture(ID3D11DeviceContext* dc, ID3D11ShaderResourceView* srv)
 {
-	dc->CopyResource(mDownscaledStabilityTexCopy.Get(), mDownscaledStabilityTex.Get());
-
-	downscaledData.clear();
-	std::vector<float> textureData;
-
-	D3D11_MAPPED_SUBRESOURCE mappedTex;
-	ThrowIfFailed(dc->Map(mDownscaledStabilityTexCopy.Get(), 0, D3D11_MAP_READ, 0, &mappedTex));
-
-	float* data = reinterpret_cast<float*>(mappedTex.pData);
-	textureData.resize((size_t)mappedTex.RowPitch * mDownscaledHeight / sizeof(float));
-
-	rowPitch = mappedTex.RowPitch / sizeof(float);
-
-	std::copy(data, data + textureData.size(), textureData.begin());
-	dc->Unmap(mDownscaledStabilityTexCopy.Get(), 0);
-
-	downscaledData.resize(textureData.size());
-	std::transform(textureData.begin(), textureData.end(), downscaledData.begin(), [](float val) {return (uint8_t)(val * 255.0f); });
-
-	downscaledWidth  = mDownscaledWidth;
-	downscaledHeight = mDownscaledHeight;
+	ActualDownscaling(dc, srv);
 }
 
-void Downscaler::CreateTextures(ID3D11Device* device, uint32_t oldWidth, uint32_t oldHeight, uint32_t downscaleWidth, uint32_t downscaleHeight)
+ID3D11ShaderResourceView* Downscaler::GetDownscaledSRV() const
 {
-	D3D11_TEXTURE2D_DESC finalPictureTexDesc;
-	finalPictureTexDesc.Width              = oldWidth;
-	finalPictureTexDesc.Height             = oldHeight;
-	finalPictureTexDesc.Format             = DXGI_FORMAT_R32_FLOAT;
-	finalPictureTexDesc.Usage              = D3D11_USAGE_DEFAULT;
-	finalPictureTexDesc.BindFlags          = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_RENDER_TARGET;
-	finalPictureTexDesc.CPUAccessFlags     = 0;
-	finalPictureTexDesc.ArraySize          = 1;
-	finalPictureTexDesc.MipLevels          = 1;
-	finalPictureTexDesc.SampleDesc.Count   = 1;
-	finalPictureTexDesc.SampleDesc.Quality = 0;
-	finalPictureTexDesc.MiscFlags          = D3D11_RESOURCE_MISC_GENERATE_MIPS;
+	return mDownscaledStateSRV.Get();
+}
 
-	Microsoft::WRL::ComPtr<ID3D11Texture2D> finalTex = nullptr;
-	ThrowIfFailed(device->CreateTexture2D(&finalPictureTexDesc, nullptr, finalTex.GetAddressOf()));
-
-	D3D11_SHADER_RESOURCE_VIEW_DESC finalSrvDesc;
-	finalSrvDesc.Format                    = DXGI_FORMAT_R32_FLOAT;
-	finalSrvDesc.ViewDimension             = D3D11_SRV_DIMENSION_TEXTURE2D;
-	finalSrvDesc.Texture2D.MipLevels       = 1;
-	finalSrvDesc.Texture2D.MostDetailedMip = 0;
-
-	ThrowIfFailed(device->CreateShaderResourceView(finalTex.Get(), &finalSrvDesc, mFinalStateSRV.GetAddressOf()));
-
-	D3D11_UNORDERED_ACCESS_VIEW_DESC finalUavDesc;
-	finalUavDesc.Format             = DXGI_FORMAT_R32_FLOAT;
-	finalUavDesc.ViewDimension      = D3D11_UAV_DIMENSION_TEXTURE2D;
-	finalUavDesc.Texture2D.MipSlice = 0;
-
-	ThrowIfFailed(device->CreateUnorderedAccessView(finalTex.Get(), &finalUavDesc, mFinalStateUAV.GetAddressOf()));
+void Downscaler::ReinitTextures(ID3D11Device* device, uint32_t downscaleWidth, uint32_t downscaleHeight)
+{
+	mDownscaledStateSRV.Reset();
+	mDownscaledStateRTV.Reset();
 
 	D3D11_TEXTURE2D_DESC downscaledPictureTexDesc;
 	downscaledPictureTexDesc.Width              = downscaleWidth;
 	downscaledPictureTexDesc.Height             = downscaleHeight;
 	downscaledPictureTexDesc.Format             = DXGI_FORMAT_R32_FLOAT;
 	downscaledPictureTexDesc.Usage              = D3D11_USAGE_DEFAULT;
-	downscaledPictureTexDesc.BindFlags          = D3D11_BIND_RENDER_TARGET;
+	downscaledPictureTexDesc.BindFlags          = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET;
 	downscaledPictureTexDesc.CPUAccessFlags     = 0;
 	downscaledPictureTexDesc.ArraySize          = 1;
 	downscaledPictureTexDesc.MipLevels          = 1;
@@ -100,46 +53,30 @@ void Downscaler::CreateTextures(ID3D11Device* device, uint32_t oldWidth, uint32_
 	downscaledPictureTexDesc.SampleDesc.Quality = 0;
 	downscaledPictureTexDesc.MiscFlags          = 0;
 
-	ThrowIfFailed(device->CreateTexture2D(&downscaledPictureTexDesc, nullptr, mDownscaledStabilityTex.GetAddressOf()));
+	Microsoft::WRL::ComPtr<ID3D11Texture2D> downscaledTex;
+	ThrowIfFailed(device->CreateTexture2D(&downscaledPictureTexDesc, nullptr, downscaledTex.GetAddressOf()));
 	
+	D3D11_SHADER_RESOURCE_VIEW_DESC downscaledSRVDesc;
+	downscaledSRVDesc.Format                    = DXGI_FORMAT_R32_FLOAT;
+	downscaledSRVDesc.ViewDimension             = D3D11_SRV_DIMENSION_TEXTURE2D;
+	downscaledSRVDesc.Texture2D.MipLevels       = 1;
+	downscaledSRVDesc.Texture2D.MostDetailedMip = 0;
+
+	ThrowIfFailed(device->CreateShaderResourceView(downscaledTex.Get(), &downscaledSRVDesc, mDownscaledStateSRV.GetAddressOf()));
+
 	D3D11_RENDER_TARGET_VIEW_DESC downscaledRTVDesc;
 	downscaledRTVDesc.Format             = DXGI_FORMAT_R32_FLOAT;
 	downscaledRTVDesc.ViewDimension      = D3D11_RTV_DIMENSION_TEXTURE2D;
 	downscaledRTVDesc.Texture2D.MipSlice = 0;
 
-	ThrowIfFailed(device->CreateRenderTargetView(mDownscaledStabilityTex.Get(), &downscaledRTVDesc, mDownscaledStateRTV.GetAddressOf()));
-
-	D3D11_TEXTURE2D_DESC downscaledPictureTexCopyDesc;
-	downscaledPictureTexCopyDesc.Width              = mDownscaledWidth;
-	downscaledPictureTexCopyDesc.Height             = mDownscaledHeight;
-	downscaledPictureTexCopyDesc.Format             = DXGI_FORMAT_R32_FLOAT;
-	downscaledPictureTexCopyDesc.Usage              = D3D11_USAGE_STAGING;
-	downscaledPictureTexCopyDesc.BindFlags          = 0;
-	downscaledPictureTexCopyDesc.CPUAccessFlags     = D3D11_CPU_ACCESS_READ;
-	downscaledPictureTexCopyDesc.ArraySize          = 1;
-	downscaledPictureTexCopyDesc.MipLevels          = 1;
-	downscaledPictureTexCopyDesc.SampleDesc.Count   = 1;
-	downscaledPictureTexCopyDesc.SampleDesc.Quality = 0;
-	downscaledPictureTexCopyDesc.MiscFlags          = 0;
-
-	ThrowIfFailed(device->CreateTexture2D(&downscaledPictureTexCopyDesc, nullptr, mDownscaledStabilityTexCopy.GetAddressOf()));
+	ThrowIfFailed(device->CreateRenderTargetView(downscaledTex.Get(), &downscaledRTVDesc, mDownscaledStateRTV.GetAddressOf()));
 }
 
 void Downscaler::LoadShaderData(ID3D11Device* device)
 {
-	Microsoft::WRL::ComPtr<ID3DBlob> shaderBlob;
-
-	ThrowIfFailed(D3DReadFileToBlob((GetShaderPath() + L"FinalStateTransformCS.cso").c_str(), shaderBlob.GetAddressOf()));
-	ThrowIfFailed(device->CreateComputeShader(shaderBlob->GetBufferPointer(), shaderBlob->GetBufferSize(), nullptr, mFinalStateTransformShader.GetAddressOf()));
-
-	ThrowIfFailed(D3DReadFileToBlob((GetShaderPath() + L"FinalStateTransformSmoothCS.cso").c_str(), shaderBlob.GetAddressOf()));
-	ThrowIfFailed(device->CreateComputeShader(shaderBlob->GetBufferPointer(), shaderBlob->GetBufferSize(), nullptr, mFinalStateTransformSmoothShader.GetAddressOf()));
-
-	ThrowIfFailed(D3DReadFileToBlob((GetShaderPath() + L"DownscaleBigPictureVS.cso").c_str(), shaderBlob.GetAddressOf()));
-	ThrowIfFailed(device->CreateVertexShader(shaderBlob->GetBufferPointer(), shaderBlob->GetBufferSize(), nullptr, mDownscaleVertexShader.GetAddressOf()));
-
-	ThrowIfFailed(D3DReadFileToBlob((GetShaderPath() + L"DownscaleBigPicturePS.cso").c_str(), shaderBlob.GetAddressOf()));
-	ThrowIfFailed(device->CreatePixelShader(shaderBlob->GetBufferPointer(), shaderBlob->GetBufferSize(), nullptr, mDownscalePixelShader.GetAddressOf()));
+	const std::wstring shaderDir = Utils::GetShaderPath();
+	Utils::LoadShaderFromFile(device, shaderDir + L"DownscaleBigPictureVS.cso", mDownscaleVertexShader.GetAddressOf());
+	Utils::LoadShaderFromFile(device, shaderDir + L"DownscaleBigPicturePS.cso", mDownscalePixelShader.GetAddressOf());
 
 	D3D11_SAMPLER_DESC samDesc;
 	ZeroMemory(&samDesc, sizeof(D3D11_SAMPLER_DESC));
@@ -149,79 +86,9 @@ void Downscaler::LoadShaderData(ID3D11Device* device)
 	samDesc.Filter   = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
 
 	ThrowIfFailed(device->CreateSamplerState(&samDesc, mBestSamplerEver.GetAddressOf()));
-
-	D3D11_BUFFER_DESC cbDesc;
-	cbDesc.Usage               = D3D11_USAGE_DYNAMIC;
-	cbDesc.ByteWidth           = (sizeof(CBParamsStruct) + 0xff) & (~0xff);
-	cbDesc.BindFlags           = D3D11_BIND_CONSTANT_BUFFER;
-	cbDesc.CPUAccessFlags      = D3D11_CPU_ACCESS_WRITE;
-	cbDesc.MiscFlags           = 0;
-	cbDesc.StructureByteStride = 0;
-
-	CBParamsStruct initData;
-	initData.SpawnPeriod = 0;
-
-	D3D11_SUBRESOURCE_DATA cbData;
-	cbData.pSysMem          = &initData;
-	cbData.SysMemPitch      = 0;
-	cbData.SysMemSlicePitch = 0;
-
-	ThrowIfFailed(device->CreateBuffer(&cbDesc, &cbData, &mCBufferParams));
-
-	mDownscaleViewport.TopLeftX = 0.0f;
-	mDownscaleViewport.TopLeftY = 0.0f;
-	mDownscaleViewport.Width    = (float)mDownscaledWidth;
-	mDownscaleViewport.Height   = (float)mDownscaledHeight;
-	mDownscaleViewport.MinDepth = 0.0f;
-	mDownscaleViewport.MaxDepth = 1.0f;
 }
 
-void Downscaler::FinalStateTransform(ID3D11DeviceContext* dc, ID3D11ShaderResourceView* srv, uint32_t oldWidth, uint32_t oldHeight)
-{
-	ID3D11ShaderResourceView*  finalStateTransformSRVs[] = { srv };
-	ID3D11UnorderedAccessView* finalStateTransformUAVs[] = { mFinalStateUAV.Get() };
-
-	dc->CSSetShaderResources(0, 1, finalStateTransformSRVs);
-	dc->CSSetUnorderedAccessViews(0, 1, finalStateTransformUAVs, nullptr);
-
-	dc->CSSetShader(mFinalStateTransformShader.Get(), nullptr, 0);
-	dc->Dispatch((uint32_t)(ceilf(oldWidth / 32.0f)), (uint32_t)(ceilf(oldHeight / 32.0f)), 1);
-
-	ID3D11ShaderResourceView*  nullSRVs[] = { nullptr };
-	ID3D11UnorderedAccessView* nullUAVs[] = { nullptr };
-
-	dc->CSSetShaderResources(0, 1, nullSRVs);
-	dc->CSSetUnorderedAccessViews(0, 1, nullUAVs, nullptr);
-	dc->CSSetShader(nullptr, nullptr, 0);
-}
-
-void Downscaler::FinalStateTransformSmooth(ID3D11DeviceContext* dc, ID3D11ShaderResourceView* srv, uint32_t spawnPeriod, uint32_t oldWidth, uint32_t oldHeight)
-{
-	mCBufferParamsCopy.SpawnPeriod = spawnPeriod;
-	UpdateBuffer(mCBufferParams.Get(), mCBufferParamsCopy, dc);
-
-	ID3D11Buffer*              finalStateTransformCbuffers[] = {mCBufferParams.Get()};
-	ID3D11ShaderResourceView*  finalStateTransformSRVs[]     = { srv };
-	ID3D11UnorderedAccessView* finalStateTransformUAVs[]     = { mFinalStateUAV.Get() };
-
-	dc->CSSetConstantBuffers(0, 1, finalStateTransformCbuffers);
-	dc->CSSetShaderResources(0, 1, finalStateTransformSRVs);
-	dc->CSSetUnorderedAccessViews(0, 1, finalStateTransformUAVs, nullptr);
-
-	dc->CSSetShader(mFinalStateTransformSmoothShader.Get(), nullptr, 0);
-	dc->Dispatch((uint32_t)(ceilf(oldWidth / 32.0f)), (uint32_t)(ceilf(oldHeight / 32.0f)), 1);
-
-	ID3D11Buffer*          nullCBuffers[] = { nullptr };
-	ID3D11ShaderResourceView*  nullSRVs[] = { nullptr };
-	ID3D11UnorderedAccessView* nullUAVs[] = { nullptr };
-
-	dc->CSSetConstantBuffers(0, 1, nullCBuffers);
-	dc->CSSetShaderResources(0, 1, nullSRVs);
-	dc->CSSetUnorderedAccessViews(0, 1, nullUAVs, nullptr);
-	dc->CSSetShader(nullptr, nullptr, 0);
-}
-
-void Downscaler::ActualDownscaling(ID3D11DeviceContext* dc)
+void Downscaler::ActualDownscaling(ID3D11DeviceContext* dc, ID3D11ShaderResourceView* srv)
 {
 	ID3D11Buffer* vertexBuffers[] = {nullptr};
 	UINT          strides[]       = {0};
@@ -235,7 +102,7 @@ void Downscaler::ActualDownscaling(ID3D11DeviceContext* dc)
 
 	dc->VSSetShader(mDownscaleVertexShader.Get(), nullptr, 0);
 
-	ID3D11ShaderResourceView* downscaleSRVs[] = {mFinalStateSRV.Get()};
+	ID3D11ShaderResourceView* downscaleSRVs[] = {srv};
 	dc->PSSetShaderResources(0, 1, downscaleSRVs);
 
 	ID3D11SamplerState* samplers[] = { mBestSamplerEver.Get() };

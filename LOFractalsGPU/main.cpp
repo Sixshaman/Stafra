@@ -1,37 +1,11 @@
-﻿#include <iostream>
+﻿#include "App/WindowApp.hpp"
+#include "App/CommandLineArguments.hpp"
 
-#include <string>
-#include <vector>
-#include "Util.hpp"
-#include "FractalGen.hpp"
-#include "CommandLineArguments.hpp"
-
-int main(int argc, char* argv[])
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
-	CommandLineArguments cmdArgs(argc, argv);
+	CommandLineArguments cmdArgs(lpCmdLine);
+	cmdArgs.ParseArgs();
 
-	CmdParseResult parseRes = cmdArgs.ParseArgs();
-	if(parseRes == CmdParseResult::PARSE_HELP)
-	{
-		std::cout << cmdArgs.GetHelpMessage();
-		return 0;
-	}
-	else if(parseRes != CmdParseResult::PARSE_OK)
-	{
-		std::cout << cmdArgs.GetErrorMessage(parseRes);
-		return 1;
-	}
-
-	try
-	{
-		FractalGen fg(cmdArgs.PowSize(), cmdArgs.SpawnPeriod());
-		fg.ComputeFractal(cmdArgs.SaveVideoFrames(), cmdArgs.SmoothTransform(), cmdArgs.Enlonging());
-		fg.SaveFractalImage("STABILITY.png", cmdArgs.SmoothTransform());
-	}
-	catch (DXException ex)
-	{
-		std::cout << ex.ToString();
-	}
-
-	return 0;
+	WindowApp app(hInstance, cmdArgs);
+	return app.Run();
 }

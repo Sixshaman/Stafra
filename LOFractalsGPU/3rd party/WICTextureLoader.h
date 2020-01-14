@@ -29,12 +29,15 @@
 
 namespace DirectX
 {
+#ifndef WIC_LOADER_FLAGS_DEFINED
+#define WIC_LOADER_FLAGS_DEFINED
     enum WIC_LOADER_FLAGS
     {
         WIC_LOADER_DEFAULT      = 0,
         WIC_LOADER_FORCE_SRGB   = 0x1,
         WIC_LOADER_IGNORE_SRGB  = 0x2,
     };
+#endif
 
     // Standard version
     HRESULT CreateWICTextureFromMemory(
@@ -124,3 +127,4 @@ namespace DirectX
         _Outptr_opt_ ID3D11Resource** texture,
         _Outptr_opt_ ID3D11ShaderResourceView** textureView);
 }
+

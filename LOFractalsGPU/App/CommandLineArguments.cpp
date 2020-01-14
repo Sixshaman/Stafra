@@ -1,10 +1,11 @@
 #include "CommandLineArguments.hpp"
 #include <iostream>
 #include <regex>
+#include <Windows.h>
 
 namespace
 {
-	const size_t gDefaultPSize     = 0;
+	const size_t gDefaultPSize     = 10;
 	const size_t gDefaultEnlonging = 1;
 	const size_t gDefaultSpawn     = 0;
 
@@ -22,44 +23,46 @@ namespace
 	const size_t gMaximumSpawn = 9999;
 }
 
-CommandLineArguments::CommandLineArguments(int argc, char* argv[]): mPowSize(gDefaultPSize), mSaveVideoFrames(gDefaultSaveVframes), mSmoothTransform(gDefaultSmooth), mEnlonging(gDefaultEnlonging), mSpawnPeriod(gDefaultSpawn)
+CommandLineArguments::CommandLineArguments(const std::string& cmdArgs): mPowSize(gDefaultPSize), mSaveVideoFrames(gDefaultSaveVframes), mSmoothTransform(gDefaultSmooth), mEnlonging(gDefaultEnlonging), mSpawnPeriod(gDefaultSpawn)
 {
-	if(argc < 1) //Hide app name
+	auto prevArgEnd = cmdArgs.begin();
+	for(auto it = cmdArgs.begin(); it != cmdArgs.end(); ++it)
 	{
-		return;
+		if(strchr(" \n\r\t", *it))
+		{
+			mCmdLineArgs.push_back(std::string(prevArgEnd, it));
+			prevArgEnd = it + 1;
+		}
 	}
 
-	for(int i = 1; i < argc; i++)
-	{
-		mCmdLineArgs.push_back(argv[i]);
-	}
+	mCmdLineArgs.push_back(std::string(prevArgEnd, cmdArgs.end()));
 }
 
 CommandLineArguments::~CommandLineArguments()
 {
 }
 
-size_t CommandLineArguments::PowSize()
+size_t CommandLineArguments::PowSize() const
 {
 	return mPowSize;
 }
 
-size_t CommandLineArguments::Enlonging()
+size_t CommandLineArguments::Enlonging() const
 {
 	return mEnlonging;
 }
 
-size_t CommandLineArguments::SpawnPeriod()
+size_t CommandLineArguments::SpawnPeriod() const
 {
 	return mSpawnPeriod;
 }
 
-bool CommandLineArguments::SaveVideoFrames()
+bool CommandLineArguments::SaveVideoFrames() const
 {
 	return mSaveVideoFrames;
 }
 
-bool CommandLineArguments::SmoothTransform()
+bool CommandLineArguments::SmoothTransform() const
 {
 	return mSmoothTransform;;
 }
@@ -156,7 +159,7 @@ CmdParseResult CommandLineArguments::ParseArgs()
 	return res;
 }
 
-std::string CommandLineArguments::GetHelpMessage()
+std::string CommandLineArguments::GetHelpMessage() const
 {
 	return "Options:                                                                 \r\n"
 		   "                                                                         \r\n"
@@ -167,7 +170,7 @@ std::string CommandLineArguments::GetHelpMessage()
 		   "-spawn:        Spawn stability period. Enter 0 for no spawn at all.      \r\n";
 }
 
-std::string CommandLineArguments::GetErrorMessage(CmdParseResult parseRes)
+std::string CommandLineArguments::GetErrorMessage(CmdParseResult parseRes) const
 {
 	switch (parseRes)
 	{

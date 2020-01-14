@@ -1,20 +1,28 @@
 #include "EqualityChecker.hpp"
-#include "Util.hpp"
+#include "../Util.hpp"
 #include <d3dcompiler.h>
 
-EqualityChecker::EqualityChecker(ID3D11Device* device, uint32_t maxWidth, uint32_t maxHeight): mMaxWidth(maxWidth), mMaxHeight(maxHeight)
+EqualityChecker::EqualityChecker(ID3D11Device* device)
 {
-	CreateTextures(device);
 	LoadShaderData(device);
+	CreateEqualityBuffer(device);
 }
 
 EqualityChecker::~EqualityChecker()
 {
 }
 
+void EqualityChecker::PrepareForCalculations(ID3D11Device* device, uint32_t width, uint32_t height)
+{
+	mMaxWidth  = width;
+	mMaxHeight = height;
+
+	ReinitTextures(device, width, height);
+}
+
 bool EqualityChecker::CheckEquality(ID3D11DeviceContext* dc, ID3D11ShaderResourceView* left, ID3D11ShaderResourceView* right)
 {
-	CreateEqualityTexture(dc, left, right);
+	InitEqualityTexture(dc, left, right, mMaxWidth, mMaxHeight);
 
 	uint32_t curWidth  = mMaxWidth;
 	uint32_t curHeight = mMaxHeight;
@@ -34,11 +42,16 @@ bool EqualityChecker::CheckEquality(ID3D11DeviceContext* dc, ID3D11ShaderResourc
 	return (compareRes != 0);
 }
 
-void EqualityChecker::CreateTextures(ID3D11Device* device)
+void EqualityChecker::ReinitTextures(ID3D11Device* device, uint32_t width, uint32_t height)
 {
+	mPrevEqualitySRV.Reset();
+	mNextEqualitySRV.Reset();
+	mPrevEqualityUAV.Reset();
+	mNextEqualityUAV.Reset();
+
 	D3D11_TEXTURE2D_DESC boardTexDesc;
-	boardTexDesc.Width              = mMaxWidth;
-	boardTexDesc.Height             = mMaxHeight;
+	boardTexDesc.Width              = width;
+	boardTexDesc.Height             = height;
 	boardTexDesc.Format             = DXGI_FORMAT_R8_UINT;
 	boardTexDesc.Usage              = D3D11_USAGE_DEFAULT;
 	boardTexDesc.BindFlags          = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
@@ -71,7 +84,10 @@ void EqualityChecker::CreateTextures(ID3D11Device* device)
 
 	ThrowIfFailed(device->CreateUnorderedAccessView(prevEqualityTex.Get(), &boardUavDesc, mPrevEqualityUAV.GetAddressOf()));
 	ThrowIfFailed(device->CreateUnorderedAccessView(nextEqualityTex.Get(), &boardUavDesc, mNextEqualityUAV.GetAddressOf()));
+}
 
+void EqualityChecker::CreateEqualityBuffer(ID3D11Device* device)
+{
 	D3D11_BUFFER_DESC equalityBufferDesc;
 	equalityBufferDesc.ByteWidth           = sizeof(uint32_t);
 	equalityBufferDesc.Usage               = D3D11_USAGE_DEFAULT;
@@ -99,7 +115,16 @@ void EqualityChecker::CreateTextures(ID3D11Device* device)
 	equalityBufferCopyDesc.MiscFlags           = 0;
 	equalityBufferCopyDesc.StructureByteStride = 0;
 
-	ThrowIfFailed(device->CreateBuffer(&equalityBufferCopyDesc, nullptr, &mEqualityBufferCopy));
+	ThrowIfFailed(device->CreateBuffer(&equalityBufferCopyDesc, nullptr, mEqualityBufferCopy.GetAddressOf()));
+}
+
+void EqualityChecker::LoadShaderData(ID3D11Device* device)
+{
+	const std::wstring shaderDir = Utils::GetShaderPath();
+
+	ThrowIfFailed(Utils::LoadShaderFromFile(device, shaderDir + L"CompareBoardsStartCS.cso",  mCompareBoardsStartShader.GetAddressOf()));
+	ThrowIfFailed(Utils::LoadShaderFromFile(device, shaderDir + L"CompareBoardsShrinkCS.cso", mCompareBoardsShrinkShader.GetAddressOf()));
+	ThrowIfFailed(Utils::LoadShaderFromFile(device, shaderDir + L"CompareBoardsFinalCS.cso",  mCompareBoardsFinalShader.GetAddressOf()));
 
 	D3D11_BUFFER_DESC cbDesc;
 	cbDesc.Usage               = D3D11_USAGE_DYNAMIC;
@@ -110,7 +135,7 @@ void EqualityChecker::CreateTextures(ID3D11Device* device)
 	cbDesc.StructureByteStride = 0;
 
 	CBParamsStruct initData;
-	initData.BoardSize = DirectX::XMUINT2(mMaxWidth, mMaxHeight);
+	initData.BoardSize = DirectX::XMUINT2(0, 0);
 
 	D3D11_SUBRESOURCE_DATA cbData;
 	cbData.pSysMem          = &initData;
@@ -120,21 +145,7 @@ void EqualityChecker::CreateTextures(ID3D11Device* device)
 	ThrowIfFailed(device->CreateBuffer(&cbDesc, &cbData, &mCBufferParams));
 }
 
-void EqualityChecker::LoadShaderData(ID3D11Device* device)
-{
-	Microsoft::WRL::ComPtr<ID3DBlob> shaderBlob;
-
-	ThrowIfFailed(D3DReadFileToBlob((GetShaderPath() + L"CompareBoardsStartCS.cso").c_str(), shaderBlob.GetAddressOf()));
-	ThrowIfFailed(device->CreateComputeShader(shaderBlob->GetBufferPointer(), shaderBlob->GetBufferSize(), nullptr, mCompareBoardsStartShader.GetAddressOf()));
-
-	ThrowIfFailed(D3DReadFileToBlob((GetShaderPath() + L"CompareBoardsShrinkCS.cso").c_str(), shaderBlob.GetAddressOf()));
-	ThrowIfFailed(device->CreateComputeShader(shaderBlob->GetBufferPointer(), shaderBlob->GetBufferSize(), nullptr, mCompareBoardsShrinkShader.GetAddressOf()));
-
-	ThrowIfFailed(D3DReadFileToBlob((GetShaderPath() + L"CompareBoardsFinalCS.cso").c_str(), shaderBlob.GetAddressOf()));
-	ThrowIfFailed(device->CreateComputeShader(shaderBlob->GetBufferPointer(), shaderBlob->GetBufferSize(), nullptr, mCompareBoardsFinalShader.GetAddressOf()));
-}
-
-void EqualityChecker::CreateEqualityTexture(ID3D11DeviceContext* dc, ID3D11ShaderResourceView* left, ID3D11ShaderResourceView* right)
+void EqualityChecker::InitEqualityTexture(ID3D11DeviceContext* dc, ID3D11ShaderResourceView* left, ID3D11ShaderResourceView* right, uint32_t width, uint32_t height)
 {
 	ID3D11ShaderResourceView*  compareStartSRVs[] = { left, right };
 	ID3D11UnorderedAccessView* compareStartUAVs[] = { mNextEqualityUAV.Get() };
@@ -143,7 +154,7 @@ void EqualityChecker::CreateEqualityTexture(ID3D11DeviceContext* dc, ID3D11Shade
 	dc->CSSetUnorderedAccessViews(0, 1, compareStartUAVs, nullptr);
 
 	dc->CSSetShader(mCompareBoardsStartShader.Get(), nullptr, 0);
-	dc->Dispatch((uint32_t)(ceilf(mMaxWidth / 32.0f)), (uint32_t)(ceilf(mMaxHeight / 32.0f)), 1);
+	dc->Dispatch((uint32_t)(ceilf(width / 32.0f)), (uint32_t)(ceilf(height / 32.0f)), 1);
 
 	ID3D11Buffer*          nullCbuffers[] = { nullptr };
 	ID3D11ShaderResourceView*  nullSRVs[] = { nullptr, nullptr };
@@ -166,7 +177,7 @@ void EqualityChecker::ShrinkEqualityTexture(ID3D11DeviceContext* dc, uint32_t cu
 
 	mCBufferParamsCopy.BoardSize.x = curWidth;
 	mCBufferParamsCopy.BoardSize.y = curHeight;
-	UpdateBuffer(mCBufferParams.Get(), mCBufferParamsCopy, dc);
+	Utils::UpdateBuffer(mCBufferParams.Get(), mCBufferParamsCopy, dc);
 
 	ID3D11Buffer* compareShrinkCBuffers[] = { mCBufferParams.Get() };
 	dc->CSSetConstantBuffers(0, 1, compareShrinkCBuffers);
@@ -202,7 +213,7 @@ void EqualityChecker::FinalizeEqualityTexture(ID3D11DeviceContext* dc, uint32_t 
 
 	mCBufferParamsCopy.BoardSize.x = curWidth;
 	mCBufferParamsCopy.BoardSize.y = curHeight;
-	UpdateBuffer(mCBufferParams.Get(), mCBufferParamsCopy, dc);
+	Utils::UpdateBuffer(mCBufferParams.Get(), mCBufferParamsCopy, dc);
 
 	ID3D11Buffer* compareFinalCBuffer[] = { mCBufferParams.Get() };
 	dc->CSSetConstantBuffers(0, 1, compareFinalCBuffer);

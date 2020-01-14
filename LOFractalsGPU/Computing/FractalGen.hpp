@@ -10,42 +10,52 @@
 #include <string>
 #include <vector>
 #include <memory>
-#include "Downscaler.hpp"
-#include "StabilityCalculator.hpp"
+
+class Renderer;
+
+class StabilityCalculator;
+class EqualityChecker;
+class Downscaler;
+class FinalTransformer;
+
+class InitialStates;
+class BoardLoader;
+class BoardSaver;
 
 class FractalGen
 {
 public:
-	FractalGen(uint32_t pow2Size, uint32_t spawnPeriod);
+	FractalGen(Renderer* renderer);
 	~FractalGen();
 
-	void ComputeFractal(bool SaveVideoFrames, bool bUseSmoothTransform, size_t enlonging);
-	void SaveFractalImage(const std::string& filename, bool useSmoothTransform, bool useDownscaling = false);
+	void SetDefaultBoardWidth(uint32_t width);
+	void SetDefaultBoardHeight(uint32_t height);
+
+	void SetVideoFrameWidth(uint32_t width);
+	void SetVideoFrameHeight(uint32_t height);
+
+	void DoComputingPreparations(const std::wstring& initialBoardFile, const std::wstring& clickRuleFile, const std::wstring& restrictionFile);
+	void Tick(uint32_t spawnPeriod, const std::wstring& videoFrameFile);
+	void FinishComputing(uint32_t spawnPeriod, const std::wstring& stabilityFile);
+
+	uint32_t GetSolutionPeriod() const;
 
 private:
-	uint32_t SolutionPeriodFromSize(size_t enlonging);
-	uint32_t SizeLoFromImageSize(const std::string& imgFilename);
+	Renderer* mRenderer; //Non-owning observer pointer
 
-	std::string IntermediateStateString(size_t stIndex, size_t stateCount);
-	std::string IntermediateStateFilename(size_t stIndex, size_t stateCount);
-
-private:
-	void PrintIntermediateState(size_t intermediateStr, size_t stateCount);
-	void PrintEqualityState(bool equalityState);
-	void PrintFinishingWork();
-	void PrintErrorImageLoading();
-	void PrintInitialStateDimensions();
-	void PrintDefaultInitialState();
-	void PrintCustomClickRule();
-	void PrintErrorClickRule();
-
-private:
-	Microsoft::WRL::ComPtr<ID3D11Device>        mDevice;
-	Microsoft::WRL::ComPtr<ID3D11DeviceContext> mDeviceContext;
-
-	std::unique_ptr<Downscaler>          mDownscaler;
 	std::unique_ptr<StabilityCalculator> mStabilityCalculator;
 
-	uint32_t mSizeLo;
-	uint32_t mSpawnPeriod;
+	std::unique_ptr<Downscaler>       mDownscaler;
+	std::unique_ptr<FinalTransformer> mFinalTransformer;
+	std::unique_ptr<EqualityChecker>  mEqualityChecker;
+
+	std::unique_ptr<InitialStates> mInitialStates;
+	std::unique_ptr<BoardLoader>   mBoardLoader;
+	std::unique_ptr<BoardSaver>    mBoardSaver;
+
+	uint32_t mDefaultBoardWidth;
+	uint32_t mDefaultBoardHeight;
+
+	uint32_t mVideoFrameWidth;
+	uint32_t mVideoFrameHeight;
 };

@@ -1,8 +1,10 @@
 #include "Util.hpp"
 #include <comdef.h>
 #include <clocale>
+#include <wrl/client.h>
+#include <d3dcompiler.h>
 
-DXException::DXException(HRESULT hr, const std::string& funcName, const std::string& filename, int32_t line)
+Utils::DXException::DXException(HRESULT hr, const std::string& funcName, const std::string& filename, int32_t line)
 {
 	mErrorCode  = hr;
 	mFuncName   = funcName;
@@ -16,7 +18,7 @@ DXException::DXException(HRESULT hr, const std::string& funcName, const std::str
 	setlocale(LC_ALL, locale);
 }
 
-std::string DXException::ToString() const
+std::string Utils::DXException::ToString() const
 {
 	_com_error err(mErrorCode);
 	std::string msg = err.ErrorMessage();
@@ -29,12 +31,12 @@ std::string DXException::ToString() const
 	return "\r\n\r\n\r\n" + mFuncName + " failed in " + mFilename + "; line " + std::to_string(mLineNumber) + "; error: " + msg + "\r\n\r\n\r\n";
 }
 
-HRESULT DXException::ToHR() const
+HRESULT Utils::DXException::ToHR() const
 {
 	return mErrorCode;
 }
 
-const std::wstring GetShaderPath()
+const std::wstring Utils::GetShaderPath()
 {
 	wchar_t path[2048];
 	GetModuleFileNameW(nullptr, path, 2048);
@@ -50,4 +52,64 @@ const std::wstring GetShaderPath()
 #else
 	return std::wstring(drive) + std::wstring(dir) + LR"(Shaders\Release\)";
 #endif
+}
+
+HRESULT Utils::LoadShaderFromFile(ID3D11Device* device, const std::wstring& path, ID3D11ComputeShader** shader)
+{
+	HRESULT hr = S_OK;
+	Microsoft::WRL::ComPtr<ID3DBlob> shaderBlob;
+
+	hr = D3DReadFileToBlob(path.c_str(), shaderBlob.GetAddressOf());
+	if(FAILED(hr))
+	{
+		return hr;
+	}
+
+	hr = device->CreateComputeShader(shaderBlob->GetBufferPointer(), shaderBlob->GetBufferSize(), nullptr, shader);
+	if(FAILED(hr))
+	{
+		return hr;
+	}
+
+	return S_OK;
+}
+
+HRESULT Utils::LoadShaderFromFile(ID3D11Device* device, const std::wstring& path, ID3D11VertexShader** shader)
+{
+	HRESULT hr = S_OK;
+	Microsoft::WRL::ComPtr<ID3DBlob> shaderBlob;
+
+	hr = D3DReadFileToBlob(path.c_str(), shaderBlob.GetAddressOf());
+	if(FAILED(hr))
+	{
+		return hr;
+	}
+
+	hr = device->CreateVertexShader(shaderBlob->GetBufferPointer(), shaderBlob->GetBufferSize(), nullptr, shader);
+	if(FAILED(hr))
+	{
+		return hr;
+	}
+
+	return S_OK;
+}
+
+HRESULT Utils::LoadShaderFromFile(ID3D11Device* device, const std::wstring& path, ID3D11PixelShader** shader)
+{
+	HRESULT hr = S_OK;
+	Microsoft::WRL::ComPtr<ID3DBlob> shaderBlob;
+
+	hr = D3DReadFileToBlob(path.c_str(), shaderBlob.GetAddressOf());
+	if(FAILED(hr))
+	{
+		return hr;
+	}
+
+	hr = device->CreatePixelShader(shaderBlob->GetBufferPointer(), shaderBlob->GetBufferSize(), nullptr, shader);
+	if(FAILED(hr))
+	{
+		return hr;
+	}
+
+	return S_OK;
 }

@@ -10,35 +10,32 @@ enum class LoadError
 {
 	LOAD_SUCCESS,
 	ERROR_CANT_READ_FILE,
-	ERROR_WRONG_SIZE
+	ERROR_WRONG_SIZE,
+	ERROR_INVALID_ARGUMENT
 };
 
-class InitialState
+/*
+The class for loading initial state from file.
+Input:               Filename
+Output#1:            ID3D11Texture2D with initial board and D3D11_BIND_SHADER_RESOURCE bind flag. The cell values for the board are based on the pixel luminance (threshold: 0.15)
+Output#2:            ID3D11Texture2D with click rule and D3D11_BIND_SHADER_RESOURCE bind flag. The cell values for the click rule are based on the pixel luminance (threshold: 0.15)
+Possible expansions: Different thresholds for luminance and different bases for cell values
+*/
+
+class BoardLoader
 {
-	struct CBParamsStruct
-	{
-		DirectX::XMUINT2 BoardSize;
-	};
-
 public:
-	InitialState(ID3D11Device* device);
-	~InitialState();
+	BoardLoader(ID3D11Device* device);
+	~BoardLoader();
 
-	LoadError LoadFromFile(ID3D11Device* device, ID3D11DeviceContext* dc, const std::wstring& filename, ID3D11UnorderedAccessView* initialBoardUAV, uint32_t& texWidth, uint32_t& texHeight);
-	void      CreateDefault(ID3D11DeviceContext* dc, ID3D11UnorderedAccessView* initialBoardUAV, uint32_t texWidth, uint32_t texHeight);
-
-	LoadError LoadClickRuleFromFile(ID3D11Device* device, ID3D11DeviceContext* dc, const std::wstring& filename, ID3D11UnorderedAccessView* clickRuleUAV);
+	LoadError LoadBoardFromFile(ID3D11Device* device, ID3D11DeviceContext* dc, const std::wstring& filename, ID3D11Texture2D** outBoardTex);
+	LoadError LoadClickRuleFromFile(ID3D11Device* device, ID3D11DeviceContext* dc, const std::wstring& filename, ID3D11Texture2D** outClickRule);
 
 private:
 	void LoadShaderData(ID3D11Device* device);
 
-	void DefaultInitialState(ID3D11DeviceContext* dc, ID3D11UnorderedAccessView* initialBoardUAV, uint32_t width, uint32_t height);
-	void InitialStateTransform(ID3D11DeviceContext* dc, ID3D11ShaderResourceView* initialStateSRV, ID3D11UnorderedAccessView* initialBoardUAV, uint32_t width, uint32_t height);
+	void InitialStateTransform(ID3D11DeviceContext* dc, ID3D11ShaderResourceView* textureSRV, ID3D11UnorderedAccessView* boardUAV, uint32_t width, uint32_t height);
 
 private:
-	Microsoft::WRL::ComPtr<ID3D11ComputeShader> mClear4CornersShader;
 	Microsoft::WRL::ComPtr<ID3D11ComputeShader> mInitialStateTransformShader;
-
-	Microsoft::WRL::ComPtr<ID3D11Buffer> mCBufferParams;
-	CBParamsStruct                       mCBufferParamsCopy;
 };

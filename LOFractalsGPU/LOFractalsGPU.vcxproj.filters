@@ -37,34 +37,22 @@
     <Filter Include="FileMgmt">
       <UniqueIdentifier>{20ea0a95-95f3-4f31-8ee6-620b04b04129}</UniqueIdentifier>
     </Filter>
+    <Filter Include="App">
+      <UniqueIdentifier>{e007a822-42a1-4179-99d9-d08b7d8eb7f8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Computing">
+      <UniqueIdentifier>{2bb0329d-50c6-43bf-9c0b-bf763c89f713}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shaders\Render">
+      <UniqueIdentifier>{08585943-e6e7-4d2d-81e9-b943ff12c33c}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="LOFractalsGPU.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="FractalGen.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Util.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="3rd party\WICTextureLoader.cpp">
       <Filter>3rd party</Filter>
-    </ClCompile>
-    <ClCompile Include="EqualityChecker.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="InitialState.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Downscaler.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="StabilityCalculator.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="CommandLineArguments.cpp">
-      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="FileMgmt\PNGSaver.cpp">
       <Filter>FileMgmt</Filter>
@@ -74,6 +62,42 @@
     </ClCompile>
     <ClCompile Include="FileMgmt\PNGOpener.cpp">
       <Filter>FileMgmt</Filter>
+    </ClCompile>
+    <ClCompile Include="App\WindowApp.cpp">
+      <Filter>App</Filter>
+    </ClCompile>
+    <ClCompile Include="App\Renderer.cpp">
+      <Filter>App</Filter>
+    </ClCompile>
+    <ClCompile Include="main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="App\CommandLineArguments.cpp">
+      <Filter>App</Filter>
+    </ClCompile>
+    <ClCompile Include="Computing\BoardLoader.cpp">
+      <Filter>Computing</Filter>
+    </ClCompile>
+    <ClCompile Include="Computing\Downscaler.cpp">
+      <Filter>Computing</Filter>
+    </ClCompile>
+    <ClCompile Include="Computing\EqualityChecker.cpp">
+      <Filter>Computing</Filter>
+    </ClCompile>
+    <ClCompile Include="Computing\FractalGen.cpp">
+      <Filter>Computing</Filter>
+    </ClCompile>
+    <ClCompile Include="Computing\StabilityCalculator.cpp">
+      <Filter>Computing</Filter>
+    </ClCompile>
+    <ClCompile Include="Computing\InitialStates.cpp">
+      <Filter>Computing</Filter>
+    </ClCompile>
+    <ClCompile Include="Computing\FinalTransform.cpp">
+      <Filter>Computing</Filter>
+    </ClCompile>
+    <ClCompile Include="Computing\BoardSaver.cpp">
+      <Filter>Computing</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -128,31 +152,25 @@
     <FxCompile Include="Shaders\StabilityNextStepRESTRICTEDCS.hlsl">
       <Filter>Shaders\NextStep</Filter>
     </FxCompile>
+    <FxCompile Include="Shaders\RenderVS.hlsl">
+      <Filter>Shaders\Render</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\RenderPS.hlsl">
+      <Filter>Shaders\Render</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\Clear4SidesCS.hlsl">
+      <Filter>Shaders\ClearBoard</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\RenderClickRulePS.hlsl">
+      <Filter>Shaders\Render</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="FractalGen.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Util.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="3rd party\WICTextureLoader.h">
       <Filter>3rd party</Filter>
-    </ClInclude>
-    <ClInclude Include="EqualityChecker.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="InitialState.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Downscaler.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="StabilityCalculator.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="CommandLineArguments.hpp">
-      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="FileMgmt\PNGOpener.hpp">
       <Filter>FileMgmt</Filter>
@@ -162,6 +180,39 @@
     </ClInclude>
     <ClInclude Include="FileMgmt\FileHandle.hpp">
       <Filter>FileMgmt</Filter>
+    </ClInclude>
+    <ClInclude Include="App\Renderer.hpp">
+      <Filter>App</Filter>
+    </ClInclude>
+    <ClInclude Include="App\WindowApp.hpp">
+      <Filter>App</Filter>
+    </ClInclude>
+    <ClInclude Include="App\CommandLineArguments.hpp">
+      <Filter>App</Filter>
+    </ClInclude>
+    <ClInclude Include="Computing\StabilityCalculator.hpp">
+      <Filter>Computing</Filter>
+    </ClInclude>
+    <ClInclude Include="Computing\BoardLoader.hpp">
+      <Filter>Computing</Filter>
+    </ClInclude>
+    <ClInclude Include="Computing\Downscaler.hpp">
+      <Filter>Computing</Filter>
+    </ClInclude>
+    <ClInclude Include="Computing\EqualityChecker.hpp">
+      <Filter>Computing</Filter>
+    </ClInclude>
+    <ClInclude Include="Computing\FractalGen.hpp">
+      <Filter>Computing</Filter>
+    </ClInclude>
+    <ClInclude Include="Computing\InitialStates.hpp">
+      <Filter>Computing</Filter>
+    </ClInclude>
+    <ClInclude Include="Computing\FinalTransform.hpp">
+      <Filter>Computing</Filter>
+    </ClInclude>
+    <ClInclude Include="Computing\BoardSaver.hpp">
+      <Filter>Computing</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

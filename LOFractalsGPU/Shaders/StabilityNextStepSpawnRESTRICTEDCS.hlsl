@@ -37,7 +37,7 @@ void main(uint3 DTid: SV_DispatchThreadID)
 		[flatten]
 		if(prevStability != 1) //1 stands for "stable" and won't change until the cell state changes
 		{
-			nextStability = (prevStability + 1) % (2 + gSpawnPeriod); //2 and more stands for (steps with unchanged state) + 2
+			nextStability = (prevStability + 1) % (2 + gSpawnPeriod); //2 and higher stands for (steps with unchanged state) + 2
 		}
 	}
 	else
