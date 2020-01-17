@@ -9,14 +9,14 @@
 
 namespace
 {
-	const int gPreviewAreaMinWidth  = 512;
-	const int gPreviewAreaMinHeight = 512;
+	const int gPreviewAreaMinWidth  = 768;
+	const int gPreviewAreaMinHeight = 768;
 
 	const int gClickRuleImageWidth  = 32;
 	const int gClickRuleImageHeight = 32;
 
-	const int gClickRuleAreaWidth  = gClickRuleImageWidth  * 8;
-	const int gClickRuleAreaHeight = gClickRuleImageHeight * 8;
+	const int gClickRuleAreaWidth  = gClickRuleImageWidth  * 9;
+	const int gClickRuleAreaHeight = gClickRuleImageHeight * 9;
 
 	const int gMarginLeft = 5;
 	const int gMarginTop  = 5;
@@ -287,10 +287,10 @@ void WindowApp::CreateMainWindow(HINSTANCE hInstance)
 	DWORD wndStyle   = WS_OVERLAPPEDWINDOW;
 
 	RECT clientRect;
-	clientRect.left   = 350;
-	clientRect.right  = 350 + mMinWindowWidth;
-	clientRect.top    = 350;
-	clientRect.bottom = 350 + mMinWindowHeight;
+	clientRect.left   = 100;
+	clientRect.right  = clientRect.left + mMinWindowWidth;
+	clientRect.top    = 100;
+	clientRect.bottom = clientRect.top + mMinWindowHeight;
 	AdjustWindowRectEx(&clientRect, wndStyle, FALSE, wndStyleEx);
 
 	mMinWindowWidth  = clientRect.right  - clientRect.left;
