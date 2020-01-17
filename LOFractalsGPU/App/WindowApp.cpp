@@ -11,8 +11,8 @@ namespace
 	const int gPreviewAreaMinWidth  = 512;
 	const int gPreviewAreaMinHeight = 512;
 
-	const int gClickRuleImageWidth  = 31;
-	const int gClickRuleImageHeight = 31;
+	const int gClickRuleImageWidth  = 32;
+	const int gClickRuleImageHeight = 32;
 
 	const int gClickRuleAreaWidth  = gClickRuleImageWidth  * 8;
 	const int gClickRuleAreaHeight = gClickRuleImageHeight * 8;
@@ -205,7 +205,7 @@ DWORD WINAPI WindowApp::RenderThread(LPVOID lpParam)
 
 		if(that->mNeedToReinitComputing)
 		{
-			that->mFractalGen->DoComputingPreparations(L"", L"ClickRule.png", L"");
+			that->mFractalGen->DoComputingPreparations(L"", L"", L"");
 			that->mNeedToReinitComputing = false;
 		}
 

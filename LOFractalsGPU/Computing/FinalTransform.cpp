@@ -75,7 +75,7 @@ void FinalTransformer::ReinitTextures(ID3D11Device* device, uint32_t width, uint
 
 void FinalTransformer::LoadShaderData(ID3D11Device* device)
 {
-	const std::wstring shaderDir = Utils::GetShaderPath();
+	const std::wstring shaderDir = Utils::GetShaderPath() + L"StateTransform\\";
 
 	Utils::LoadShaderFromFile(device, shaderDir + L"FinalStateTransformCS.cso",       mFinalStateTransformShader.GetAddressOf());
 	Utils::LoadShaderFromFile(device, shaderDir + L"FinalStateTransformSmoothCS.cso", mFinalStateTransformSmoothShader.GetAddressOf());

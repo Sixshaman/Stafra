@@ -46,6 +46,9 @@
     <Filter Include="Shaders\Render">
       <UniqueIdentifier>{08585943-e6e7-4d2d-81e9-b943ff12c33c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Shaders\ClickRules">
+      <UniqueIdentifier>{ba38e77f-b39a-4911-b193-b223003f8345}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Util.cpp">
@@ -99,71 +102,9 @@
     <ClCompile Include="Computing\BoardSaver.cpp">
       <Filter>Computing</Filter>
     </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <FxCompile Include="Shaders\FinalStateTransformCS.hlsl">
-      <Filter>Shaders\StateTransform</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\InitialStateTransformCS.hlsl">
-      <Filter>Shaders\StateTransform</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\Clear4CornersCS.hlsl">
-      <Filter>Shaders\ClearBoard</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\CompareBoardsFinalCS.hlsl">
-      <Filter>Shaders\Compare</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\CompareBoardsShrinkCS.hlsl">
-      <Filter>Shaders\Compare</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\CompareBoardsStartCS.hlsl">
-      <Filter>Shaders\Compare</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\DownscaleBigPicturePS.hlsl">
-      <Filter>Shaders\Downscale</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\DownscaleBigPictureVS.hlsl">
-      <Filter>Shaders\Downscale</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\StabilityNextStepCS.hlsl">
-      <Filter>Shaders\NextStep</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\StabilityNextStepClickRuleCS.hlsl">
-      <Filter>Shaders\NextStep</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\StabilityNextStepSpawnCLICKRuLECS.hlsl">
-      <Filter>Shaders\NextStep</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\StabilityNextStepSpawnCS.hlsl">
-      <Filter>Shaders\NextStep</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\FinalStateTransformSmoothCS.hlsl">
-      <Filter>Shaders\StateTransform</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\StabilityNextStepSpawnCLICKRuLERESTRICTEDCS.hlsl">
-      <Filter>Shaders\NextStep</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\StabilityNextStepSpawnRESTRICTEDCS.hlsl">
-      <Filter>Shaders\NextStep</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\StabilityNextStepClickRuleRESTRICTEDCS.hlsl">
-      <Filter>Shaders\NextStep</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\StabilityNextStepRESTRICTEDCS.hlsl">
-      <Filter>Shaders\NextStep</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\RenderVS.hlsl">
-      <Filter>Shaders\Render</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\RenderPS.hlsl">
-      <Filter>Shaders\Render</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\Clear4SidesCS.hlsl">
-      <Filter>Shaders\ClearBoard</Filter>
-    </FxCompile>
-    <FxCompile Include="Shaders\RenderClickRulePS.hlsl">
-      <Filter>Shaders\Render</Filter>
-    </FxCompile>
+    <ClCompile Include="Computing\ClickRules.cpp">
+      <Filter>Computing</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Util.hpp">
@@ -214,5 +155,79 @@
     <ClInclude Include="Computing\BoardSaver.hpp">
       <Filter>Computing</Filter>
     </ClInclude>
+    <ClInclude Include="Computing\ClickRules.hpp">
+      <Filter>Computing</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="Shaders\RenderPS.hlsl">
+      <Filter>Shaders\Render</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\RenderVS.hlsl">
+      <Filter>Shaders\Render</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\RenderClickRulePS.hlsl">
+      <Filter>Shaders\Render</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\FinalStateTransformSmoothCS.hlsl">
+      <Filter>Shaders\StateTransform</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\InitialStateTransformCS.hlsl">
+      <Filter>Shaders\StateTransform</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\FinalStateTransformCS.hlsl">
+      <Filter>Shaders\StateTransform</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DownscaleBigPicturePS.hlsl">
+      <Filter>Shaders\Downscale</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\DownscaleBigPictureVS.hlsl">
+      <Filter>Shaders\Downscale</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\CompareBoardsStartCS.hlsl">
+      <Filter>Shaders\Compare</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\CompareBoardsFinalCS.hlsl">
+      <Filter>Shaders\Compare</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\CompareBoardsShrinkCS.hlsl">
+      <Filter>Shaders\Compare</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\Clear4SidesCS.hlsl">
+      <Filter>Shaders\ClearBoard</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\Clear4CornersCS.hlsl">
+      <Filter>Shaders\ClearBoard</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\BakeClickRuleCS.hlsl">
+      <Filter>Shaders\ClickRules</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\ChangeCellStateCS.hlsl">
+      <Filter>Shaders\ClickRules</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\StabilityNextStepCS.hlsl">
+      <Filter>Shaders\NextStep</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\StabilityNextStepRestrictedCS.hlsl">
+      <Filter>Shaders\NextStep</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\StabilityNextStepSpawnClickRuleCS.hlsl">
+      <Filter>Shaders\NextStep</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\StabilityNextStepSpawnClickRuleRestrictedCS.hlsl">
+      <Filter>Shaders\NextStep</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\StabilityNextStepSpawnCS.hlsl">
+      <Filter>Shaders\NextStep</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\StabilityNextStepSpawnRestrictedCS.hlsl">
+      <Filter>Shaders\NextStep</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\StabilityNextStepClickRuleCS.hlsl">
+      <Filter>Shaders\NextStep</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\StabilityNextStepClickRuleRestrictedCS.hlsl">
+      <Filter>Shaders\NextStep</Filter>
+    </FxCompile>
   </ItemGroup>
 </Project>

@@ -120,9 +120,6 @@ void Renderer::DrawClickRule()
 	ID3D11ShaderResourceView* boardSRVs[] = {mCurrentClickRuleSRV};
 	mDeviceContext->PSSetShaderResources(0, 1, boardSRVs);
 
-	ID3D11SamplerState* samplers[] = {mBoardSampler.Get()};
-	mDeviceContext->PSSetSamplers(0, 1, samplers);
-
 	mDeviceContext->Draw(4, 0);
 
 	ID3D11ShaderResourceView* nullSRVs[] = { nullptr };
@@ -185,7 +182,7 @@ void Renderer::CreateDeviceAndSwapChains(HWND previewWnd, HWND clickRuleWnd)
 
 void Renderer::LoadShaders()
 {
-	const std::wstring shaderDir = Utils::GetShaderPath();
+	const std::wstring shaderDir = Utils::GetShaderPath() + L"Render\\";
 	ThrowIfFailed(Utils::LoadShaderFromFile(mDevice.Get(), shaderDir + L"RenderVS.cso",          mRenderVertexShader.GetAddressOf()));
 	ThrowIfFailed(Utils::LoadShaderFromFile(mDevice.Get(), shaderDir + L"RenderPS.cso",          mRenderPixelShader.GetAddressOf()));
 	ThrowIfFailed(Utils::LoadShaderFromFile(mDevice.Get(), shaderDir + L"RenderClickRulePS.cso", mRenderClickRulePixelShader.GetAddressOf()));

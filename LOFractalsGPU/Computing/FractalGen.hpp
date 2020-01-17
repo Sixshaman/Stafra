@@ -18,6 +18,7 @@ class EqualityChecker;
 class Downscaler;
 class FinalTransformer;
 
+class ClickRules;
 class InitialStates;
 class BoardLoader;
 class BoardSaver;
@@ -49,6 +50,7 @@ private:
 	std::unique_ptr<FinalTransformer> mFinalTransformer;
 	std::unique_ptr<EqualityChecker>  mEqualityChecker;
 
+	std::unique_ptr<ClickRules>    mClickRules;
 	std::unique_ptr<InitialStates> mInitialStates;
 	std::unique_ptr<BoardLoader>   mBoardLoader;
 	std::unique_ptr<BoardSaver>    mBoardSaver;

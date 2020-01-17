@@ -1,4 +1,4 @@
-//Transfroms the initial state texture into the stability buffer data, with smooth transformation
+//Transfroms the stability buffer data into a colorful image, with smooth transformation
 
 cbuffer cbSpawnParams
 {
@@ -25,6 +25,7 @@ void main(uint3 DTid: SV_DispatchThreadID)
 		//1 -> gSpawnPeriod
 		//2 -> 0 
 		//3 -> 1
+		//4 -> 2
 		//...
 		finalStability = (finalStability + gSpawnPeriod - 1) % (gSpawnPeriod + 1);
 		finalVal       = (float)finalStability / (float)gSpawnPeriod;

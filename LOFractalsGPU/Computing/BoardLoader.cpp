@@ -127,10 +127,10 @@ LoadError BoardLoader::LoadClickRuleFromFile(ID3D11Device* device, ID3D11DeviceC
 
 	InitialStateTransform(dc, clickruleSRV.Get(), clickRuleUAV.Get(), 32, 32);
 
-	//Out click rule should only be bindable as SRV
+	//Out click rule should bindable as both SRV and UAV, since we need to edit it
 	D3D11_TEXTURE2D_DESC outClickRuleTexDesc;
 	memcpy_s(&outClickRuleTexDesc, sizeof(D3D11_TEXTURE2D_DESC), &clickRuleTexDesc, sizeof(D3D11_TEXTURE2D_DESC));
-	outClickRuleTexDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+	outClickRuleTexDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
 
 	ThrowIfFailed(device->CreateTexture2D(&outClickRuleTexDesc, nullptr, outClickRuleTex));
 	dc->CopyResource(*outClickRuleTex, clickRuleTransformedTex.Get());
@@ -159,6 +159,6 @@ void BoardLoader::InitialStateTransform(ID3D11DeviceContext* dc, ID3D11ShaderRes
 
 void BoardLoader::LoadShaderData(ID3D11Device* device)
 {
-	const std::wstring shaderDir = Utils::GetShaderPath();
+	const std::wstring shaderDir = Utils::GetShaderPath() + L"StateTransform\\";
 	ThrowIfFailed(Utils::LoadShaderFromFile(device, shaderDir + L"InitialStateTransformCS.cso", mInitialStateTransformShader.GetAddressOf()));
 }

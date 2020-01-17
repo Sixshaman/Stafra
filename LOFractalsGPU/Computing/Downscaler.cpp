@@ -74,7 +74,7 @@ void Downscaler::ReinitTextures(ID3D11Device* device, uint32_t downscaleWidth, u
 
 void Downscaler::LoadShaderData(ID3D11Device* device)
 {
-	const std::wstring shaderDir = Utils::GetShaderPath();
+	const std::wstring shaderDir = Utils::GetShaderPath() + L"Downscale\\";
 	Utils::LoadShaderFromFile(device, shaderDir + L"DownscaleBigPictureVS.cso", mDownscaleVertexShader.GetAddressOf());
 	Utils::LoadShaderFromFile(device, shaderDir + L"DownscaleBigPicturePS.cso", mDownscalePixelShader.GetAddressOf());
 

@@ -14,9 +14,9 @@ float4 main(PixelIn pin): SV_TARGET
 	uint clickRuleHeight = 0;
 	gClickRuleTex.GetDimensions(clickRuleWidth, clickRuleHeight);
 
-	//Bottom-right part of click rule is not used
-	clickRuleWidth  = clickRuleWidth  - 1;
-	clickRuleHeight = clickRuleHeight - 1;
+	////Bottom-right part of click rule is not used
+	//clickRuleWidth  = clickRuleWidth  - 1;
+	//clickRuleHeight = clickRuleHeight - 1;
 
 	uint2 clickRuleCoords = (uint2)(pin.TexC * float2(clickRuleWidth, clickRuleHeight));
 

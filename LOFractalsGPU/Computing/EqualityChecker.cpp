@@ -120,7 +120,7 @@ void EqualityChecker::CreateEqualityBuffer(ID3D11Device* device)
 
 void EqualityChecker::LoadShaderData(ID3D11Device* device)
 {
-	const std::wstring shaderDir = Utils::GetShaderPath();
+	const std::wstring shaderDir = Utils::GetShaderPath() + L"Compare\\";
 
 	ThrowIfFailed(Utils::LoadShaderFromFile(device, shaderDir + L"CompareBoardsStartCS.cso",  mCompareBoardsStartShader.GetAddressOf()));
 	ThrowIfFailed(Utils::LoadShaderFromFile(device, shaderDir + L"CompareBoardsShrinkCS.cso", mCompareBoardsShrinkShader.GetAddressOf()));

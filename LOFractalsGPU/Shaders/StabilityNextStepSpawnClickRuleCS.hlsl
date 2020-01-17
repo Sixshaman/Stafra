@@ -5,28 +5,42 @@ cbuffer cbSpawnParams
 
 Texture2D<uint> gPrevBoard:     register(t0);
 Texture2D<uint> gPrevStability: register(t1);
-Texture2D<uint> gClickRule:     register(t2);
+
+StructuredBuffer<int2> gClickRuleCoordsBuf: register(t2); //Non-zero cells of the click rule
+Buffer<uint>    gClickRuleCoordsCounterBuf: register(t3); //A number of non-zero cells in the click rule
 
 RWTexture2D<uint> gNextBoard:     register(u0);
 RWTexture2D<uint> gNextStability: register(u1);
 
-groupshared uint clickRuleDataCache[1024];
+groupshared int2 clickRuleDataCache[1024];
+groupshared uint clickRuleCounterVal;
 
 [numthreads(32, 32, 1)]
 void main(uint3 DTid: SV_DispatchThreadID, uint3 GTid: SV_GroupThreadID, uint GroupIndex: SV_GroupIndex)
 {
-	clickRuleDataCache[GroupIndex] = gClickRule[GTid.xy];
+	if(GroupIndex == 0) //Copy the counter value
+	{
+		clickRuleCounterVal = gClickRuleCoordsCounterBuf[0];
+	}
+
+	GroupMemoryBarrierWithGroupSync();
+
+	if(GroupIndex < clickRuleCounterVal) //Copy the click rule cells
+	{
+		clickRuleDataCache[GroupIndex] = gClickRuleCoordsBuf[GroupIndex];
+	}
+	else
+	{
+		clickRuleDataCache[GroupIndex] = int2(0, 0);
+	}
+
 	GroupMemoryBarrierWithGroupSync();
 
 	uint sum = 0;
-
-	for(uint i = 0; i < 1024; i++)
+	for(uint i = 0; i < clickRuleCounterVal; i++)
 	{
-		int x = i % 32 - 15;
-		int y = i / 32 - 15;
-
-		uint cellState = gPrevBoard[int2(DTid.x - x, DTid.y - y)];
-		sum += clickRuleDataCache[i] * cellState;
+		int2 clickRuleCoord = clickRuleDataCache[i];
+		sum += gPrevBoard[int2(DTid.xy) - clickRuleCoord];
 	}
 
 	//Using reflectivity and symmetry

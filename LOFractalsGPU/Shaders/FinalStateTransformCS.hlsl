@@ -1,4 +1,4 @@
-//Transfroms the initial state texture into the stability buffer data
+//Transfroms the stability buffer data into a colorful image
 
 Texture2D<uint> gFinalBoard: register(t0);
 

@@ -110,7 +110,7 @@ void InitialStates::InitialState4Sides(ID3D11DeviceContext* dc, ID3D11UnorderedA
 
 void InitialStates::LoadShaderData(ID3D11Device* device)
 {
-	const std::wstring shaderDir = Utils::GetShaderPath();
+	const std::wstring shaderDir = Utils::GetShaderPath() + L"ClearBoard\\";
 	ThrowIfFailed(Utils::LoadShaderFromFile(device, shaderDir + L"Clear4CornersCS.cso", mClear4CornersShader.GetAddressOf()));
 	ThrowIfFailed(Utils::LoadShaderFromFile(device, shaderDir + L"Clear4SidesCS.cso",   mClear4SidesShader.GetAddressOf()));
 
