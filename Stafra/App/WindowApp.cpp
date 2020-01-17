@@ -3,6 +3,7 @@
 #include <CommCtrl.h>
 #include <algorithm>
 #include <sstream>
+#include <Windowsx.h>
 
 #undef min
 #undef max
@@ -34,7 +35,8 @@ namespace
 }
 
 WindowApp::WindowApp(HINSTANCE hInstance, const CommandLineArguments& cmdArgs): mMainWindowHandle(nullptr), mPreviewAreaHandle(nullptr), mClickRuleAreaHandle(nullptr), 
-                                                                                mRenderThreadHandle(nullptr), mRenderThreadRunning(false), mPlayMode(PlayMode::MODE_CONTINUOUS_FRAMES)
+                                                                                mRenderThreadHandle(nullptr), mRenderThreadRunning(false), mPlayMode(PlayMode::MODE_CONTINUOUS_FRAMES),
+	                                                                            mNeedChangeClickRuleX(-1.0f), mNeedChangeClickRuleY(-1.0f)
 {
 	InitializeCriticalSection(&mRenderThreadLock);
 
@@ -117,23 +119,38 @@ LRESULT CALLBACK WindowApp::AppProc(HWND hwnd, UINT message, WPARAM wparam, LPAR
 		switch (wparam)
 		{
 		case 'R':
+			that->mPlayMode = PlayMode::MODE_CONTINUOUS_FRAMES;
 			that->mNeedToReinitComputing = true;
 			that->mRenderer->NeedRedraw();
 			break;
 		case 'P':
-			if(that->mPlayMode == PlayMode::MODE_PAUSED)
+			if(that->mPlayMode != PlayMode::MODE_STOP)
 			{
-				that->mPlayMode = PlayMode::MODE_CONTINUOUS_FRAMES;
-			}
-			else
-			{
-				that->mPlayMode = PlayMode::MODE_PAUSED;
+				if (that->mPlayMode == PlayMode::MODE_PAUSED)
+				{
+					that->mPlayMode = PlayMode::MODE_CONTINUOUS_FRAMES;
+				}
+				else
+				{
+					that->mPlayMode = PlayMode::MODE_PAUSED;
+				}
 			}
 			break;
 		case 'N':
 			if(that->mPlayMode == PlayMode::MODE_PAUSED)
 			{
 				that->mPlayMode = PlayMode::MODE_SINGLE_FRAME;
+			}
+			break;
+		case 'S':
+			if(that->mPlayMode == PlayMode::MODE_STOP)
+			{
+				that->mNeedToReinitComputing = true;
+				that->mPlayMode = PlayMode::MODE_CONTINUOUS_FRAMES;
+			}
+			else
+			{
+				that->mPlayMode = PlayMode::MODE_STOP;
 			}
 			break;
 		default:
@@ -159,6 +176,39 @@ LRESULT CALLBACK WindowApp::AppProc(HWND hwnd, UINT message, WPARAM wparam, LPAR
 			that->UpdateRendererForPreview();
 		}
 		break;
+	}
+	case WM_LBUTTONDOWN:
+	{
+		WindowApp* that = (WindowApp*)(GetWindowLongPtr(hwnd, GWLP_USERDATA));
+		if(that)
+		{
+			int xClick = GET_X_LPARAM(lparam);
+			int yClick = GET_Y_LPARAM(lparam);
+
+			RECT clickRuleRect;
+			GetWindowRect(that->mClickRuleAreaHandle, &clickRuleRect);
+			MapWindowPoints(nullptr, that->mMainWindowHandle, reinterpret_cast<LPPOINT>(&clickRuleRect), 2);
+
+			POINT pt;
+			pt.x = xClick;
+			pt.y = yClick;
+
+			if(PtInRect(&clickRuleRect, pt))
+			{
+				if(that->mPlayMode == PlayMode::MODE_STOP)
+				{
+					int xClickRule = xClick - clickRuleRect.left;
+					int yClickRule = yClick - clickRuleRect.top;
+
+					int clickRuleWidth  = clickRuleRect.right - clickRuleRect.left;
+					int clickRuleHeight = clickRuleRect.bottom - clickRuleRect.top;
+
+					that->mNeedChangeClickRuleX = (float)xClickRule / (float)clickRuleWidth;
+					that->mNeedChangeClickRuleY = (float)yClickRule / (float)clickRuleHeight;
+				}
+			}
+		}
+		return 0;
 	}
 	case WM_SIZE:
 	{
@@ -218,6 +268,13 @@ DWORD WINAPI WindowApp::RenderThread(LPVOID lpParam)
 		{
 			that->mFractalGen->ResetComputingParameters(L"InitialState.png", L"ClickRule.png", L"Restriction.png");
 			that->mNeedToReinitComputing = false;
+		}
+
+		if(that->mPlayMode == PlayMode::MODE_STOP && that->mNeedChangeClickRuleX > 0.0f && that->mNeedChangeClickRuleY > 0.0f)
+		{
+			that->mFractalGen->EditClickRule(that->mNeedChangeClickRuleX, that->mNeedChangeClickRuleY);
+			that->mNeedChangeClickRuleX = -1.0f;
+			that->mNeedChangeClickRuleY = -1.0f;
 		}
 
 		if(that->mRenderer->GetNeedRedraw())

@@ -76,6 +76,17 @@ uint32_t FractalGen::GetSolutionPeriod() const
 	return mStabilityCalculator->GetDefaultSolutionPeriod();
 }
 
+void FractalGen::EditClickRule(float normalizedX, float normalizedY)
+{
+	uint32_t clickRuleWidth;
+	uint32_t clickRuleHeight;
+	mClickRules->GetDimensions(clickRuleWidth, clickRuleHeight);
+
+	mClickRules->EditCellState(mRenderer->GetDeviceContext(), (uint32_t)(clickRuleWidth * normalizedX), (uint32_t)(clickRuleHeight * normalizedY));
+	mRenderer->SetCurrentClickRule(mClickRules->GetClickRuleImageSRV());
+	mRenderer->NeedRedrawClickRule();
+}
+
 void FractalGen::ResetComputingParameters(const std::wstring& initialBoardFile, const std::wstring& clickRuleFile, const std::wstring& restrictionFile)
 {
 	Microsoft::WRL::ComPtr<ID3D11Texture2D> initialBoardTex;

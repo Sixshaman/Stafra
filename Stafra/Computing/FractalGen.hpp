@@ -38,6 +38,8 @@ public:
 	void SetSpawnPeriod(uint32_t spawn);
 	void SetUseSmooth(bool smooth);
 
+	void EditClickRule(float normalizedX, float normalizedY);
+
 	void ResetComputingParameters(const std::wstring& initialBoardFile, const std::wstring& clickRuleFile, const std::wstring& restrictionFile);
 	void Tick();
 

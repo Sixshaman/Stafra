@@ -61,6 +61,9 @@ private:
 	 
 	PlayMode mPlayMode;
 
+	float mNeedChangeClickRuleX;
+	float mNeedChangeClickRuleY;
+
 	bool mResizing;
 	bool mNeedToReinitComputing;
 	bool mSaveVideoFrames;
