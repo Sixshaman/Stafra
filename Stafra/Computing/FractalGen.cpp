@@ -96,7 +96,7 @@ void FractalGen::ResetComputingParameters(const std::wstring& initialBoardFile, 
 
 	if(!initialBoardTex)
 	{
-		mInitialStates->CreateBoard(mRenderer->GetDevice(), mRenderer->GetDeviceContext(), mDefaultBoardWidth, mDefaultBoardHeight, BoardClearMode::FOUR_SIDES, initialBoardTex.GetAddressOf());
+		mInitialStates->CreateBoard(mRenderer->GetDevice(), mRenderer->GetDeviceContext(), mDefaultBoardWidth, mDefaultBoardHeight, BoardClearMode::FOUR_CORNERS, initialBoardTex.GetAddressOf());
 	}
 
 	Microsoft::WRL::ComPtr<ID3D11Texture2D> clickRuleTex;
