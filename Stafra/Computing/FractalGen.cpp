@@ -15,7 +15,7 @@
 #include "BoardSaver.hpp"
 #include "../App/Renderer.hpp"
 
-FractalGen::FractalGen(Renderer* renderer): mRenderer(renderer), mDefaultBoardWidth(1023), mDefaultBoardHeight(1023), mVideoFrameWidth(1), mVideoFrameHeight(1)
+FractalGen::FractalGen(Renderer* renderer): mRenderer(renderer), mDefaultBoardWidth(1023), mDefaultBoardHeight(1023), mVideoFrameWidth(1), mVideoFrameHeight(1), mSpawnPeriod(0), mbUseSmoothTransform(false)
 {
 	ID3D11Device*    device = mRenderer->GetDevice();
 	ID3D11DeviceContext* dc = mRenderer->GetDeviceContext();
@@ -56,12 +56,27 @@ void FractalGen::SetVideoFrameHeight(uint32_t height)
 	mVideoFrameHeight = height;
 }
 
+void FractalGen::SetSpawnPeriod(uint32_t spawn)
+{
+	mSpawnPeriod = spawn;
+}
+
+void FractalGen::SetUseSmooth(bool smooth)
+{
+	mbUseSmoothTransform = smooth;
+}
+
+uint32_t FractalGen::GetCurrentFrame() const
+{
+	return mStabilityCalculator->GetCurrentStep();
+}
+
 uint32_t FractalGen::GetSolutionPeriod() const
 {
 	return mStabilityCalculator->GetDefaultSolutionPeriod();
 }
 
-void FractalGen::DoComputingPreparations(const std::wstring& initialBoardFile, const std::wstring& clickRuleFile, const std::wstring& restrictionFile)
+void FractalGen::ResetComputingParameters(const std::wstring& initialBoardFile, const std::wstring& clickRuleFile, const std::wstring& restrictionFile)
 {
 	Microsoft::WRL::ComPtr<ID3D11Texture2D> initialBoardTex;
 	mBoardLoader->LoadBoardFromFile(mRenderer->GetDevice(), mRenderer->GetDeviceContext(), initialBoardFile, initialBoardTex.GetAddressOf());
@@ -88,21 +103,23 @@ void FractalGen::DoComputingPreparations(const std::wstring& initialBoardFile, c
 	Microsoft::WRL::ComPtr<ID3D11Texture2D> restrictionTex;
 	mBoardLoader->LoadBoardFromFile(mRenderer->GetDevice(), mRenderer->GetDeviceContext(), restrictionFile, restrictionTex.GetAddressOf());
 
-	mDownscaler->PrepareForDownscaling(mRenderer->GetDevice(), mVideoFrameWidth, mVideoFrameHeight);
-	mFinalTransformer->PrepareForTransform(mRenderer->GetDevice(), mDefaultBoardWidth, mDefaultBoardHeight);
-	mEqualityChecker->PrepareForCalculations(mRenderer->GetDevice(), mDefaultBoardWidth, mDefaultBoardHeight);
-
 	mStabilityCalculator->PrepareForCalculations(mRenderer->GetDevice(), mRenderer->GetDeviceContext(), initialBoardTex.Get(), restrictionTex.Get());
+
+	uint32_t boardWidth  = mStabilityCalculator->GetBoardWidth();
+	uint32_t boardHeight = mStabilityCalculator->GetBoardHeight();
+
+	mDownscaler->PrepareForDownscaling(mRenderer->GetDevice(), mVideoFrameWidth, mVideoFrameHeight);
+	mFinalTransformer->PrepareForTransform(mRenderer->GetDevice(), boardWidth, boardHeight);
+	mEqualityChecker->PrepareForCalculations(mRenderer->GetDevice(), boardWidth, boardHeight);
+
+	mBoardSaver->PrepareStagingTextures(mRenderer->GetDevice(), boardWidth, boardHeight, mVideoFrameWidth, mVideoFrameHeight);
 
 	mRenderer->SetCurrentClickRule(mClickRules->GetClickRuleImageSRV());
 	mRenderer->NeedRedrawClickRule();
 }
 
-void FractalGen::Tick(uint32_t spawnPeriod, const std::wstring& videoFrameFile)
+void FractalGen::Tick()
 {
-	bool saveFrame = !videoFrameFile.empty();
-	bool drawFrame = mRenderer->CanDrawBoard();
-	
 	ID3D11ShaderResourceView* clickRuleBufferSRV  = nullptr;
 	ID3D11ShaderResourceView* clickRuleCounterSRV = nullptr;
 	if(!mClickRules->IsDefault())
@@ -111,38 +128,27 @@ void FractalGen::Tick(uint32_t spawnPeriod, const std::wstring& videoFrameFile)
 		clickRuleCounterSRV = mClickRules->GetClickRuleBufferCounterSRV();
 	}
 
-	mStabilityCalculator->StabilityNextStep(mRenderer->GetDeviceContext(), clickRuleBufferSRV, clickRuleCounterSRV, spawnPeriod);
-	if(saveFrame || drawFrame)
-	{
-		mFinalTransformer->ComputeTransform(mRenderer->GetDeviceContext(), mStabilityCalculator->GetLastStabilityState(), spawnPeriod);
-	}
+	mStabilityCalculator->StabilityNextStep(mRenderer->GetDeviceContext(), clickRuleBufferSRV, clickRuleCounterSRV, mSpawnPeriod);
+	mFinalTransformer->ComputeTransform(mRenderer->GetDeviceContext(), mStabilityCalculator->GetLastStabilityState(), mSpawnPeriod, mbUseSmoothTransform);
 
-	if(saveFrame)
-	{
-		mDownscaler->DownscalePicture(mRenderer->GetDeviceContext(), mFinalTransformer->GetTransformedSRV());
-
-		Microsoft::WRL::ComPtr<ID3D11Texture2D> downscaledTex;
-		mDownscaler->GetDownscaledSRV()->GetResource(reinterpret_cast<ID3D11Resource**>(downscaledTex.GetAddressOf()));
-
-		mBoardSaver->SaveBoardToFile(mRenderer->GetDevice(), mRenderer->GetDeviceContext(), downscaledTex.Get(), videoFrameFile);
-	}
-
-	if(drawFrame)
-	{
-		mRenderer->SetCurrentBoard(mFinalTransformer->GetTransformedSRV());
-		mRenderer->NeedRedraw();
-	}
+	mRenderer->SetCurrentBoard(mFinalTransformer->GetTransformedSRV());
+	mRenderer->NeedRedraw();
 }
 
-void FractalGen::FinishComputing(uint32_t spawnPeriod, const std::wstring& stabilityFile)
+void FractalGen::SaveCurrentVideoFrame(const std::wstring& videoFrameFile)
 {
-	if(!stabilityFile.empty())
-	{
-		mFinalTransformer->ComputeTransform(mRenderer->GetDeviceContext(), mStabilityCalculator->GetLastStabilityState(), spawnPeriod);
+	mDownscaler->DownscalePicture(mRenderer->GetDeviceContext(), mFinalTransformer->GetTransformedSRV());
 
-		Microsoft::WRL::ComPtr<ID3D11Texture2D> downscaledTex;
-		mFinalTransformer->GetTransformedSRV()->GetResource(reinterpret_cast<ID3D11Resource**>(downscaledTex.GetAddressOf()));
+	Microsoft::WRL::ComPtr<ID3D11Texture2D> downscaledTex;
+	mDownscaler->GetDownscaledSRV()->GetResource(reinterpret_cast<ID3D11Resource**>(downscaledTex.GetAddressOf()));
 
-		mBoardSaver->SaveBoardToFile(mRenderer->GetDevice(), mRenderer->GetDeviceContext(), downscaledTex.Get(), stabilityFile);
-	}
+	mBoardSaver->SaveVideoFrameToFile(mRenderer->GetDevice(), mRenderer->GetDeviceContext(), downscaledTex.Get(), videoFrameFile);
+}
+
+void FractalGen::SaveCurrentStep(const std::wstring& stabilityFile)
+{
+	Microsoft::WRL::ComPtr<ID3D11Texture2D> stabilityTex;
+	mFinalTransformer->GetTransformedSRV()->GetResource(reinterpret_cast<ID3D11Resource**>(stabilityTex.GetAddressOf()));
+
+	mBoardSaver->SaveBoardToFile(mRenderer->GetDevice(), mRenderer->GetDeviceContext(), stabilityTex.Get(), stabilityFile);
 }

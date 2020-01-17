@@ -3,7 +3,7 @@
 #include <d3dcompiler.h>
 #include "EqualityChecker.hpp"
 
-StabilityCalculator::StabilityCalculator(ID3D11Device* device): mBoardWidth(0), mBoardHeight(0)
+StabilityCalculator::StabilityCalculator(ID3D11Device* device): mBoardWidth(0), mBoardHeight(0), mCurrentStep(0)
 {
 	LoadShaderData(device);
 }
@@ -31,6 +31,8 @@ void StabilityCalculator::PrepareForCalculations(ID3D11Device* device, ID3D11Dev
 	std::swap(mCurrStabilityUAV, mPrevStabilityUAV);
 	std::swap(mCurrBoardSRV, mPrevBoardSRV);
 	std::swap(mCurrBoardUAV, mPrevBoardUAV);
+
+	mCurrentStep = 0;
 }
 
 void StabilityCalculator::StabilityNextStep(ID3D11DeviceContext* dc, ID3D11ShaderResourceView* clickRuleBuffer, ID3D11ShaderResourceView* clickRuleCounterBuffer, uint32_t spawnPeriod)
@@ -100,6 +102,23 @@ void StabilityCalculator::StabilityNextStep(ID3D11DeviceContext* dc, ID3D11Shade
 	std::swap(mCurrStabilityUAV, mPrevStabilityUAV);
 	std::swap(mCurrBoardSRV,     mPrevBoardSRV);
 	std::swap(mCurrBoardUAV,     mPrevBoardUAV);
+
+	mCurrentStep++;
+}
+
+uint32_t StabilityCalculator::GetBoardWidth() const
+{
+	return mBoardWidth;
+}
+
+uint32_t StabilityCalculator::GetBoardHeight() const
+{
+	return mBoardHeight;
+}
+
+uint32_t StabilityCalculator::GetCurrentStep() const
+{
+	return mCurrentStep;
 }
 
 uint32_t StabilityCalculator::GetDefaultSolutionPeriod() const

@@ -18,11 +18,6 @@ void Renderer::ResizePreviewArea(uint32_t newWidth, uint32_t newHeight)
 	NeedRedraw();
 }
 
-bool Renderer::CanDrawBoard() const
-{
-	return true;
-}
-
 void Renderer::NeedRedraw()
 {
 	mNeedRedraw = true;
@@ -157,6 +152,8 @@ void Renderer::CreateDeviceAndSwapChains(HWND previewWnd, HWND clickRuleWnd)
 	ThrowIfFailed(pFactory->EnumAdapters1(0, pAdapter.GetAddressOf()));
 
 	ThrowIfFailed(D3D11CreateDevice(pAdapter.Get(), D3D_DRIVER_TYPE_UNKNOWN, nullptr, flags, nullptr, 0, D3D11_SDK_VERSION, mDevice.GetAddressOf(), nullptr, mDeviceContext.GetAddressOf()));
+
+	ThrowIfFailed(mDevice->SetExceptionMode(D3D11_RAISE_FLAG_DRIVER_INTERNAL_ERROR));
 
 	RECT previewWndowRect;
 	GetClientRect(previewWnd, &previewWndowRect);

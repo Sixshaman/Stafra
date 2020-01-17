@@ -25,6 +25,10 @@ public:
 	void PrepareForCalculations(ID3D11Device* device, ID3D11DeviceContext* dc, ID3D11Texture2D* initialBoard, ID3D11Texture2D* restriction);
 	void StabilityNextStep(ID3D11DeviceContext* dc, ID3D11ShaderResourceView* clickRuleBuffer, ID3D11ShaderResourceView* clickRuleCounterBuffer, uint32_t spawnPeriod);
 
+	uint32_t GetBoardWidth()  const;
+	uint32_t GetBoardHeight() const;
+
+	uint32_t GetCurrentStep()           const;
 	uint32_t GetDefaultSolutionPeriod() const;
 
 	ID3D11ShaderResourceView* GetLastStabilityState() const;
@@ -70,6 +74,8 @@ private:
 
 	uint32_t mBoardWidth;
 	uint32_t mBoardHeight;
+
+	uint32_t mCurrentStep;
 
 	Microsoft::WRL::ComPtr<ID3D11Buffer> mCBufferParams;
 	CBParamsStruct                       mCBufferParamsCopy;

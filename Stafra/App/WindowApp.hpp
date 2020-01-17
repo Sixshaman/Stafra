@@ -8,6 +8,14 @@
 #include "CommandLineArguments.hpp"
 #include "..\Computing\FractalGen.hpp"
 
+enum class PlayMode
+{
+	MODE_STOP,
+	MODE_PAUSED,
+	MODE_SINGLE_FRAME,
+	MODE_CONTINUOUS_FRAMES
+};
+
 class WindowApp
 {
 public:
@@ -27,6 +35,8 @@ private:
 	void CalculateMinWindowSize();
 
 	void UpdateRendererForPreview();
+
+	std::wstring IntermediateStateString(uint32_t frameNumber) const;
 
 	void ParseCmdArgs(const CommandLineArguments& cmdArgs);
 
@@ -49,8 +59,9 @@ private:
 	CRITICAL_SECTION mRenderThreadLock;
 	bool             mRenderThreadRunning;
 	 
+	PlayMode mPlayMode;
+
 	bool mResizing;
-	bool mPaused;
-	bool mNeedToCalculateNextFrame;
 	bool mNeedToReinitComputing;
+	bool mSaveVideoFrames;
 };

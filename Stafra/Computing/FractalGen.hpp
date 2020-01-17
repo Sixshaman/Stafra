@@ -35,10 +35,16 @@ public:
 	void SetVideoFrameWidth(uint32_t width);
 	void SetVideoFrameHeight(uint32_t height);
 
-	void DoComputingPreparations(const std::wstring& initialBoardFile, const std::wstring& clickRuleFile, const std::wstring& restrictionFile);
-	void Tick(uint32_t spawnPeriod, const std::wstring& videoFrameFile);
-	void FinishComputing(uint32_t spawnPeriod, const std::wstring& stabilityFile);
+	void SetSpawnPeriod(uint32_t spawn);
+	void SetUseSmooth(bool smooth);
 
+	void ResetComputingParameters(const std::wstring& initialBoardFile, const std::wstring& clickRuleFile, const std::wstring& restrictionFile);
+	void Tick();
+
+	void SaveCurrentVideoFrame(const std::wstring& videoFrameFile); //Saves small image optimized for a video frame
+	void SaveCurrentStep(const std::wstring& stabilityFile);        //Saves full image, without downscaling
+
+	uint32_t GetCurrentFrame()   const;
 	uint32_t GetSolutionPeriod() const;
 
 private:
@@ -60,4 +66,8 @@ private:
 
 	uint32_t mVideoFrameWidth;
 	uint32_t mVideoFrameHeight;
+
+	uint32_t mSpawnPeriod;
+
+	bool mbUseSmoothTransform;
 };

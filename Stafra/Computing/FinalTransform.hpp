@@ -24,7 +24,7 @@ public:
 	~FinalTransformer();
 
 	void PrepareForTransform(ID3D11Device* device, uint32_t width, uint32_t height);
-	void ComputeTransform(ID3D11DeviceContext* dc, ID3D11ShaderResourceView* srv, uint32_t spawnPeriod);
+	void ComputeTransform(ID3D11DeviceContext* dc, ID3D11ShaderResourceView* srv, uint32_t spawnPeriod, bool useSmooth);
 
 	ID3D11ShaderResourceView* GetTransformedSRV() const;
 

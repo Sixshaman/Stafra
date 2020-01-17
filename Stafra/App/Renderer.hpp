@@ -12,8 +12,6 @@ public:
 
 	void ResizePreviewArea(uint32_t newWidth, uint32_t newHeight);
 
-	bool CanDrawBoard() const;
-
 	void NeedRedraw();
 	bool GetNeedRedraw() const;
 

@@ -17,9 +17,9 @@ void FinalTransformer::PrepareForTransform(ID3D11Device* device, uint32_t width,
 	ReinitTextures(device, mBoardWidth, mBoardHeight);
 }
 
-void FinalTransformer::ComputeTransform(ID3D11DeviceContext* dc, ID3D11ShaderResourceView* srv, uint32_t spawnPeriod)
+void FinalTransformer::ComputeTransform(ID3D11DeviceContext* dc, ID3D11ShaderResourceView* srv, uint32_t spawnPeriod, bool bUseSmooth)
 {
-	if(spawnPeriod == 0)
+	if(spawnPeriod == 0 || !bUseSmooth)
 	{
 		FinalStateTransform(dc, srv, mBoardWidth, mBoardHeight);
 	}

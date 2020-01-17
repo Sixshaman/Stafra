@@ -2,6 +2,7 @@
 #include <comdef.h>
 #include <CommCtrl.h>
 #include <algorithm>
+#include <sstream>
 
 #undef min
 #undef max
@@ -33,7 +34,7 @@ namespace
 }
 
 WindowApp::WindowApp(HINSTANCE hInstance, const CommandLineArguments& cmdArgs): mMainWindowHandle(nullptr), mPreviewAreaHandle(nullptr), mClickRuleAreaHandle(nullptr), 
-                                                                                mRenderThreadHandle(nullptr), mRenderThreadRunning(false), mPaused(false)
+                                                                                mRenderThreadHandle(nullptr), mRenderThreadRunning(false), mPlayMode(PlayMode::MODE_CONTINUOUS_FRAMES)
 {
 	InitializeCriticalSection(&mRenderThreadLock);
 
@@ -120,10 +121,20 @@ LRESULT CALLBACK WindowApp::AppProc(HWND hwnd, UINT message, WPARAM wparam, LPAR
 			that->mRenderer->NeedRedraw();
 			break;
 		case 'P':
-			that->mPaused = !that->mPaused;
+			if(that->mPlayMode == PlayMode::MODE_PAUSED)
+			{
+				that->mPlayMode = PlayMode::MODE_CONTINUOUS_FRAMES;
+			}
+			else
+			{
+				that->mPlayMode = PlayMode::MODE_PAUSED;
+			}
 			break;
 		case 'N':
-			that->mNeedToCalculateNextFrame = true;
+			if(that->mPlayMode == PlayMode::MODE_PAUSED)
+			{
+				that->mPlayMode = PlayMode::MODE_SINGLE_FRAME;
+			}
 			break;
 		default:
 			break;
@@ -205,7 +216,7 @@ DWORD WINAPI WindowApp::RenderThread(LPVOID lpParam)
 
 		if(that->mNeedToReinitComputing)
 		{
-			that->mFractalGen->DoComputingPreparations(L"InitialState.png", L"ClickRule.png", L"Restriction.png");
+			that->mFractalGen->ResetComputingParameters(L"InitialState.png", L"ClickRule.png", L"Restriction.png");
 			that->mNeedToReinitComputing = false;
 		}
 
@@ -219,11 +230,27 @@ DWORD WINAPI WindowApp::RenderThread(LPVOID lpParam)
 			that->mRenderer->DrawClickRule();
 		}
 
-		if(!that->mPaused || that->mNeedToCalculateNextFrame)
+		if(that->mPlayMode == PlayMode::MODE_SINGLE_FRAME || that->mPlayMode == PlayMode::MODE_CONTINUOUS_FRAMES)
 		{
-			that->mFractalGen->Tick(0, L"");
-			that->mNeedToCalculateNextFrame = false;
-		}
+			that->mFractalGen->Tick();
+
+			if(that->mPlayMode == PlayMode::MODE_SINGLE_FRAME)
+			{
+				that->mPlayMode = PlayMode::MODE_PAUSED;
+			}
+
+			if(that->mSaveVideoFrames)
+			{
+				std::wstring frameNumberStr = that->IntermediateStateString(that->mFractalGen->GetCurrentFrame());
+				that->mFractalGen->SaveCurrentVideoFrame(L"DiffStabil\\Stabl" + frameNumberStr + L".png");
+			}
+
+			if(that->mFractalGen->GetCurrentFrame() == that->mFractalGen->GetSolutionPeriod())
+			{
+				that->mFractalGen->SaveCurrentStep(L"Stability.png");
+				that->mPlayMode = PlayMode::MODE_PAUSED;
+			}
+		} 
 
 		LeaveCriticalSection(&that->mRenderThreadLock);
 	}
@@ -350,5 +377,21 @@ void WindowApp::ParseCmdArgs(const CommandLineArguments& cmdArgs)
 	mFractalGen->SetDefaultBoardWidth(boardSize);
 	mFractalGen->SetDefaultBoardHeight(boardSize);
 
-	
+	mFractalGen->SetVideoFrameWidth(1024);
+	mFractalGen->SetVideoFrameHeight(1024);
+
+	mFractalGen->SetSpawnPeriod(cmdArgs.SpawnPeriod());
+	mFractalGen->SetUseSmooth(cmdArgs.SmoothTransform());
+
+	mSaveVideoFrames = cmdArgs.SaveVideoFrames();
+}
+
+std::wstring WindowApp::IntermediateStateString(uint32_t frameNumber) const
+{
+	std::wostringstream namestr;
+	namestr.fill('0');
+	namestr.width(7); //Good enough
+	namestr << frameNumber;
+
+	return namestr.str();
 }
