@@ -13,7 +13,7 @@ void main(uint3 DTid: SV_DispatchThreadID)
 		uint clickRuleHeight;
 		gClickRuleTex.GetDimensions(clickRuleWidth, clickRuleHeight);
 
-		int2 clickOffset = (int2)(DTid.xy) - int2(clickRuleWidth / 2, clickRuleHeight / 2);
+		int2 clickOffset = (int2)(DTid.xy) - int2((clickRuleWidth - 1) / 2, (clickRuleHeight - 1) / 2);
 		gClickRuleCoordBuf.Append(clickOffset);
 	}
 }

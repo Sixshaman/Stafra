@@ -205,7 +205,7 @@ DWORD WINAPI WindowApp::RenderThread(LPVOID lpParam)
 
 		if(that->mNeedToReinitComputing)
 		{
-			that->mFractalGen->DoComputingPreparations(L"", L"", L"");
+			that->mFractalGen->DoComputingPreparations(L"InitialState.png", L"ClickRule.png", L"Restriction.png");
 			that->mNeedToReinitComputing = false;
 		}
 
@@ -349,4 +349,6 @@ void WindowApp::ParseCmdArgs(const CommandLineArguments& cmdArgs)
 
 	mFractalGen->SetDefaultBoardWidth(boardSize);
 	mFractalGen->SetDefaultBoardHeight(boardSize);
+
+	
 }
