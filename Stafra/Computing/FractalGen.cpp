@@ -30,6 +30,8 @@ FractalGen::FractalGen(Renderer* renderer): mRenderer(renderer), mDefaultBoardWi
 	mInitialStates = std::make_unique<InitialStates>(device);
 	mBoardLoader   = std::make_unique<BoardLoader>(device);
 	mBoardSaver    = std::make_unique<BoardSaver>();
+
+	mClickRules->InitDefault(mRenderer->GetDevice()); //WORKAROUND
 }
 
 FractalGen::~FractalGen()
@@ -100,14 +102,14 @@ void FractalGen::ResetComputingParameters(const std::wstring& initialBoardFile, 
 	Microsoft::WRL::ComPtr<ID3D11Texture2D> clickRuleTex;
 	mBoardLoader->LoadClickRuleFromFile(mRenderer->GetDevice(), mRenderer->GetDeviceContext(), clickRuleFile, clickRuleTex.GetAddressOf());
 
-	if(!clickRuleTex)
-	{
-		mClickRules->InitDefault(mRenderer->GetDevice());
-	}
-	else
-	{
-		mClickRules->CreateFromTexture(mRenderer->GetDevice(), clickRuleTex.Get());
-	}
+	//if(!clickRuleTex)
+	//{
+	//	mClickRules->InitDefault(mRenderer->GetDevice());
+	//}
+	//else
+	//{
+	//	mClickRules->CreateFromTexture(mRenderer->GetDevice(), clickRuleTex.Get());
+	//}
 
 	mClickRules->Bake(mRenderer->GetDeviceContext());
 
