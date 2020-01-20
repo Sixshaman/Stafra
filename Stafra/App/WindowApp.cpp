@@ -266,7 +266,7 @@ DWORD WINAPI WindowApp::RenderThread(LPVOID lpParam)
 
 		if(that->mNeedToReinitComputing)
 		{
-			that->mFractalGen->ResetComputingParameters(L"InitialState.png", L"ClickRule.png", L"Restriction.png");
+			that->mFractalGen->ResetComputingParameters(L"InitialState.png", L"Restriction.png");
 			that->mNeedToReinitComputing = false;
 		}
 
@@ -305,7 +305,7 @@ DWORD WINAPI WindowApp::RenderThread(LPVOID lpParam)
 			if(that->mFractalGen->GetCurrentFrame() == that->mFractalGen->GetSolutionPeriod())
 			{
 				that->mFractalGen->SaveCurrentStep(L"Stability.png");
-				that->mPlayMode = PlayMode::MODE_PAUSED;
+				//that->mPlayMode = PlayMode::MODE_PAUSED;
 			}
 		} 
 
@@ -441,6 +441,11 @@ void WindowApp::ParseCmdArgs(const CommandLineArguments& cmdArgs)
 	mFractalGen->SetUseSmooth(cmdArgs.SmoothTransform());
 
 	mSaveVideoFrames = cmdArgs.SaveVideoFrames();
+
+	if(!mFractalGen->LoadClickRuleFromFile(L"ClickRule.png"))
+	{
+		mFractalGen->InitDefaultClickRule();
+	}
 }
 
 std::wstring WindowApp::IntermediateStateString(uint32_t frameNumber) const

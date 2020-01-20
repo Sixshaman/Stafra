@@ -68,6 +68,32 @@ void FractalGen::SetUseSmooth(bool smooth)
 	mbUseSmoothTransform = smooth;
 }
 
+void FractalGen::InitDefaultClickRule()
+{
+	mClickRules->InitDefault(mRenderer->GetDevice());
+	mRenderer->SetCurrentClickRule(mClickRules->GetClickRuleImageSRV());
+	mRenderer->NeedRedrawClickRule();
+}
+
+bool FractalGen::LoadClickRuleFromFile(const std::wstring& clickRuleFile)
+{
+	Microsoft::WRL::ComPtr<ID3D11Texture2D> clickRuleTex;
+	mBoardLoader->LoadClickRuleFromFile(mRenderer->GetDevice(), mRenderer->GetDeviceContext(), clickRuleFile, clickRuleTex.GetAddressOf());
+
+	if(clickRuleTex)
+	{
+		mClickRules->CreateFromTexture(mRenderer->GetDevice(), clickRuleTex.Get());
+		mRenderer->SetCurrentClickRule(mClickRules->GetClickRuleImageSRV());
+		mRenderer->NeedRedrawClickRule();
+
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
+
 uint32_t FractalGen::GetCurrentFrame() const
 {
 	return mStabilityCalculator->GetCurrentStep();
@@ -89,7 +115,7 @@ void FractalGen::EditClickRule(float normalizedX, float normalizedY)
 	mRenderer->NeedRedrawClickRule();
 }
 
-void FractalGen::ResetComputingParameters(const std::wstring& initialBoardFile, const std::wstring& clickRuleFile, const std::wstring& restrictionFile)
+void FractalGen::ResetComputingParameters(const std::wstring& initialBoardFile, const std::wstring& restrictionFile)
 {
 	Microsoft::WRL::ComPtr<ID3D11Texture2D> initialBoardTex;
 	mBoardLoader->LoadBoardFromFile(mRenderer->GetDevice(), mRenderer->GetDeviceContext(), initialBoardFile, initialBoardTex.GetAddressOf());
@@ -98,18 +124,6 @@ void FractalGen::ResetComputingParameters(const std::wstring& initialBoardFile, 
 	{
 		mInitialStates->CreateBoard(mRenderer->GetDevice(), mRenderer->GetDeviceContext(), mDefaultBoardWidth, mDefaultBoardHeight, BoardClearMode::FOUR_CORNERS, initialBoardTex.GetAddressOf());
 	}
-
-	Microsoft::WRL::ComPtr<ID3D11Texture2D> clickRuleTex;
-	mBoardLoader->LoadClickRuleFromFile(mRenderer->GetDevice(), mRenderer->GetDeviceContext(), clickRuleFile, clickRuleTex.GetAddressOf());
-
-	//if(!clickRuleTex)
-	//{
-	//	mClickRules->InitDefault(mRenderer->GetDevice());
-	//}
-	//else
-	//{
-	//	mClickRules->CreateFromTexture(mRenderer->GetDevice(), clickRuleTex.Get());
-	//}
 
 	mClickRules->Bake(mRenderer->GetDeviceContext());
 

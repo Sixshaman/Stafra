@@ -24,14 +24,20 @@ float4 main(PixelIn pin): SV_TARGET
 	float  clickRuleVal   = gClickRuleTex[clickRuleCoords];
 	float4 clickRuleColor = clickRuleVal * float4(0.0f, 1.0f, 0.0f, 1.0f);
 
-	float2 texCCorr = CorrectTexCoords(pin.TexC, clickRuleSize);
+	float2 texCCorr  = CorrectTexCoords(pin.TexC, clickRuleSize);
+	float cellWidth  = 1.0f / clickRuleWidth;
+	float cellHeight = 1.0f / clickRuleHeight;
+
+	//float leftCellCoordX = texCor
+
+	bool onHorizontalMiddle = abs(texCCorr.x * 2.0f - 1.0f) < 0.005f;
+	bool onVerticalMiddle   = abs(texCCorr.y * 2.0f - 1.0f) < 0.005f;
+	bool onDiagonalTLBR     = abs(texCCorr.x - texCCorr.y + 0.0f) < 0.001f;
+	bool onDiagonalTRBL     = abs(texCCorr.x + texCCorr.y - 1.0f) < 0.001f;
 
 	//Draw the overlay
 	float4 overlayColor = float4(0.0f, 0.0f, 0.0f, 0.0f);
-	if(abs(texCCorr.x * 2.0f       - 1.0f) < 0.005f  //Horizontal middle
-	|| abs(texCCorr.y * 2.0f       - 1.0f) < 0.005f  //Vertical middle
-	|| abs(texCCorr.x - texCCorr.y + 0.0f) < 0.001f  //Diagonal top-left to bottom-right
-	|| abs(texCCorr.x + texCCorr.y - 1.0f) < 0.001f) //Diagonal top-right to bottom-left
+	if(onHorizontalMiddle || onVerticalMiddle || onDiagonalTLBR || onDiagonalTRBL)
 	{
 		overlayColor = float4(0.5f, 0.5f, 0.5f, 0.0f);
 	}

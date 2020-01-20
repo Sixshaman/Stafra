@@ -38,9 +38,11 @@ public:
 	void SetSpawnPeriod(uint32_t spawn);
 	void SetUseSmooth(bool smooth);
 
+	void InitDefaultClickRule();
+	bool LoadClickRuleFromFile(const std::wstring& clickRuleFile);
 	void EditClickRule(float normalizedX, float normalizedY);
 
-	void ResetComputingParameters(const std::wstring& initialBoardFile, const std::wstring& clickRuleFile, const std::wstring& restrictionFile);
+	void ResetComputingParameters(const std::wstring& initialBoardFile, const std::wstring& restrictionFile);
 	void Tick();
 
 	void SaveCurrentVideoFrame(const std::wstring& videoFrameFile); //Saves small image optimized for a video frame
