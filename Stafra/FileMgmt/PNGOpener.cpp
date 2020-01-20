@@ -20,9 +20,9 @@ PngOpener::~PngOpener()
 	png_destroy_read_struct(&mPngStruct, &mPngInfo, nullptr);
 }
 
-bool PngOpener::GetImageSize(const std::string& filename, size_t& width, size_t& height)
+bool PngOpener::GetImageSize(const std::wstring& filename, size_t& width, size_t& height)
 {
-	FileHandle fin(filename, "rb");
+	FileHandle fin(filename, L"rb");
 	if (!fin)
 	{
 		width  = 0;

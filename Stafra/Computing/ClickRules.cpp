@@ -14,10 +14,14 @@ ClickRules::~ClickRules()
 {
 }
 
-void ClickRules::GetDimensions(uint32_t& width, uint32_t& height)
+uint32_t ClickRules::GetWidth() const
 {
-	width  = mClickRuleWidth;
-	height = mClickRuleHeight;
+	return mClickRuleWidth;
+}
+
+uint32_t ClickRules::GetHeight() const
+{
+	return mClickRuleHeight;
 }
 
 void ClickRules::InitDefault(ID3D11Device* device)

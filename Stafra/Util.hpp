@@ -9,16 +9,16 @@ namespace Utils
 	class DXException
 	{
 	public:
-		DXException(HRESULT hr, const std::string& funcName, const std::string& filename, int32_t line);
-		std::string ToString() const;
+		DXException(HRESULT hr, const std::wstring& funcName, const std::wstring& filename, int32_t line);
+		std::wstring ToString() const;
 
 		HRESULT ToHR() const;
 
 	private:
-		HRESULT      mErrorCode;
-		std::string  mFuncName;
-		std::string  mFilename;
-		int32_t      mLineNumber;
+		HRESULT       mErrorCode;
+		std::wstring  mFuncName;
+		std::wstring  mFilename;
+		int32_t       mLineNumber;
 	};
 
 	const std::wstring GetShaderPath();
@@ -29,13 +29,13 @@ namespace Utils
 }
 
 #ifndef ThrowIfFailed
-#define ThrowIfFailed(x)                                        \
-{                                                               \
-	HRESULT __hr = (x);                                         \
-	if(FAILED(__hr))                                            \
-	{                                                           \
-		throw Utils::DXException(__hr, #x, __FILE__, __LINE__); \
-	}                                                           \
+#define ThrowIfFailed(x)                                          \
+{                                                                 \
+	HRESULT __hr = (x);                                           \
+	if(FAILED(__hr))                                              \
+	{                                                             \
+		throw Utils::DXException(__hr, L#x, __FILEW__, __LINE__); \
+	}                                                             \
 }
 #endif
 

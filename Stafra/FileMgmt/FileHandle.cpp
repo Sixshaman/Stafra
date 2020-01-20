@@ -1,8 +1,8 @@
 #include "FileHandle.hpp"
 
-FileHandle::FileHandle(const std::string& filename, const std::string& readMode) : mFile(nullptr)
+FileHandle::FileHandle(const std::wstring& filename, const std::wstring& readMode): mFile(nullptr)
 {
-	errno_t fileOpenErr = fopen_s(&mFile, filename.c_str(), readMode.c_str());
+	errno_t fileOpenErr = _wfopen_s(&mFile, filename.c_str(), readMode.c_str());
 }
 
 FileHandle::~FileHandle()

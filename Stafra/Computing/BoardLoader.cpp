@@ -5,7 +5,6 @@
 BoardLoader::BoardLoader(ID3D11Device* device)
 {
 	LoadShaderData(device);
-	ThrowIfFailed(CoInitializeEx(nullptr, COINIT_MULTITHREADED));
 }
 
 BoardLoader::~BoardLoader()

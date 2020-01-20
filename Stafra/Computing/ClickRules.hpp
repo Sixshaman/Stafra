@@ -16,7 +16,8 @@ public:
 	ClickRules(ID3D11Device* device);
 	~ClickRules();
 
-	void GetDimensions(uint32_t& width, uint32_t& height);
+	uint32_t GetWidth()  const;
+	uint32_t GetHeight() const;
 
 	void InitDefault(ID3D11Device* device);
 	void CreateFromTexture(ID3D11Device* device, ID3D11Texture2D* clickRuleTex);

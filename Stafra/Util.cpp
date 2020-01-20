@@ -4,7 +4,7 @@
 #include <wrl/client.h>
 #include <d3dcompiler.h>
 
-Utils::DXException::DXException(HRESULT hr, const std::string& funcName, const std::string& filename, int32_t line)
+Utils::DXException::DXException(HRESULT hr, const std::wstring& funcName, const std::wstring& filename, int32_t line)
 {
 	mErrorCode  = hr;
 	mFuncName   = funcName;
@@ -18,17 +18,17 @@ Utils::DXException::DXException(HRESULT hr, const std::string& funcName, const s
 	setlocale(LC_ALL, locale);
 }
 
-std::string Utils::DXException::ToString() const
+std::wstring Utils::DXException::ToString() const
 {
 	_com_error err(mErrorCode);
-	std::string msg = err.ErrorMessage();
+	std::wstring msg = err.ErrorMessage();
 
 	if(ToHR() == DXGI_ERROR_DEVICE_REMOVED)
 	{
-		msg = "DXGI_ERROR_DEVICE_REMOVED detected (probably killed by TDR mechanism). Your graphics card isn't good enough.";
+		msg = L"DXGI_ERROR_DEVICE_REMOVED detected (probably killed by TDR mechanism). Your graphics card isn't good enough.";
 	}
 
-	return "\r\n\r\n\r\n" + mFuncName + " failed in " + mFilename + "; line " + std::to_string(mLineNumber) + "; error: " + msg + "\r\n\r\n\r\n";
+	return L"\r\n\r\n\r\n" + mFuncName + L" failed in " + mFilename + L"; line " + std::to_wstring(mLineNumber) + L"; error: " + msg + L"\r\n\r\n\r\n";
 }
 
 HRESULT Utils::DXException::ToHR() const

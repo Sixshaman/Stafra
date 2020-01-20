@@ -4,9 +4,13 @@
 #include <algorithm>
 #include <sstream>
 #include <Windowsx.h>
+#include "FileDialog.hpp"
+#include "..\Util.hpp"
 
 #undef min
 #undef max
+
+#define MENU_SAVE_CLICK_RULE 1001
 
 namespace
 {
@@ -38,6 +42,8 @@ WindowApp::WindowApp(HINSTANCE hInstance, const CommandLineArguments& cmdArgs): 
                                                                                 mRenderThreadHandle(nullptr), mRenderThreadRunning(false), mPlayMode(PlayMode::MODE_CONTINUOUS_FRAMES),
 	                                                                            mNeedChangeClickRuleX(-1.0f), mNeedChangeClickRuleY(-1.0f)
 {
+	ThrowIfFailed(CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED)); //Shell functions (file save/open dialogs) don't like multithreaded environment
+
 	InitializeCriticalSection(&mRenderThreadLock);
 
 	CreateMainWindow(hInstance);
@@ -177,6 +183,18 @@ LRESULT CALLBACK WindowApp::AppProc(HWND hwnd, UINT message, WPARAM wparam, LPAR
 		}
 		break;
 	}
+	case WM_COMMAND:
+	{
+		if(HIWORD(wparam) == 0)
+		{
+			WindowApp* that = (WindowApp*)(GetWindowLongPtr(hwnd, GWLP_USERDATA));
+			if (that)
+			{
+				return that->OnMenuItem(LOWORD(wparam));
+			}
+		}
+		break;
+	}
 	case WM_LBUTTONDOWN:
 	{
 		WindowApp* that = (WindowApp*)(GetWindowLongPtr(hwnd, GWLP_USERDATA));
@@ -206,6 +224,39 @@ LRESULT CALLBACK WindowApp::AppProc(HWND hwnd, UINT message, WPARAM wparam, LPAR
 					that->mNeedChangeClickRuleX = (float)xClickRule / (float)clickRuleWidth;
 					that->mNeedChangeClickRuleY = (float)yClickRule / (float)clickRuleHeight;
 				}
+			}
+		}
+		return 0;
+	}
+	case WM_RBUTTONDOWN:
+	{
+		WindowApp* that = (WindowApp*)(GetWindowLongPtr(hwnd, GWLP_USERDATA));
+		if (that)
+		{
+			int xClick = GET_X_LPARAM(lparam);
+			int yClick = GET_Y_LPARAM(lparam);
+
+			RECT clickRuleRect;
+			GetWindowRect(that->mClickRuleAreaHandle, &clickRuleRect);
+			MapWindowPoints(nullptr, that->mMainWindowHandle, reinterpret_cast<LPPOINT>(&clickRuleRect), 2);
+
+			POINT pt;
+			pt.x = xClick;
+			pt.y = yClick;
+
+			if(PtInRect(&clickRuleRect, pt))
+			{
+				UINT saveClickRuleMenuFlags = MF_BYCOMMAND | MF_STRING;
+				if(that->mPlayMode != PlayMode::MODE_STOP)
+				{
+					saveClickRuleMenuFlags = saveClickRuleMenuFlags | MF_DISABLED;
+				}
+
+				ClientToScreen(that->mMainWindowHandle, &pt);
+
+				HMENU popupMenu = CreatePopupMenu();
+				InsertMenu(popupMenu, 0, saveClickRuleMenuFlags, MENU_SAVE_CLICK_RULE, L"Save click rule...");
+				TrackPopupMenu(popupMenu, TPM_LEFTALIGN | TPM_TOPALIGN | TPM_LEFTBUTTON | TPM_NOANIMATION, pt.x, pt.y, 0, that->mMainWindowHandle, nullptr);
 			}
 		}
 		return 0;
@@ -260,7 +311,7 @@ DWORD WINAPI WindowApp::RenderThread(LPVOID lpParam)
 	WindowApp* that = (WindowApp*)(lpParam);
 	that->mRenderThreadRunning = true;
 
-	while(that->mRenderThreadRunning)
+	while(that->mRenderThreadRunning) //Probably have to do something like a message queue
 	{
 		EnterCriticalSection(&that->mRenderThreadLock);
 
@@ -305,9 +356,14 @@ DWORD WINAPI WindowApp::RenderThread(LPVOID lpParam)
 			if(that->mFractalGen->GetCurrentFrame() == that->mFractalGen->GetSolutionPeriod())
 			{
 				that->mFractalGen->SaveCurrentStep(L"Stability.png");
-				//that->mPlayMode = PlayMode::MODE_PAUSED;
 			}
 		} 
+
+		if(!that->mNeedToSaveClickRuleFilename.empty())
+		{
+			that->mFractalGen->SaveClickRule(that->mNeedToSaveClickRuleFilename);
+			that->mNeedToSaveClickRuleFilename.clear();
+		}
 
 		LeaveCriticalSection(&that->mRenderThreadLock);
 	}
@@ -317,7 +373,7 @@ DWORD WINAPI WindowApp::RenderThread(LPVOID lpParam)
 
 void WindowApp::CreateMainWindow(HINSTANCE hInstance)
 {
-	LPCSTR windowClassName = "StabilityFractalClass";
+	LPCWSTR windowClassName = L"StabilityFractalClass";
 	
 	WNDCLASSEX wc;
 	wc.cbSize        = sizeof(WNDCLASSEX);
@@ -335,7 +391,7 @@ void WindowApp::CreateMainWindow(HINSTANCE hInstance)
 
 	if(!RegisterClassEx(&wc))
 	{
-		throw new std::exception(_com_error(GetLastError()).ErrorMessage());
+		ThrowIfFailed(GetLastError());
 	}
 
 	CalculateMinWindowSize();
@@ -353,7 +409,7 @@ void WindowApp::CreateMainWindow(HINSTANCE hInstance)
 	mMinWindowWidth  = clientRect.right  - clientRect.left;
 	mMinWindowHeight = clientRect.bottom - clientRect.top;
 
-	mMainWindowHandle = CreateWindowEx(wndStyleEx, windowClassName, "Stability fractal", wndStyle, clientRect.left, clientRect.top, mMinWindowWidth, mMinWindowHeight, nullptr, nullptr, hInstance, this);
+	mMainWindowHandle = CreateWindowEx(wndStyleEx, windowClassName, L"Stability fractal", wndStyle, clientRect.left, clientRect.top, mMinWindowWidth, mMinWindowHeight, nullptr, nullptr, hInstance, this);
 
 	UpdateWindow(mMainWindowHandle);
 	ShowWindow(mMainWindowHandle, SW_SHOW);
@@ -361,8 +417,8 @@ void WindowApp::CreateMainWindow(HINSTANCE hInstance)
 
 void WindowApp::CreateChildWindows(HINSTANCE hInstance)
 {
-	mPreviewAreaHandle   = CreateWindowEx(0, WC_STATIC, "Preview",   WS_CHILD, 0, 0, gPreviewAreaMinWidth, gPreviewAreaMinHeight, mMainWindowHandle, nullptr, hInstance, nullptr);
-	mClickRuleAreaHandle = CreateWindowEx(0, WC_STATIC, "ClickRule", WS_CHILD, 0, 0, gClickRuleAreaWidth,  gClickRuleAreaHeight,  mMainWindowHandle, nullptr, hInstance, nullptr);
+	mPreviewAreaHandle   = CreateWindowEx(0, WC_STATIC, L"Preview",   WS_CHILD, 0, 0, gPreviewAreaMinWidth, gPreviewAreaMinHeight, mMainWindowHandle, nullptr, hInstance, nullptr);
+	mClickRuleAreaHandle = CreateWindowEx(0, WC_STATIC, L"ClickRule", WS_CHILD, 0, 0, gClickRuleAreaWidth,  gClickRuleAreaHeight,  mMainWindowHandle, nullptr, hInstance, nullptr);
 
 	UpdateWindow(mPreviewAreaHandle);
 	ShowWindow(mPreviewAreaHandle, SW_SHOW);
@@ -448,11 +504,35 @@ void WindowApp::ParseCmdArgs(const CommandLineArguments& cmdArgs)
 	}
 }
 
+int WindowApp::OnMenuItem(uint32_t menuItem)
+{
+	switch (menuItem)
+	{
+	case MENU_SAVE_CLICK_RULE:
+	{
+		std::wstring clickRuleFilename = L"ClickRule.png";
+
+		FileDialog fileDialog;
+		if(fileDialog.GetFilenameToSave(mMainWindowHandle, clickRuleFilename))
+		{
+			mNeedToSaveClickRuleFilename = clickRuleFilename;
+		}
+		break;
+	}
+	default:
+		break;
+	}
+
+	return MNC_CLOSE;
+}
+
 std::wstring WindowApp::IntermediateStateString(uint32_t frameNumber) const
 {
+	const int zerosPadding = 7; //Good enough
+
 	std::wostringstream namestr;
 	namestr.fill('0');
-	namestr.width(7); //Good enough
+	namestr.width(zerosPadding);
 	namestr << frameNumber;
 
 	return namestr.str();

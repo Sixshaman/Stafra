@@ -16,7 +16,7 @@ public:
 	PngOpener(const PngOpener&&) = delete;
 	PngOpener operator=(const PngOpener&&) = delete;
 
-	bool GetImageSize(const std::string& filename, size_t& width, size_t& height);
+	bool GetImageSize(const std::wstring& filename, size_t& width, size_t& height);
 
 	bool operator!() const;
 

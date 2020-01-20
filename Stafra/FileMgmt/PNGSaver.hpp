@@ -4,6 +4,16 @@
 #include <string>
 #include <vector>
 
+struct RGBCOLOR
+{
+	float R;
+	float G;
+	float B;
+
+	RGBCOLOR();
+	RGBCOLOR(float r, float g, float b);
+};
+
 class PngSaver //This class is needed to save PNG data to file
 {
 public:
@@ -16,7 +26,7 @@ public:
 	PngSaver(const PngSaver&&)           = delete;
 	PngSaver operator=(const PngSaver&&) = delete;
 
-	void SavePngImage(const std::string& filename, size_t width, size_t height, size_t rowPitch, const std::vector<uint8_t>& grayscaleData);
+	void SavePngImage(const std::wstring& filename, size_t width, size_t height, size_t rowPitch, RGBCOLOR colorScheme, const std::vector<uint8_t>& grayscaleData);
 
 	bool operator!() const;
 

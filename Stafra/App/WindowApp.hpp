@@ -37,8 +37,10 @@ private:
 	void UpdateRendererForPreview();
 
 	std::wstring IntermediateStateString(uint32_t frameNumber) const;
-
+	
 	void ParseCmdArgs(const CommandLineArguments& cmdArgs);
+
+	int OnMenuItem(uint32_t menuItem);
 
 	static LRESULT CALLBACK AppProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam);
 
@@ -63,6 +65,8 @@ private:
 
 	float mNeedChangeClickRuleX;
 	float mNeedChangeClickRuleY;
+
+	std::wstring mNeedToSaveClickRuleFilename;
 
 	bool mResizing;
 	bool mNeedToReinitComputing;

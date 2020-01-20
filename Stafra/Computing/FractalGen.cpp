@@ -106,9 +106,8 @@ uint32_t FractalGen::GetSolutionPeriod() const
 
 void FractalGen::EditClickRule(float normalizedX, float normalizedY)
 {
-	uint32_t clickRuleWidth;
-	uint32_t clickRuleHeight;
-	mClickRules->GetDimensions(clickRuleWidth, clickRuleHeight);
+	uint32_t clickRuleWidth = mClickRules->GetWidth();
+	uint32_t clickRuleHeight = mClickRules->GetHeight();
 
 	mClickRules->EditCellState(mRenderer->GetDeviceContext(), (uint32_t)(clickRuleWidth * normalizedX), (uint32_t)(clickRuleHeight * normalizedY));
 	mRenderer->SetCurrentClickRule(mClickRules->GetClickRuleImageSRV());
@@ -135,11 +134,14 @@ void FractalGen::ResetComputingParameters(const std::wstring& initialBoardFile, 
 	uint32_t boardWidth  = mStabilityCalculator->GetBoardWidth();
 	uint32_t boardHeight = mStabilityCalculator->GetBoardHeight();
 
+	uint32_t clickRuleWidth  = mClickRules->GetWidth();
+	uint32_t clickRuleHeight = mClickRules->GetHeight();
+
 	mDownscaler->PrepareForDownscaling(mRenderer->GetDevice(), mVideoFrameWidth, mVideoFrameHeight);
 	mFinalTransformer->PrepareForTransform(mRenderer->GetDevice(), boardWidth, boardHeight);
 	mEqualityChecker->PrepareForCalculations(mRenderer->GetDevice(), boardWidth, boardHeight);
 
-	mBoardSaver->PrepareStagingTextures(mRenderer->GetDevice(), boardWidth, boardHeight, mVideoFrameWidth, mVideoFrameHeight);
+	mBoardSaver->PrepareStagingTextures(mRenderer->GetDevice(), boardWidth, boardHeight, mVideoFrameWidth, mVideoFrameHeight, clickRuleWidth, clickRuleHeight);
 
 	mRenderer->SetCurrentClickRule(mClickRules->GetClickRuleImageSRV());
 	mRenderer->NeedRedrawClickRule();
@@ -178,4 +180,12 @@ void FractalGen::SaveCurrentStep(const std::wstring& stabilityFile)
 	mFinalTransformer->GetTransformedSRV()->GetResource(reinterpret_cast<ID3D11Resource**>(stabilityTex.GetAddressOf()));
 
 	mBoardSaver->SaveBoardToFile(mRenderer->GetDevice(), mRenderer->GetDeviceContext(), stabilityTex.Get(), stabilityFile);
+}
+
+void FractalGen::SaveClickRule(const std::wstring& clickRuleFile)
+{
+	Microsoft::WRL::ComPtr<ID3D11Texture2D> clickRuleTex;
+	mClickRules->GetClickRuleImageSRV()->GetResource(reinterpret_cast<ID3D11Resource**>(clickRuleTex.GetAddressOf()));
+
+	mBoardSaver->SaveClickRuleToFile(mRenderer->GetDevice(), mRenderer->GetDeviceContext(), clickRuleTex.Get(), clickRuleFile);
 }

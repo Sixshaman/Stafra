@@ -43,14 +43,14 @@
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v142</PlatformToolset>
-    <CharacterSet>MultiByte</CharacterSet>
+    <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v142</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
-    <CharacterSet>MultiByte</CharacterSet>
+    <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -159,6 +159,7 @@
   <ItemGroup>
     <ClCompile Include="3rd party\WICTextureLoader.cpp" />
     <ClCompile Include="App\CommandLineArguments.cpp" />
+    <ClCompile Include="App\FileDialog.cpp" />
     <ClCompile Include="App\Renderer.cpp" />
     <ClCompile Include="App\WindowApp.cpp" />
     <ClCompile Include="Computing\BoardLoader.cpp" />
@@ -179,6 +180,7 @@
   <ItemGroup>
     <ClInclude Include="3rd party\WICTextureLoader.h" />
     <ClInclude Include="App\CommandLineArguments.hpp" />
+    <ClInclude Include="App\FileDialog.hpp" />
     <ClInclude Include="App\Renderer.hpp" />
     <ClInclude Include="App\WindowApp.hpp" />
     <ClInclude Include="Computing\BoardLoader.hpp" />

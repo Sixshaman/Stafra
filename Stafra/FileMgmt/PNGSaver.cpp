@@ -1,6 +1,14 @@
 #include "PNGSaver.hpp"
 #include "FileHandle.hpp"
 
+RGBCOLOR::RGBCOLOR(): R(1.0f), G(1.0f), B(1.0f)
+{
+}
+
+RGBCOLOR::RGBCOLOR(float r, float g, float b): R(r), G(g), B(b)
+{
+}
+
 PngSaver::PngSaver(): mPngStruct(nullptr), mPngInfo(nullptr)
 {
 	mPngStruct = png_create_write_struct(PNG_LIBPNG_VER_STRING, nullptr, nullptr, nullptr);
@@ -20,7 +28,7 @@ PngSaver::~PngSaver()
 	png_destroy_write_struct(&mPngStruct, &mPngInfo);
 }
 
-void PngSaver::SavePngImage(const std::string& filename, size_t width, size_t height, size_t rowPitch, const std::vector<uint8_t>& grayscaleData)
+void PngSaver::SavePngImage(const std::wstring& filename, size_t width, size_t height, size_t rowPitch, RGBCOLOR colorScheme, const std::vector<uint8_t>& grayscaleData)
 {
 	if(grayscaleData.size() < rowPitch * height)
 	{
@@ -40,9 +48,9 @@ void PngSaver::SavePngImage(const std::string& filename, size_t width, size_t he
 		std::vector<png_byte> row((size_t)width * 4);
 		for (size_t j = 0; j < width; j++)
 		{
-			row[j * 4 + 0] = grayscaleData[i * rowPitch + j];
-			row[j * 4 + 1] = 0;
-			row[j * 4 + 2] = grayscaleData[i * rowPitch + j];
+			row[j * 4 + 0] = (uint8_t)(grayscaleData[i * rowPitch + j] * colorScheme.R);
+			row[j * 4 + 1] = (uint8_t)(grayscaleData[i * rowPitch + j] * colorScheme.G);
+			row[j * 4 + 2] = (uint8_t)(grayscaleData[i * rowPitch + j] * colorScheme.B);
 			row[j * 4 + 3] = 255;
 		}
 
@@ -50,7 +58,7 @@ void PngSaver::SavePngImage(const std::string& filename, size_t width, size_t he
 		rowPointers[i] = &imgRows[i][0];
 	}
 
-	FileHandle fout(filename, "wb");
+	FileHandle fout(filename, L"wb");
 	if(!fout)
 	{
 		return;

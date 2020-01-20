@@ -6,7 +6,7 @@
 class FileHandle
 {
 public:
-	FileHandle(const std::string& filename, const std::string& readMode = "wb");
+	FileHandle(const std::wstring& filename, const std::wstring& readMode = L"wb");
 	~FileHandle();
 
 	FileHandle(const FileHandle&) = delete;

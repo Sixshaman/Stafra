@@ -105,6 +105,9 @@
     <ClCompile Include="Computing\ClickRules.cpp">
       <Filter>Computing</Filter>
     </ClCompile>
+    <ClCompile Include="App\FileDialog.cpp">
+      <Filter>App</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Util.hpp">
@@ -157,6 +160,9 @@
     </ClInclude>
     <ClInclude Include="Computing\ClickRules.hpp">
       <Filter>Computing</Filter>
+    </ClInclude>
+    <ClInclude Include="App\FileDialog.hpp">
+      <Filter>App</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
