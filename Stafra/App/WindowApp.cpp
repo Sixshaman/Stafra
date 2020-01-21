@@ -10,10 +10,28 @@
 #undef min
 #undef max
 
-#define MENU_SAVE_CLICK_RULE 1001
+#define MENU_SAVE_CLICK_RULE  1001
+#define MENU_OPEN_CLICK_RULE  1002
+#define MENU_OPEN_BOARD       1003
+#define MENU_SAVE_BOARD       1004
+#define MENU_OPEN_RESTRICTION 1005
+
+#define RENDER_THREAD_EXIT            WM_APP + 1
+#define RENDER_THREAD_REINIT          WM_APP + 2
+#define RENDER_THREAD_CLICK_RULE      WM_APP + 3
+#define RENDER_THREAD_LOAD_CLICK_RULE WM_APP + 4
+#define RENDER_THREAD_SAVE_CLICK_RULE WM_APP + 5
 
 namespace
 {
+	const int gMarginLeft = 5;
+	const int gMarginTop = 5;
+
+	const int gMarginRight = 5;
+	const int gMarginBottom = 5;
+
+	const int gSpacing = 5;
+
 	const int gPreviewAreaMinWidth  = 768;
 	const int gPreviewAreaMinHeight = 768;
 
@@ -23,26 +41,20 @@ namespace
 	const int gClickRuleAreaWidth  = gClickRuleImageWidth  * 9;
 	const int gClickRuleAreaHeight = gClickRuleImageHeight * 9;
 
-	const int gMarginLeft = 5;
-	const int gMarginTop  = 5;
-
-	const int gMarginRight  = 5;
-	const int gMarginBottom = 5;
-
-	const int gSpacing = 5;
+	const int gMinLogAreaWidth  = gClickRuleAreaWidth * 3;
+	const int gMinLogAreaHeight = gPreviewAreaMinHeight - gClickRuleAreaHeight - gSpacing;
 
 	const int gMinLeftSideWidth  = gPreviewAreaMinWidth;
 	const int gMinLeftSideHeight = gPreviewAreaMinHeight;
 
-	const int gMinRightSideWidth  = gClickRuleAreaWidth;
-	const int gMinRightSideHeight = gClickRuleAreaHeight;
+	const int gMinRightSideWidth  = gMinLogAreaWidth;
+	const int gMinRightSideHeight = gClickRuleAreaHeight + gSpacing + gMinLogAreaHeight;
 }
 
 WindowApp::WindowApp(HINSTANCE hInstance, const CommandLineArguments& cmdArgs): mMainWindowHandle(nullptr), mPreviewAreaHandle(nullptr), mClickRuleAreaHandle(nullptr), 
-                                                                                mRenderThreadHandle(nullptr), mRenderThreadRunning(false), mPlayMode(PlayMode::MODE_CONTINUOUS_FRAMES),
-	                                                                            mNeedChangeClickRuleX(-1.0f), mNeedChangeClickRuleY(-1.0f)
+                                                                                mRenderThreadHandle(nullptr), mCreateRenderThreadEvent(nullptr), mPlayMode(PlayMode::MODE_CONTINUOUS_FRAMES)
 {
-	ThrowIfFailed(CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED)); //Shell functions (file save/open dialogs) don't like multithreaded environment
+	ThrowIfFailed(CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED)); //Shell functions (file save/open dialogs) don't like multithreaded environment, so use COINIT_APARTMENTTHREADED instead of COINIT_MULTITHREADED
 
 	InitializeCriticalSection(&mRenderThreadLock);
 
@@ -56,7 +68,7 @@ WindowApp::WindowApp(HINSTANCE hInstance, const CommandLineArguments& cmdArgs): 
 	UpdateRendererForPreview();
 
 	ParseCmdArgs(cmdArgs);
-	mNeedToReinitComputing = true;
+	mFractalGen->ResetComputingParameters(L"InitialState.png", L"Restriction.png");
 
 	CreateBackgroundTaskThread();
 }
@@ -89,6 +101,11 @@ int WindowApp::Run()
 
 LRESULT CALLBACK WindowApp::AppProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam)
 {
+	if(!mRenderer) //Still in the initialization process
+	{
+		return DefWindowProc(hwnd, message, wparam, lparam);
+	}
+
 	switch(message)
 	{
 	case WM_CREATE:
@@ -101,201 +118,137 @@ LRESULT CALLBACK WindowApp::AppProc(HWND hwnd, UINT message, WPARAM wparam, LPAR
 	}
 	case WM_CLOSE:
 	{
-		WindowApp* that = (WindowApp*)(GetWindowLongPtr(hwnd, GWLP_USERDATA));
-		if(that)
-		{
-			that->CloseBackgroundTaskThread();
-		}
-
+		CloseBackgroundTaskThread();
 		PostQuitMessage(0);
 		break;
 	}
 	case WM_PAINT:
 	{
-		WindowApp* that = (WindowApp*)(GetWindowLongPtr(hwnd, GWLP_USERDATA));
-		if(that && that->mRenderer)
-		{
-			that->mRenderer->NeedRedraw();
-		}
+		mRenderer->NeedRedraw();
 		break;
 	}
 	case WM_KEYUP:
 	{
-		WindowApp* that = (WindowApp*)(GetWindowLongPtr(hwnd, GWLP_USERDATA));
-		switch (wparam)
-		{
-		case 'R':
-			that->mPlayMode = PlayMode::MODE_CONTINUOUS_FRAMES;
-			that->mNeedToReinitComputing = true;
-			that->mRenderer->NeedRedraw();
-			break;
-		case 'P':
-			if(that->mPlayMode != PlayMode::MODE_STOP)
-			{
-				if (that->mPlayMode == PlayMode::MODE_PAUSED)
-				{
-					that->mPlayMode = PlayMode::MODE_CONTINUOUS_FRAMES;
-				}
-				else
-				{
-					that->mPlayMode = PlayMode::MODE_PAUSED;
-				}
-			}
-			break;
-		case 'N':
-			if(that->mPlayMode == PlayMode::MODE_PAUSED)
-			{
-				that->mPlayMode = PlayMode::MODE_SINGLE_FRAME;
-			}
-			break;
-		case 'S':
-			if(that->mPlayMode == PlayMode::MODE_STOP)
-			{
-				that->mNeedToReinitComputing = true;
-				that->mPlayMode = PlayMode::MODE_CONTINUOUS_FRAMES;
-			}
-			else
-			{
-				that->mPlayMode = PlayMode::MODE_STOP;
-			}
-			break;
-		default:
-			break;
-		}
+		OnHotkey(wparam);
 		break;
 	}
 	case WM_ENTERSIZEMOVE:
 	{
-		WindowApp* that = (WindowApp*)(GetWindowLongPtr(hwnd, GWLP_USERDATA));
-		if (that)
-		{
-			that->mResizing = true;
-		}
+		mResizing = true;
 		break;
 	}
 	case WM_EXITSIZEMOVE:
 	{
-		WindowApp* that = (WindowApp*)(GetWindowLongPtr(hwnd, GWLP_USERDATA));
-		if(that)
-		{
-			that->mResizing = false;
-			that->UpdateRendererForPreview();
-		}
+		mResizing = false;
+		UpdateRendererForPreview();
 		break;
 	}
 	case WM_COMMAND:
 	{
 		if(HIWORD(wparam) == 0)
 		{
-			WindowApp* that = (WindowApp*)(GetWindowLongPtr(hwnd, GWLP_USERDATA));
-			if (that)
-			{
-				return that->OnMenuItem(LOWORD(wparam));
-			}
+			return OnMenuItem(LOWORD(wparam));
 		}
 		break;
 	}
 	case WM_LBUTTONDOWN:
 	{
-		WindowApp* that = (WindowApp*)(GetWindowLongPtr(hwnd, GWLP_USERDATA));
-		if(that)
+		int xClick = GET_X_LPARAM(lparam);
+		int yClick = GET_Y_LPARAM(lparam);
+
+		RECT clickRuleRect;
+		GetWindowRect(mClickRuleAreaHandle, &clickRuleRect);
+
+		POINT pt;
+		pt.x = xClick;
+		pt.y = yClick;
+		ClientToScreen(mMainWindowHandle, &pt);
+
+		if(PtInRect(&clickRuleRect, pt))
 		{
-			int xClick = GET_X_LPARAM(lparam);
-			int yClick = GET_Y_LPARAM(lparam);
-
-			RECT clickRuleRect;
-			GetWindowRect(that->mClickRuleAreaHandle, &clickRuleRect);
-			MapWindowPoints(nullptr, that->mMainWindowHandle, reinterpret_cast<LPPOINT>(&clickRuleRect), 2);
-
-			POINT pt;
-			pt.x = xClick;
-			pt.y = yClick;
-
-			if(PtInRect(&clickRuleRect, pt))
+			if(mPlayMode == PlayMode::MODE_STOP)
 			{
-				if(that->mPlayMode == PlayMode::MODE_STOP)
-				{
-					int xClickRule = xClick - clickRuleRect.left;
-					int yClickRule = yClick - clickRuleRect.top;
-
-					int clickRuleWidth  = clickRuleRect.right - clickRuleRect.left;
-					int clickRuleHeight = clickRuleRect.bottom - clickRuleRect.top;
-
-					that->mNeedChangeClickRuleX = (float)xClickRule / (float)clickRuleWidth;
-					that->mNeedChangeClickRuleY = (float)yClickRule / (float)clickRuleHeight;
-				}
+				LPARAM lparamThread = MAKELPARAM(pt.x, pt.y);
+				PostThreadMessage(mRenderThreadID, RENDER_THREAD_CLICK_RULE, 0, lparamThread);
 			}
 		}
 		return 0;
 	}
 	case WM_RBUTTONDOWN:
 	{
-		WindowApp* that = (WindowApp*)(GetWindowLongPtr(hwnd, GWLP_USERDATA));
-		if (that)
+		int xClick = GET_X_LPARAM(lparam);
+		int yClick = GET_Y_LPARAM(lparam);
+
+		RECT clickRuleRect;
+		GetWindowRect(mClickRuleAreaHandle, &clickRuleRect);
+
+		RECT previewRect;
+		GetWindowRect(mPreviewAreaHandle, &previewRect);
+
+		POINT pt;
+		pt.x = xClick;
+		pt.y = yClick;
+		ClientToScreen(mMainWindowHandle, &pt);
+
+		if(PtInRect(&clickRuleRect, pt))
 		{
-			int xClick = GET_X_LPARAM(lparam);
-			int yClick = GET_Y_LPARAM(lparam);
-
-			RECT clickRuleRect;
-			GetWindowRect(that->mClickRuleAreaHandle, &clickRuleRect);
-			MapWindowPoints(nullptr, that->mMainWindowHandle, reinterpret_cast<LPPOINT>(&clickRuleRect), 2);
-
-			POINT pt;
-			pt.x = xClick;
-			pt.y = yClick;
-
-			if(PtInRect(&clickRuleRect, pt))
+			UINT clickRuleMenuFlags = MF_BYCOMMAND | MF_STRING;
+			if(mPlayMode != PlayMode::MODE_STOP)
 			{
-				UINT saveClickRuleMenuFlags = MF_BYCOMMAND | MF_STRING;
-				if(that->mPlayMode != PlayMode::MODE_STOP)
-				{
-					saveClickRuleMenuFlags = saveClickRuleMenuFlags | MF_DISABLED;
-				}
-
-				ClientToScreen(that->mMainWindowHandle, &pt);
-
-				HMENU popupMenu = CreatePopupMenu();
-				InsertMenu(popupMenu, 0, saveClickRuleMenuFlags, MENU_SAVE_CLICK_RULE, L"Save click rule...");
-				TrackPopupMenu(popupMenu, TPM_LEFTALIGN | TPM_TOPALIGN | TPM_LEFTBUTTON | TPM_NOANIMATION, pt.x, pt.y, 0, that->mMainWindowHandle, nullptr);
+				clickRuleMenuFlags = clickRuleMenuFlags | MF_DISABLED;
 			}
+
+			HMENU popupMenu = CreatePopupMenu();
+			InsertMenu(popupMenu, 0, clickRuleMenuFlags, MENU_OPEN_CLICK_RULE, L"Open click rule...");
+			InsertMenu(popupMenu, 0, clickRuleMenuFlags, MENU_SAVE_CLICK_RULE, L"Save click rule...");
+			TrackPopupMenu(popupMenu, TPM_LEFTALIGN | TPM_TOPALIGN | TPM_LEFTBUTTON | TPM_NOANIMATION, pt.x, pt.y, 0, mMainWindowHandle, nullptr);
+		}
+		else if(PtInRect(&previewRect, pt))
+		{
+			UINT boardLoadMenuFlags = MF_BYCOMMAND | MF_STRING;
+			UINT boardSaveMenuFlags = MF_BYCOMMAND | MF_STRING;
+			if(mPlayMode != PlayMode::MODE_STOP)
+			{
+				boardLoadMenuFlags = boardLoadMenuFlags | MF_DISABLED;
+				if(mPlayMode != PlayMode::MODE_PAUSED)
+				{
+					boardSaveMenuFlags = boardSaveMenuFlags | MF_DISABLED;
+				}
+			}
+
+			HMENU popupMenu = CreatePopupMenu();
+			InsertMenu(popupMenu, 0, boardLoadMenuFlags, MENU_OPEN_BOARD, L"Open board...");
+			InsertMenu(popupMenu, 0, boardSaveMenuFlags, MENU_SAVE_BOARD, L"Save stability...");
+			TrackPopupMenu(popupMenu, TPM_LEFTALIGN | TPM_TOPALIGN | TPM_LEFTBUTTON | TPM_NOANIMATION, pt.x, pt.y, 0, mMainWindowHandle, nullptr);
 		}
 		return 0;
 	}
 	case WM_SIZE:
 	{
-		WindowApp* that = (WindowApp*)(GetWindowLongPtr(hwnd, GWLP_USERDATA));
-		if (that && that->mRenderer)
+		if(wparam == SIZE_RESTORED)
 		{
-			if (wparam == SIZE_RESTORED)
+			LayoutChildWindows();
+			if(!mResizing)
 			{
-				that->LayoutChildWindows();
-				if(!that->mResizing)
-				{
-					that->UpdateRendererForPreview();
-				}
+				UpdateRendererForPreview();
 			}
-			else if(wparam == SIZE_MAXIMIZED)
-			{
-				that->LayoutChildWindows();
-				that->UpdateRendererForPreview();
-			}
-			else
-			{
-			}
+		}
+		else if(wparam == SIZE_MAXIMIZED)
+		{
+			LayoutChildWindows();
+			UpdateRendererForPreview();
+		}
+		else
+		{
 		}
 		break;
 	}
 	case WM_GETMINMAXINFO:
 	{
-		WindowApp* that = (WindowApp*)(GetWindowLongPtr(hwnd, GWLP_USERDATA));
-		if(that)
-		{
-			LPMINMAXINFO minmaxInfo = (LPMINMAXINFO)(lparam);
-			minmaxInfo->ptMinTrackSize.x = that->mMinWindowWidth;
-			minmaxInfo->ptMinTrackSize.y = that->mMinWindowHeight;
-			return 0;
-		}
-		break;
+		LPMINMAXINFO minmaxInfo = (LPMINMAXINFO)(lparam);
+		minmaxInfo->ptMinTrackSize.x = mMinWindowWidth;
+		minmaxInfo->ptMinTrackSize.y = mMinWindowHeight;
+		return 0;
 	}
 	default:
 	{
@@ -306,66 +259,95 @@ LRESULT CALLBACK WindowApp::AppProc(HWND hwnd, UINT message, WPARAM wparam, LPAR
 	return DefWindowProc(hwnd, message, wparam, lparam);
 }
 
-DWORD WINAPI WindowApp::RenderThread(LPVOID lpParam)
+DWORD WINAPI WindowApp::RenderThread()
 {
-	WindowApp* that = (WindowApp*)(lpParam);
-	that->mRenderThreadRunning = true;
+	MSG threadMsg = {0};
+	PeekMessage(&threadMsg, nullptr, WM_USER, WM_USER, PM_NOREMOVE); //This creates the thread message queue
+	SetEvent(mCreateRenderThreadEvent);
 
-	while(that->mRenderThreadRunning) //Probably have to do something like a message queue
+	bool bThreadRunning = true;
+	while(bThreadRunning)
 	{
-		EnterCriticalSection(&that->mRenderThreadLock);
+		EnterCriticalSection(&mRenderThreadLock);
 
-		if(that->mNeedToReinitComputing)
+		PeekMessage(&threadMsg, nullptr, WM_APP, 0xBFFF, PM_REMOVE);
+
+		switch(threadMsg.message)
 		{
-			that->mFractalGen->ResetComputingParameters(L"InitialState.png", L"Restriction.png");
-			that->mNeedToReinitComputing = false;
+		case RENDER_THREAD_EXIT:
+		{
+			bThreadRunning = false;
+			break;
+		}
+		case RENDER_THREAD_REINIT:
+		{
+			mFractalGen->ResetComputingParameters(L"InitialState.png", L"Restriction.png");
+			break;
+		}
+		case RENDER_THREAD_CLICK_RULE:
+		{
+			int x = LOWORD(threadMsg.lParam);
+			int y = HIWORD(threadMsg.lParam);
+
+			RECT clickRuleRect;
+			GetWindowRect(mClickRuleAreaHandle, &clickRuleRect);
+
+			int xClickRule = x - clickRuleRect.left;
+			int yClickRule = y - clickRuleRect.top;
+
+			mFractalGen->EditClickRule((float)xClickRule / (float)(clickRuleRect.right - clickRuleRect.left), (float)yClickRule / (float)(clickRuleRect.bottom - clickRuleRect.top));
+			break;
+		}
+		case RENDER_THREAD_SAVE_CLICK_RULE:
+		{
+			//Catch the pointer
+			std::unique_ptr<std::wstring> clickRuleFilenamePtr(reinterpret_cast<std::wstring*>(threadMsg.lParam));
+			mFractalGen->SaveClickRule(*clickRuleFilenamePtr);
+			break;
+		}
+		case RENDER_THREAD_LOAD_CLICK_RULE:
+		{
+			//Catch the pointer
+			std::unique_ptr<std::wstring> clickRuleFilenamePtr(reinterpret_cast<std::wstring*>(threadMsg.lParam));
+			mFractalGen->LoadClickRuleFromFile(*clickRuleFilenamePtr);
+			break;
+		}
+		default:
+			break;
 		}
 
-		if(that->mPlayMode == PlayMode::MODE_STOP && that->mNeedChangeClickRuleX > 0.0f && that->mNeedChangeClickRuleY > 0.0f)
+		if(mRenderer->GetNeedRedraw())
 		{
-			that->mFractalGen->EditClickRule(that->mNeedChangeClickRuleX, that->mNeedChangeClickRuleY);
-			that->mNeedChangeClickRuleX = -1.0f;
-			that->mNeedChangeClickRuleY = -1.0f;
+			mRenderer->DrawPreview();
 		}
 
-		if(that->mRenderer->GetNeedRedraw())
+		if(mRenderer->GetNeedRedrawClickRule())
 		{
-			that->mRenderer->DrawPreview();
+			mRenderer->DrawClickRule();
 		}
 
-		if(that->mRenderer->GetNeedRedrawClickRule())
+		if(mPlayMode == PlayMode::MODE_SINGLE_FRAME || mPlayMode == PlayMode::MODE_CONTINUOUS_FRAMES)
 		{
-			that->mRenderer->DrawClickRule();
-		}
+			mFractalGen->Tick();
 
-		if(that->mPlayMode == PlayMode::MODE_SINGLE_FRAME || that->mPlayMode == PlayMode::MODE_CONTINUOUS_FRAMES)
-		{
-			that->mFractalGen->Tick();
-
-			if(that->mPlayMode == PlayMode::MODE_SINGLE_FRAME)
+			if(mPlayMode == PlayMode::MODE_SINGLE_FRAME)
 			{
-				that->mPlayMode = PlayMode::MODE_PAUSED;
+				mPlayMode = PlayMode::MODE_PAUSED;
 			}
 
-			if(that->mSaveVideoFrames)
+			if(mSaveVideoFrames)
 			{
-				std::wstring frameNumberStr = that->IntermediateStateString(that->mFractalGen->GetCurrentFrame());
-				that->mFractalGen->SaveCurrentVideoFrame(L"DiffStabil\\Stabl" + frameNumberStr + L".png");
+				std::wstring frameNumberStr = IntermediateStateString(mFractalGen->GetCurrentFrame());
+				mFractalGen->SaveCurrentVideoFrame(L"DiffStabil\\Stabl" + frameNumberStr + L".png");
 			}
 
-			if(that->mFractalGen->GetCurrentFrame() == that->mFractalGen->GetSolutionPeriod())
+			if(mFractalGen->GetCurrentFrame() == mFractalGen->GetSolutionPeriod())
 			{
-				that->mFractalGen->SaveCurrentStep(L"Stability.png");
+				mFractalGen->SaveCurrentStep(L"Stability.png");
 			}
-		} 
-
-		if(!that->mNeedToSaveClickRuleFilename.empty())
-		{
-			that->mFractalGen->SaveClickRule(that->mNeedToSaveClickRuleFilename);
-			that->mNeedToSaveClickRuleFilename.clear();
 		}
 
-		LeaveCriticalSection(&that->mRenderThreadLock);
+		LeaveCriticalSection(&mRenderThreadLock);
 	}
 
 	return 0;
@@ -378,16 +360,34 @@ void WindowApp::CreateMainWindow(HINSTANCE hInstance)
 	WNDCLASSEX wc;
 	wc.cbSize        = sizeof(WNDCLASSEX);
 	wc.style         = CS_HREDRAW | CS_VREDRAW | CS_PARENTDC;                                                                               
-	wc.lpfnWndProc   = WindowApp::AppProc;
 	wc.cbClsExtra    = 0;
 	wc.cbWndExtra    = 0;
 	wc.hInstance     = hInstance;
 	wc.hIcon         = nullptr;
 	wc.hIconSm       = nullptr;
-	wc.hCursor       = (HCURSOR)LoadImage(nullptr, MAKEINTRESOURCE(OCR_NORMAL), IMAGE_CURSOR, 0, 0, LR_DEFAULTSIZE | LR_SHARED);;
+	wc.hCursor       = (HCURSOR)LoadImage(nullptr, MAKEINTRESOURCE(OCR_NORMAL), IMAGE_CURSOR, 0, 0, LR_DEFAULTSIZE | LR_SHARED);
 	wc.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
 	wc.lpszMenuName  = nullptr;
 	wc.lpszClassName = windowClassName;
+	wc.lpfnWndProc   = [](HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam) -> LRESULT CALLBACK
+	{
+		if(message == WM_CREATE)
+		{
+			LPCREATESTRUCT createStruct = (LPCREATESTRUCT)(lparam);
+			WindowApp* that = (WindowApp*)(createStruct->lpCreateParams);
+
+			SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)(that));
+		}
+		else
+		{
+			WindowApp* that = (WindowApp*)(GetWindowLongPtr(hwnd, GWLP_USERDATA));
+			if(that)
+			{
+				return that->AppProc(hwnd, message, wparam, lparam);
+			}
+		}
+		return DefWindowProc(hwnd, message, wparam, lparam);
+	};
 
 	if(!RegisterClassEx(&wc))
 	{
@@ -429,15 +429,22 @@ void WindowApp::CreateChildWindows(HINSTANCE hInstance)
 
 void WindowApp::CreateBackgroundTaskThread()
 {
-	mRenderThreadHandle = CreateThread(nullptr, 0, RenderThread, this, 0, nullptr);
+	auto RenderThreadFunc = [](LPVOID lpParam) -> DWORD WINAPI
+	{
+		WindowApp* that = (WindowApp*)(lpParam);
+		return that->RenderThread();
+	};
+
+	mCreateRenderThreadEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+	mRenderThreadHandle = CreateThread(nullptr, 0, RenderThreadFunc, this, 0, nullptr);
+	WaitForSingleObject(mCreateRenderThreadEvent, INFINITE);
+
+	mRenderThreadID = GetThreadId(mRenderThreadHandle);
 }
 
 void WindowApp::CloseBackgroundTaskThread()
 {
-	EnterCriticalSection(&mRenderThreadLock);
-	mRenderThreadRunning = false;
-	LeaveCriticalSection(&mRenderThreadLock);
-
+	PostThreadMessage(mRenderThreadID, RENDER_THREAD_EXIT, 0, 0);
 	WaitForSingleObject(mRenderThreadHandle, 3000);
 	CloseHandle(mRenderThreadHandle);
 }
@@ -515,15 +522,91 @@ int WindowApp::OnMenuItem(uint32_t menuItem)
 		FileDialog fileDialog;
 		if(fileDialog.GetFilenameToSave(mMainWindowHandle, clickRuleFilename))
 		{
-			mNeedToSaveClickRuleFilename = clickRuleFilename;
+			std::unique_ptr<std::wstring> clickRuleFilenamePtr = std::make_unique<std::wstring>(clickRuleFilename);
+			PostThreadMessage(mRenderThreadID, RENDER_THREAD_SAVE_CLICK_RULE, 0, reinterpret_cast<LPARAM>(clickRuleFilenamePtr.release()));
+		}
+		break;
+	}
+	case MENU_OPEN_CLICK_RULE:
+	{
+		std::wstring clickRuleFilename = L"ClickRule.png";
+
+		FileDialog fileDialog;
+		if(fileDialog.GetFilenameToOpen(mMainWindowHandle, clickRuleFilename))
+		{
+			std::unique_ptr<std::wstring> clickRuleFilenamePtr = std::make_unique<std::wstring>(clickRuleFilename);
+			PostThreadMessage(mRenderThreadID, RENDER_THREAD_LOAD_CLICK_RULE, 0, reinterpret_cast<LPARAM>(clickRuleFilenamePtr.release()));
 		}
 		break;
 	}
 	default:
+	{
 		break;
+	}
 	}
 
 	return MNC_CLOSE;
+}
+
+int WindowApp::OnHotkey(uint32_t hotkey)
+{
+	switch (hotkey)
+	{
+	case 'R':
+	{
+		mPlayMode = PlayMode::MODE_CONTINUOUS_FRAMES;
+		PostThreadMessage(mRenderThreadID, RENDER_THREAD_REINIT, 0, 0);
+		mRenderer->NeedRedraw();
+		break;
+	}
+	case 'P':
+	{
+		if(mPlayMode != PlayMode::MODE_STOP)
+		{
+			if(mPlayMode == PlayMode::MODE_PAUSED)
+			{
+				mPlayMode = PlayMode::MODE_CONTINUOUS_FRAMES;
+			}
+			else
+			{
+				mPlayMode = PlayMode::MODE_PAUSED;
+			}
+		}
+		break;
+	}
+	case 'N':
+	{
+		if(mPlayMode == PlayMode::MODE_PAUSED)
+		{
+			mPlayMode = PlayMode::MODE_SINGLE_FRAME;
+		}
+		break;
+	}
+	case 'S':
+	{
+		if(mPlayMode == PlayMode::MODE_STOP)
+		{
+			PostThreadMessage(mRenderThreadID, RENDER_THREAD_REINIT, 0, 0);
+			mPlayMode = PlayMode::MODE_CONTINUOUS_FRAMES;
+		}
+		else
+		{
+			mPlayMode = PlayMode::MODE_STOP;
+		}
+		break;
+	}
+
+	default:
+	{
+		break;
+	}
+	}
+
+	return 0;
+}
+
+void WindowApp::Tick()
+{
 }
 
 std::wstring WindowApp::IntermediateStateString(uint32_t frameNumber) const

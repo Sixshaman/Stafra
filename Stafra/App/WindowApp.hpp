@@ -41,10 +41,13 @@ private:
 	void ParseCmdArgs(const CommandLineArguments& cmdArgs);
 
 	int OnMenuItem(uint32_t menuItem);
+	int OnHotkey(uint32_t hotkey);
 
-	static LRESULT CALLBACK AppProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam);
+	void Tick();
 
-	static DWORD WINAPI RenderThread(LPVOID lpParam);
+	LRESULT CALLBACK AppProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam);
+
+	DWORD WINAPI RenderThread();
 
 private:
 	std::unique_ptr<FractalGen> mFractalGen;
@@ -54,21 +57,17 @@ private:
 	HWND mPreviewAreaHandle;
 	HWND mClickRuleAreaHandle;
 
+	DWORD  mRenderThreadID;
+	HANDLE mRenderThreadHandle;
+	HANDLE mCreateRenderThreadEvent;
+
+	CRITICAL_SECTION mRenderThreadLock;
+
 	int mMinWindowWidth;
 	int mMinWindowHeight;
-
-	HANDLE           mRenderThreadHandle;
-	CRITICAL_SECTION mRenderThreadLock;
-	bool             mRenderThreadRunning;
 	 
 	PlayMode mPlayMode;
 
-	float mNeedChangeClickRuleX;
-	float mNeedChangeClickRuleY;
-
-	std::wstring mNeedToSaveClickRuleFilename;
-
 	bool mResizing;
-	bool mNeedToReinitComputing;
 	bool mSaveVideoFrames;
 };
