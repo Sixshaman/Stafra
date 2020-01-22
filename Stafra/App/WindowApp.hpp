@@ -28,8 +28,8 @@ private:
 	void CreateMainWindow(HINSTANCE hInstance);
 	void CreateChildWindows(HINSTANCE hInstance);
 
-	void CreateBackgroundTaskThread();
-	void CloseBackgroundTaskThread();
+	void CreateBackgroundTaskThreads();
+	void CloseBackgroundTaskThreads();
 
 	void LayoutChildWindows();
 	void CalculateMinWindowSize();
@@ -43,11 +43,10 @@ private:
 	int OnMenuItem(uint32_t menuItem);
 	int OnHotkey(uint32_t hotkey);
 
-	void Tick();
-
 	LRESULT CALLBACK AppProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam);
 
-	DWORD WINAPI RenderThread();
+	void RenderThreadFunc();
+	void TickThreadFunc();
 
 private:
 	std::unique_ptr<FractalGen> mFractalGen;
@@ -61,7 +60,9 @@ private:
 	HANDLE mRenderThreadHandle;
 	HANDLE mCreateRenderThreadEvent;
 
-	CRITICAL_SECTION mRenderThreadLock;
+	DWORD  mTickThreadID;
+	HANDLE mTickThreadHandle;
+	HANDLE mCreateTickThreadEvent;
 
 	int mMinWindowWidth;
 	int mMinWindowHeight;

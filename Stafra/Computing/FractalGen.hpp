@@ -73,6 +73,7 @@ private:
 	uint32_t mVideoFrameHeight;
 
 	uint32_t mSpawnPeriod;
+	bool     mCurrentlyComputing;
 
 	bool mbUseSmoothTransform;
 };

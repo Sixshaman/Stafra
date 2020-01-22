@@ -157,7 +157,10 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="3rd party\WICTextureLoader.cpp" />
+    <ClCompile Include="3rd party\WICTextureLoader.cpp">
+      <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">26812;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Release|x64'">26812;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
     <ClCompile Include="App\CommandLineArguments.cpp" />
     <ClCompile Include="App\FileDialog.cpp" />
     <ClCompile Include="App\Renderer.cpp" />

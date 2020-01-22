@@ -5,22 +5,22 @@
 
 namespace
 {
-	const size_t gDefaultPSize     = 10;
-	const size_t gDefaultEnlonging = 1;
-	const size_t gDefaultSpawn     = 0;
+	const uint32_t gDefaultPSize     = 10;
+	const uint32_t gDefaultEnlonging = 1;
+	const uint32_t gDefaultSpawn     = 0;
 
 	const bool gDefaultSaveVframes = false;
 	const bool gDefaultSmooth      = false;
 
 	//---------------------------------------
-	const size_t gMinimumPSize = 2;
-	const size_t gMaximumPSize = 14;
+	const uint32_t gMinimumPSize = 2;
+	const uint32_t gMaximumPSize = 14;
 
-	const size_t gMinimumEnlonging = 1;
-	const size_t gMaximumEnlonging = 50;
+	const uint32_t gMinimumEnlonging = 1;
+	const uint32_t gMaximumEnlonging = 50;
 
-	const size_t gMinimumSpawn = 0;
-	const size_t gMaximumSpawn = 9999;
+	const uint32_t gMinimumSpawn = 0;
+	const uint32_t gMaximumSpawn = 9999;
 }
 
 CommandLineArguments::CommandLineArguments(const std::string& cmdArgs): mPowSize(gDefaultPSize), mSaveVideoFrames(gDefaultSaveVframes), mSmoothTransform(gDefaultSmooth), mEnlonging(gDefaultEnlonging), mSpawnPeriod(gDefaultSpawn)
@@ -42,17 +42,17 @@ CommandLineArguments::~CommandLineArguments()
 {
 }
 
-size_t CommandLineArguments::PowSize() const
+uint32_t CommandLineArguments::PowSize() const
 {
 	return mPowSize;
 }
 
-size_t CommandLineArguments::Enlonging() const
+uint32_t CommandLineArguments::Enlonging() const
 {
 	return mEnlonging;
 }
 
-size_t CommandLineArguments::SpawnPeriod() const
+uint32_t CommandLineArguments::SpawnPeriod() const
 {
 	return mSpawnPeriod;
 }
@@ -67,9 +67,9 @@ bool CommandLineArguments::SmoothTransform() const
 	return mSmoothTransform;;
 }
 
-size_t CommandLineArguments::ParseInt(std::string intStr, size_t min, size_t max)
+uint32_t CommandLineArguments::ParseInt(std::string intStr, uint32_t min, uint32_t max)
 {
-	size_t parsedNumber = std::strtoull(intStr.c_str(), nullptr, 0);
+	uint32_t parsedNumber = std::strtoul(intStr.c_str(), nullptr, 0);
 	if(parsedNumber < min || parsedNumber > max)
 	{
 		return 0;
@@ -105,7 +105,7 @@ CmdParseResult CommandLineArguments::ParseArgs()
 			}
 			else
 			{
-				size_t powSize = ParseInt(mCmdLineArgs[++i], gMinimumPSize, gMaximumPSize);
+				uint32_t powSize = ParseInt(mCmdLineArgs[++i], gMinimumPSize, gMaximumPSize);
 				if(powSize == 0)
 				{
 					res = CmdParseResult::PARSE_WRONG_PSIZE;
@@ -125,7 +125,7 @@ CmdParseResult CommandLineArguments::ParseArgs()
 			}
 			else
 			{
-				size_t enlong = ParseInt(mCmdLineArgs[++i], gMinimumEnlonging, gMaximumEnlonging);
+				uint32_t enlong = ParseInt(mCmdLineArgs[++i], gMinimumEnlonging, gMaximumEnlonging);
 				if(enlong == 0)
 				{
 					res = CmdParseResult::PARSE_WRONG_ENLONGING;
@@ -145,7 +145,7 @@ CmdParseResult CommandLineArguments::ParseArgs()
 			}
 			else
 			{
-				size_t spawn = ParseInt(mCmdLineArgs[++i], gMinimumSpawn, gMaximumSpawn);
+				uint32_t spawn = ParseInt(mCmdLineArgs[++i], gMinimumSpawn, gMaximumSpawn);
 				mSpawnPeriod = spawn;
 			}
 		}

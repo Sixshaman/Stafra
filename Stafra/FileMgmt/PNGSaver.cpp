@@ -67,7 +67,7 @@ void PngSaver::SavePngImage(const std::wstring& filename, size_t width, size_t h
 	png_init_io(mPngStruct, fout.GetFilePointer());
 
 	png_set_IHDR(mPngStruct, mPngInfo,
-		         width, height,
+		         (png_uint_32)width, (png_uint_32)height,
 		         8,
 		         PNG_COLOR_TYPE_RGBA,
 		         PNG_INTERLACE_NONE,

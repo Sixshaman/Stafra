@@ -24,21 +24,21 @@ public:
 	std::string GetHelpMessage()                         const;
 	std::string GetErrorMessage(CmdParseResult parseRes) const;
 
-	size_t PowSize()         const;
-	size_t Enlonging()       const;
-	size_t SpawnPeriod()     const;
+	uint32_t PowSize()       const;
+	uint32_t Enlonging()     const;
+	uint32_t SpawnPeriod()   const;
 	bool   SaveVideoFrames() const;
 	bool   SmoothTransform() const;
 
 private:
-	size_t ParseInt(std::string intStr, size_t min, size_t max);
+	uint32_t ParseInt(std::string intStr, uint32_t min, uint32_t max);
 
 private:
 	std::vector<std::string> mCmdLineArgs;
 
-	size_t mPowSize;
-	size_t mEnlonging;
-	size_t mSpawnPeriod;
+	uint32_t mPowSize;
+	uint32_t mEnlonging;
+	uint32_t mSpawnPeriod;
 	bool   mSaveVideoFrames;
 	bool   mSmoothTransform;
 };

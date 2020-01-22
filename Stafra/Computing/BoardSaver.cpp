@@ -128,14 +128,16 @@ void BoardSaver::CopyClickRuleData(ID3D11DeviceContext* dc, ID3D11Texture2D* sta
 	dc->Unmap(stagingTex, 0);
 
 	//Mark highlight the edges of the click rule
-	for(int y = 0; y < imageHeight; y++)
+	for(uint32_t y = 0; y < imageHeight; y++)
 	{
-		clickRuleData[y * rowPitch + imageWidth - 1] = 2; //Right side
+		uint32_t rightCellindex = (uint32_t)(y * rowPitch + imageWidth - 1);
+		clickRuleData[rightCellindex] = 2;
 	}
 
-	for(int x = 0; x < imageWidth; x++)
+	for(uint32_t x = 0; x < imageWidth; x++)
 	{
-		clickRuleData[(imageHeight - 1) * rowPitch + x] = 2; //Bottom side
+		uint32_t bottomCellindex = (uint32_t)((imageHeight - 1) * rowPitch + x);
+		clickRuleData[bottomCellindex] = 2;
 	}
 
 	imageData.resize(clickRuleData.size());

@@ -106,16 +106,22 @@ uint32_t FractalGen::GetSolutionPeriod() const
 
 void FractalGen::EditClickRule(float normalizedX, float normalizedY)
 {
+	mCurrentlyComputing = true;
+
 	uint32_t clickRuleWidth = mClickRules->GetWidth();
 	uint32_t clickRuleHeight = mClickRules->GetHeight();
 
 	mClickRules->EditCellState(mRenderer->GetDeviceContext(), (uint32_t)(clickRuleWidth * normalizedX), (uint32_t)(clickRuleHeight * normalizedY));
 	mRenderer->SetCurrentClickRule(mClickRules->GetClickRuleImageSRV());
 	mRenderer->NeedRedrawClickRule();
+
+	mCurrentlyComputing = false;
 }
 
 void FractalGen::ResetComputingParameters(const std::wstring& initialBoardFile, const std::wstring& restrictionFile)
 {
+	mCurrentlyComputing = true;
+
 	Microsoft::WRL::ComPtr<ID3D11Texture2D> initialBoardTex;
 	mBoardLoader->LoadBoardFromFile(mRenderer->GetDevice(), mRenderer->GetDeviceContext(), initialBoardFile, initialBoardTex.GetAddressOf());
 
@@ -145,10 +151,14 @@ void FractalGen::ResetComputingParameters(const std::wstring& initialBoardFile, 
 
 	mRenderer->SetCurrentClickRule(mClickRules->GetClickRuleImageSRV());
 	mRenderer->NeedRedrawClickRule();
+
+	mCurrentlyComputing = false;
 }
 
 void FractalGen::Tick()
 {
+	mCurrentlyComputing = true;
+
 	ID3D11ShaderResourceView* clickRuleBufferSRV  = nullptr;
 	ID3D11ShaderResourceView* clickRuleCounterSRV = nullptr;
 	if(!mClickRules->IsDefault())
@@ -162,30 +172,44 @@ void FractalGen::Tick()
 
 	mRenderer->SetCurrentBoard(mFinalTransformer->GetTransformedSRV());
 	mRenderer->NeedRedraw();
+
+	mCurrentlyComputing = false;
 }
 
 void FractalGen::SaveCurrentVideoFrame(const std::wstring& videoFrameFile)
 {
+	mCurrentlyComputing = true;
+
 	mDownscaler->DownscalePicture(mRenderer->GetDeviceContext(), mFinalTransformer->GetTransformedSRV());
 
 	Microsoft::WRL::ComPtr<ID3D11Texture2D> downscaledTex;
 	mDownscaler->GetDownscaledSRV()->GetResource(reinterpret_cast<ID3D11Resource**>(downscaledTex.GetAddressOf()));
 
 	mBoardSaver->SaveVideoFrameToFile(mRenderer->GetDevice(), mRenderer->GetDeviceContext(), downscaledTex.Get(), videoFrameFile);
+
+	mCurrentlyComputing = false;
 }
 
 void FractalGen::SaveCurrentStep(const std::wstring& stabilityFile)
 {
+	mCurrentlyComputing = true;
+
 	Microsoft::WRL::ComPtr<ID3D11Texture2D> stabilityTex;
 	mFinalTransformer->GetTransformedSRV()->GetResource(reinterpret_cast<ID3D11Resource**>(stabilityTex.GetAddressOf()));
 
 	mBoardSaver->SaveBoardToFile(mRenderer->GetDevice(), mRenderer->GetDeviceContext(), stabilityTex.Get(), stabilityFile);
+
+	mCurrentlyComputing = false;
 }
 
 void FractalGen::SaveClickRule(const std::wstring& clickRuleFile)
 {
+	mCurrentlyComputing = true;
+
 	Microsoft::WRL::ComPtr<ID3D11Texture2D> clickRuleTex;
 	mClickRules->GetClickRuleImageSRV()->GetResource(reinterpret_cast<ID3D11Resource**>(clickRuleTex.GetAddressOf()));
 
 	mBoardSaver->SaveClickRuleToFile(mRenderer->GetDevice(), mRenderer->GetDeviceContext(), clickRuleTex.Get(), clickRuleFile);
+	
+	mCurrentlyComputing = false;
 }

@@ -14,9 +14,11 @@ public:
 
 	void NeedRedraw();
 	bool GetNeedRedraw() const;
+	bool ConsumeNeedRedraw();
 
 	void NeedRedrawClickRule();
 	bool GetNeedRedrawClickRule() const;
+	bool ConsumeNeedRedrawClickRule();
 
 	void DrawPreview();   //Only to be called from the background thread
 	void DrawClickRule(); //Only to be called from the background thread

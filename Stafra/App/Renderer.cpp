@@ -28,6 +28,19 @@ bool Renderer::GetNeedRedraw() const
 	return mNeedRedraw;
 }
 
+bool Renderer::ConsumeNeedRedraw()
+{
+	if(mNeedRedraw)
+	{
+		mNeedRedraw = false;
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
+
 void Renderer::NeedRedrawClickRule()
 {
 	mNeedRedrawClickRule = true;
@@ -36,6 +49,19 @@ void Renderer::NeedRedrawClickRule()
 bool Renderer::GetNeedRedrawClickRule() const
 {
 	return mNeedRedrawClickRule;
+}
+
+bool Renderer::ConsumeNeedRedrawClickRule()
+{
+	if(mNeedRedrawClickRule)
+	{
+		mNeedRedrawClickRule = false;
+		return true;
+	}
+	else
+	{
+		return false;
+	}
 }
 
 void Renderer::SetCurrentBoard(ID3D11ShaderResourceView* srv)

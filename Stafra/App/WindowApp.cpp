@@ -16,11 +16,20 @@
 #define MENU_SAVE_BOARD       1004
 #define MENU_OPEN_RESTRICTION 1005
 
-#define RENDER_THREAD_EXIT            WM_APP + 1
-#define RENDER_THREAD_REINIT          WM_APP + 2
-#define RENDER_THREAD_CLICK_RULE      WM_APP + 3
-#define RENDER_THREAD_LOAD_CLICK_RULE WM_APP + 4
-#define RENDER_THREAD_SAVE_CLICK_RULE WM_APP + 5
+#define RENDER_THREAD_EXIT              WM_APP + 1
+#define RENDER_THREAD_REINIT            WM_APP + 2
+#define RENDER_THREAD_CLICK_RULE        WM_APP + 3
+#define RENDER_THREAD_LOAD_CLICK_RULE   WM_APP + 4
+#define RENDER_THREAD_SAVE_CLICK_RULE   WM_APP + 5
+#define RENDER_THREAD_LOAD_BOARD        WM_APP + 6
+#define RENDER_THREAD_SAVE_STABILITY    WM_APP + 7
+#define RENDER_THREAD_SAVE_VIDEO_FRAME  WM_APP + 8
+#define RENDER_THREAD_REDRAW            WM_APP + 9
+#define RENDER_THREAD_REDRAW_CLICK_RULE WM_APP + 10
+#define RENDER_THREAD_COMPUTE_TICK      WM_APP + 11
+#define RENDER_THREAD_RESIZE            WM_APP + 12
+
+#define TICK_THREAD_EXIT WM_APP + 101
 
 namespace
 {
@@ -56,8 +65,6 @@ WindowApp::WindowApp(HINSTANCE hInstance, const CommandLineArguments& cmdArgs): 
 {
 	ThrowIfFailed(CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED)); //Shell functions (file save/open dialogs) don't like multithreaded environment, so use COINIT_APARTMENTTHREADED instead of COINIT_MULTITHREADED
 
-	InitializeCriticalSection(&mRenderThreadLock);
-
 	CreateMainWindow(hInstance);
 	CreateChildWindows(hInstance);
 
@@ -70,13 +77,11 @@ WindowApp::WindowApp(HINSTANCE hInstance, const CommandLineArguments& cmdArgs): 
 	ParseCmdArgs(cmdArgs);
 	mFractalGen->ResetComputingParameters(L"InitialState.png", L"Restriction.png");
 
-	CreateBackgroundTaskThread();
+	CreateBackgroundTaskThreads();
 }
 
 WindowApp::~WindowApp()
 {
-	DeleteCriticalSection(&mRenderThreadLock);
-
 	DestroyWindow(mPreviewAreaHandle);
 	DestroyWindow(mClickRuleAreaHandle);
 	DestroyWindow(mMainWindowHandle);
@@ -118,7 +123,7 @@ LRESULT CALLBACK WindowApp::AppProc(HWND hwnd, UINT message, WPARAM wparam, LPAR
 	}
 	case WM_CLOSE:
 	{
-		CloseBackgroundTaskThread();
+		CloseBackgroundTaskThreads();
 		PostQuitMessage(0);
 		break;
 	}
@@ -129,7 +134,7 @@ LRESULT CALLBACK WindowApp::AppProc(HWND hwnd, UINT message, WPARAM wparam, LPAR
 	}
 	case WM_KEYUP:
 	{
-		OnHotkey(wparam);
+		OnHotkey((uint32_t)wparam);
 		break;
 	}
 	case WM_ENTERSIZEMOVE:
@@ -259,7 +264,7 @@ LRESULT CALLBACK WindowApp::AppProc(HWND hwnd, UINT message, WPARAM wparam, LPAR
 	return DefWindowProc(hwnd, message, wparam, lparam);
 }
 
-DWORD WINAPI WindowApp::RenderThread()
+void WindowApp::RenderThreadFunc()
 {
 	MSG threadMsg = {0};
 	PeekMessage(&threadMsg, nullptr, WM_USER, WM_USER, PM_NOREMOVE); //This creates the thread message queue
@@ -268,11 +273,9 @@ DWORD WINAPI WindowApp::RenderThread()
 	bool bThreadRunning = true;
 	while(bThreadRunning)
 	{
-		EnterCriticalSection(&mRenderThreadLock);
+		GetMessage(&threadMsg, (HWND)(-1), WM_APP, 0xBFFF);
 
-		PeekMessage(&threadMsg, nullptr, WM_APP, 0xBFFF, PM_REMOVE);
-
-		switch(threadMsg.message)
+		switch (threadMsg.message)
 		{
 		case RENDER_THREAD_EXIT:
 		{
@@ -282,6 +285,14 @@ DWORD WINAPI WindowApp::RenderThread()
 		case RENDER_THREAD_REINIT:
 		{
 			mFractalGen->ResetComputingParameters(L"InitialState.png", L"Restriction.png");
+			break;
+		}
+		case RENDER_THREAD_RESIZE:
+		{
+			int width  = LOWORD(threadMsg.lParam);
+			int height = HIWORD(threadMsg.lParam);
+
+			mRenderer->ResizePreviewArea(width, height);
 			break;
 		}
 		case RENDER_THREAD_CLICK_RULE:
@@ -312,45 +323,100 @@ DWORD WINAPI WindowApp::RenderThread()
 			mFractalGen->LoadClickRuleFromFile(*clickRuleFilenamePtr);
 			break;
 		}
+		case RENDER_THREAD_LOAD_BOARD:
+		{
+			//Catch the pointer
+			//std::unique_ptr<std::wstring> boardFilenamePtr(reinterpret_cast<std::wstring*>(threadMsg.lParam));
+			//mFractalGen->LoadBoard(*boardFilenamePtr);
+			break;
+		}
+		case RENDER_THREAD_SAVE_STABILITY:
+		{
+			//Catch the pointer
+			std::unique_ptr<std::wstring> stabilityFilenamePtr(reinterpret_cast<std::wstring*>(threadMsg.lParam));
+			mFractalGen->SaveCurrentStep(*stabilityFilenamePtr);
+			break;
+		}
+		case RENDER_THREAD_SAVE_VIDEO_FRAME:
+		{
+			//Catch the pointer
+			std::unique_ptr<std::wstring> frameFilenamePtr(reinterpret_cast<std::wstring*>(threadMsg.lParam));
+			mFractalGen->SaveCurrentVideoFrame(*frameFilenamePtr);
+			break;
+		}
+		case RENDER_THREAD_REDRAW:
+		{
+			mRenderer->DrawPreview();
+			break;
+		}
+		case RENDER_THREAD_REDRAW_CLICK_RULE:
+		{
+			mRenderer->DrawClickRule();
+			break;
+		}
+		case RENDER_THREAD_COMPUTE_TICK:
+		{
+			mFractalGen->Tick();
+			break;
+		}
 		default:
 			break;
 		}
-
-		if(mRenderer->GetNeedRedraw())
-		{
-			mRenderer->DrawPreview();
-		}
-
-		if(mRenderer->GetNeedRedrawClickRule())
-		{
-			mRenderer->DrawClickRule();
-		}
-
-		if(mPlayMode == PlayMode::MODE_SINGLE_FRAME || mPlayMode == PlayMode::MODE_CONTINUOUS_FRAMES)
-		{
-			mFractalGen->Tick();
-
-			if(mPlayMode == PlayMode::MODE_SINGLE_FRAME)
-			{
-				mPlayMode = PlayMode::MODE_PAUSED;
-			}
-
-			if(mSaveVideoFrames)
-			{
-				std::wstring frameNumberStr = IntermediateStateString(mFractalGen->GetCurrentFrame());
-				mFractalGen->SaveCurrentVideoFrame(L"DiffStabil\\Stabl" + frameNumberStr + L".png");
-			}
-
-			if(mFractalGen->GetCurrentFrame() == mFractalGen->GetSolutionPeriod())
-			{
-				mFractalGen->SaveCurrentStep(L"Stability.png");
-			}
-		}
-
-		LeaveCriticalSection(&mRenderThreadLock);
 	}
+}
 
-	return 0;
+void WindowApp::TickThreadFunc()
+{
+	MSG threadMsg = { 0 };
+	PeekMessage(&threadMsg, nullptr, WM_USER, WM_USER, PM_NOREMOVE); //This creates the thread message queue
+	SetEvent(mCreateTickThreadEvent);
+
+	while(true)
+	{
+		PeekMessage(&threadMsg, (HWND)(-1), WM_APP, 0xBFFF, PM_REMOVE);
+		if(threadMsg.message == TICK_THREAD_EXIT)
+		{
+			break;
+		}
+		else
+		{
+			if(mRenderer->ConsumeNeedRedraw())
+			{
+				PostThreadMessage(mRenderThreadID, RENDER_THREAD_REDRAW, 0, 0);
+			}
+
+			if(mRenderer->ConsumeNeedRedrawClickRule())
+			{
+				PostThreadMessage(mRenderThreadID, RENDER_THREAD_REDRAW_CLICK_RULE, 0, 0);
+			}
+
+			if(mPlayMode == PlayMode::MODE_SINGLE_FRAME || mPlayMode == PlayMode::MODE_CONTINUOUS_FRAMES)
+			{
+				PostThreadMessage(mRenderThreadID, RENDER_THREAD_COMPUTE_TICK, 0, 0);
+
+				if(mPlayMode == PlayMode::MODE_SINGLE_FRAME)
+				{
+					mPlayMode = PlayMode::MODE_PAUSED;
+				}
+
+				if(mSaveVideoFrames)
+				{
+					std::wstring frameNumberStr = IntermediateStateString(mFractalGen->GetCurrentFrame());
+
+					std::unique_ptr<std::wstring> frameFilenamePtr = std::make_unique<std::wstring>(L"DiffStabil\\Stabl" + frameNumberStr + L".png");
+					PostThreadMessage(mRenderThreadID, RENDER_THREAD_SAVE_VIDEO_FRAME, 0, reinterpret_cast<LPARAM>(frameFilenamePtr.release()));
+				}
+
+				if(mFractalGen->GetCurrentFrame() == mFractalGen->GetSolutionPeriod())
+				{
+					std::unique_ptr<std::wstring> stabilityFilenamePtr = std::make_unique<std::wstring>(L"Stability.png");
+					PostThreadMessage(mRenderThreadID, RENDER_THREAD_SAVE_STABILITY, 0, reinterpret_cast<LPARAM>(stabilityFilenamePtr.release()));
+				}
+			}
+
+			Sleep(15); //Stop this thread from posting too many messages
+		}
+	}	
 }
 
 void WindowApp::CreateMainWindow(HINSTANCE hInstance)
@@ -369,7 +435,7 @@ void WindowApp::CreateMainWindow(HINSTANCE hInstance)
 	wc.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
 	wc.lpszMenuName  = nullptr;
 	wc.lpszClassName = windowClassName;
-	wc.lpfnWndProc   = [](HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam) -> LRESULT CALLBACK
+	wc.lpfnWndProc   = [](HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam) -> LRESULT
 	{
 		if(message == WM_CREATE)
 		{
@@ -427,25 +493,69 @@ void WindowApp::CreateChildWindows(HINSTANCE hInstance)
 	ShowWindow(mClickRuleAreaHandle, SW_SHOW);
 }
 
-void WindowApp::CreateBackgroundTaskThread()
+void WindowApp::CreateBackgroundTaskThreads()
 {
-	auto RenderThreadFunc = [](LPVOID lpParam) -> DWORD WINAPI
+	auto RenderThreadProc = [](LPVOID lpParam) -> DWORD
 	{
 		WindowApp* that = (WindowApp*)(lpParam);
-		return that->RenderThread();
+		that->RenderThreadFunc();
+		return 0;
+	};
+
+	auto TickThreadProc = [](LPVOID lpParam) -> DWORD
+	{
+		WindowApp* that = (WindowApp*)(lpParam);
+		that->TickThreadFunc();
+		return 0;
 	};
 
 	mCreateRenderThreadEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
-	mRenderThreadHandle = CreateThread(nullptr, 0, RenderThreadFunc, this, 0, nullptr);
-	WaitForSingleObject(mCreateRenderThreadEvent, INFINITE);
+	if(mCreateRenderThreadEvent)
+	{
+		mRenderThreadHandle = CreateThread(nullptr, 0, RenderThreadProc, this, 0, nullptr);
+		if(mRenderThreadHandle)
+		{
+			mRenderThreadID = GetThreadId(mRenderThreadHandle);
+			WaitForSingleObject(mCreateRenderThreadEvent, INFINITE);
+		}
+		else
+		{
+			ThrowIfFailed(GetLastError());
+		}
+	}
+	else
+	{
+		ThrowIfFailed(GetLastError());
+	}
 
-	mRenderThreadID = GetThreadId(mRenderThreadHandle);
+	mCreateTickThreadEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+	if(mCreateTickThreadEvent)
+	{
+		mTickThreadHandle = CreateThread(nullptr, 0, TickThreadProc, this, 0, nullptr);
+		if(mTickThreadHandle)
+		{
+			WaitForSingleObject(mCreateTickThreadEvent, INFINITE);
+			mTickThreadID = GetThreadId(mTickThreadHandle);
+		}
+		else
+		{
+			ThrowIfFailed(GetLastError());
+		}
+	}
+	else
+	{
+		ThrowIfFailed(GetLastError());
+	}
 }
 
-void WindowApp::CloseBackgroundTaskThread()
+void WindowApp::CloseBackgroundTaskThreads()
 {
+	PostThreadMessage(mTickThreadID, TICK_THREAD_EXIT, 0, 0);
+	WaitForSingleObject(mTickThreadHandle, 5000);
+	CloseHandle(mTickThreadHandle);
+
 	PostThreadMessage(mRenderThreadID, RENDER_THREAD_EXIT, 0, 0);
-	WaitForSingleObject(mRenderThreadHandle, 3000);
+	WaitForSingleObject(mRenderThreadHandle, 5000);
 	CloseHandle(mRenderThreadHandle);
 }
 
@@ -477,16 +587,14 @@ void WindowApp::CalculateMinWindowSize()
 
 void WindowApp::UpdateRendererForPreview()
 {
-	EnterCriticalSection(&mRenderThreadLock);
-
 	RECT previewAreaRect;
 	GetClientRect(mPreviewAreaHandle, &previewAreaRect);
 
-	int previewWidth  = previewAreaRect.right - previewAreaRect.left;
+	int previewWidth  = previewAreaRect.right  - previewAreaRect.left;
 	int previewHeight = previewAreaRect.bottom - previewAreaRect.top;
-	mRenderer->ResizePreviewArea(previewWidth, previewHeight);
 
-	LeaveCriticalSection(&mRenderThreadLock);
+	LPARAM lparam = MAKELPARAM(previewWidth, previewHeight);
+	PostThreadMessage(mRenderThreadID, RENDER_THREAD_RESIZE, 0, lparam);
 }
 
 void WindowApp::ParseCmdArgs(const CommandLineArguments& cmdArgs)
@@ -603,10 +711,6 @@ int WindowApp::OnHotkey(uint32_t hotkey)
 	}
 
 	return 0;
-}
-
-void WindowApp::Tick()
-{
 }
 
 std::wstring WindowApp::IntermediateStateString(uint32_t frameNumber) const

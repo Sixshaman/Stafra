@@ -48,11 +48,11 @@ void ClickRules::InitDefault(ID3D11Device* device)
 	defaultClickRuleDesc.MiscFlags          = 0;
 
 	//Fill the default click rule(cross)
-	const size_t width              = mClickRuleWidth;
-	const size_t height             = mClickRuleHeight;
-	const size_t clickRuleCellCount = width * height;
-	const size_t centralCellX       = (width - 1)/ 2;
-	const size_t centralCellY       = (height - 1) / 2;
+	const uint32_t width              = mClickRuleWidth;
+	const uint32_t height             = mClickRuleHeight;
+	const uint32_t clickRuleCellCount = width * height;
+	const uint32_t centralCellX       = (width - 1)/ 2;
+	const uint32_t centralCellY       = (height - 1) / 2;
 
 	std::vector<uint8_t> initialTextureData(clickRuleCellCount, (uint8_t)0);
 	initialTextureData[(centralCellY + 0) * width + (centralCellX + 0)] = 1; //Central cell
