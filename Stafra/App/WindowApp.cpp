@@ -28,8 +28,10 @@
 #define RENDER_THREAD_REDRAW_CLICK_RULE (WM_APP + 10)
 #define RENDER_THREAD_COMPUTE_TICK      (WM_APP + 11)
 #define RENDER_THREAD_RESIZE            (WM_APP + 12)
+#define RENDER_THREAD_SYNC              (WM_APP + 100)
 
 #define TICK_THREAD_EXIT (WM_APP + 101)
+#define TICK_THREAD_SYNC (WM_APP + 200)
 
 namespace
 {
@@ -359,6 +361,11 @@ void WindowApp::RenderThreadFunc()
 			mFractalGen->Tick();
 			break;
 		}
+		case RENDER_THREAD_SYNC:
+		{
+			PostThreadMessage(mTickThreadID, TICK_THREAD_SYNC, 0, 0);
+			break;
+		}
 		default:
 			break;
 		}
@@ -373,12 +380,12 @@ void WindowApp::TickThreadFunc()
 
 	while(true)
 	{
-		PeekMessage(&threadMsg, (HWND)(-1), WM_APP, 0xBFFF, PM_REMOVE);
+		GetMessage(&threadMsg, (HWND)(-1), WM_APP, 0xBFFF);
 		if(threadMsg.message == TICK_THREAD_EXIT)
 		{
 			break;
 		}
-		else
+		else if(threadMsg.message == TICK_THREAD_SYNC) //Next tick available
 		{
 			if(mRenderer->ConsumeNeedRedraw())
 			{
@@ -414,7 +421,7 @@ void WindowApp::TickThreadFunc()
 				}
 			}
 
-			Sleep(15); //Stop this thread from posting too many messages
+			PostThreadMessage(mRenderThreadID, RENDER_THREAD_SYNC, 0, 0); //Don't produce next commands until renderer finishes with these
 		}
 	}	
 }
@@ -536,6 +543,7 @@ void WindowApp::CreateBackgroundTaskThreads()
 		{
 			WaitForSingleObject(mCreateTickThreadEvent, INFINITE);
 			mTickThreadID = GetThreadId(mTickThreadHandle);
+			PostThreadMessage(mTickThreadID, TICK_THREAD_SYNC, 0, 0); //Syncing the render and tick threads
 		}
 		else
 		{
@@ -612,6 +620,10 @@ void WindowApp::ParseCmdArgs(const CommandLineArguments& cmdArgs)
 	mFractalGen->SetUseSmooth(cmdArgs.SmoothTransform());
 
 	mSaveVideoFrames = cmdArgs.SaveVideoFrames();
+	if(mSaveVideoFrames)
+	{
+		CreateDirectory(L"DiffStabil", nullptr);
+	}
 
 	if(!mFractalGen->LoadClickRuleFromFile(L"ClickRule.png"))
 	{
