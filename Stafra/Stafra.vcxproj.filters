@@ -93,9 +93,6 @@
     <ClCompile Include="Computing\StabilityCalculator.cpp">
       <Filter>Computing</Filter>
     </ClCompile>
-    <ClCompile Include="Computing\InitialStates.cpp">
-      <Filter>Computing</Filter>
-    </ClCompile>
     <ClCompile Include="Computing\FinalTransform.cpp">
       <Filter>Computing</Filter>
     </ClCompile>
@@ -107,6 +104,12 @@
     </ClCompile>
     <ClCompile Include="App\FileDialog.cpp">
       <Filter>App</Filter>
+    </ClCompile>
+    <ClCompile Include="Computing\DefaultBoards.cpp">
+      <Filter>Computing</Filter>
+    </ClCompile>
+    <ClCompile Include="Computing\Boards.cpp">
+      <Filter>Computing</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -149,9 +152,6 @@
     <ClInclude Include="Computing\FractalGen.hpp">
       <Filter>Computing</Filter>
     </ClInclude>
-    <ClInclude Include="Computing\InitialStates.hpp">
-      <Filter>Computing</Filter>
-    </ClInclude>
     <ClInclude Include="Computing\FinalTransform.hpp">
       <Filter>Computing</Filter>
     </ClInclude>
@@ -163,6 +163,12 @@
     </ClInclude>
     <ClInclude Include="App\FileDialog.hpp">
       <Filter>App</Filter>
+    </ClInclude>
+    <ClInclude Include="Computing\DefaultBoards.hpp">
+      <Filter>Computing</Filter>
+    </ClInclude>
+    <ClInclude Include="Computing\Boards.hpp">
+      <Filter>Computing</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

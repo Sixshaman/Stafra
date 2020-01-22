@@ -16,20 +16,20 @@
 #define MENU_SAVE_BOARD       1004
 #define MENU_OPEN_RESTRICTION 1005
 
-#define RENDER_THREAD_EXIT              WM_APP + 1
-#define RENDER_THREAD_REINIT            WM_APP + 2
-#define RENDER_THREAD_CLICK_RULE        WM_APP + 3
-#define RENDER_THREAD_LOAD_CLICK_RULE   WM_APP + 4
-#define RENDER_THREAD_SAVE_CLICK_RULE   WM_APP + 5
-#define RENDER_THREAD_LOAD_BOARD        WM_APP + 6
-#define RENDER_THREAD_SAVE_STABILITY    WM_APP + 7
-#define RENDER_THREAD_SAVE_VIDEO_FRAME  WM_APP + 8
-#define RENDER_THREAD_REDRAW            WM_APP + 9
-#define RENDER_THREAD_REDRAW_CLICK_RULE WM_APP + 10
-#define RENDER_THREAD_COMPUTE_TICK      WM_APP + 11
-#define RENDER_THREAD_RESIZE            WM_APP + 12
+#define RENDER_THREAD_EXIT              (WM_APP + 1)
+#define RENDER_THREAD_REINIT            (WM_APP + 2)
+#define RENDER_THREAD_CLICK_RULE        (WM_APP + 3)
+#define RENDER_THREAD_LOAD_CLICK_RULE   (WM_APP + 4)
+#define RENDER_THREAD_SAVE_CLICK_RULE   (WM_APP + 5)
+#define RENDER_THREAD_LOAD_BOARD        (WM_APP + 6)
+#define RENDER_THREAD_SAVE_STABILITY    (WM_APP + 7)
+#define RENDER_THREAD_SAVE_VIDEO_FRAME  (WM_APP + 8)
+#define RENDER_THREAD_REDRAW            (WM_APP + 9)
+#define RENDER_THREAD_REDRAW_CLICK_RULE (WM_APP + 10)
+#define RENDER_THREAD_COMPUTE_TICK      (WM_APP + 11)
+#define RENDER_THREAD_RESIZE            (WM_APP + 12)
 
-#define TICK_THREAD_EXIT WM_APP + 101
+#define TICK_THREAD_EXIT (WM_APP + 101)
 
 namespace
 {
@@ -75,7 +75,7 @@ WindowApp::WindowApp(HINSTANCE hInstance, const CommandLineArguments& cmdArgs): 
 	UpdateRendererForPreview();
 
 	ParseCmdArgs(cmdArgs);
-	mFractalGen->ResetComputingParameters(L"InitialState.png", L"Restriction.png");
+	mFractalGen->ResetComputingParameters();
 
 	CreateBackgroundTaskThreads();
 }
@@ -284,7 +284,7 @@ void WindowApp::RenderThreadFunc()
 		}
 		case RENDER_THREAD_REINIT:
 		{
-			mFractalGen->ResetComputingParameters(L"InitialState.png", L"Restriction.png");
+			mFractalGen->ResetComputingParameters();
 			break;
 		}
 		case RENDER_THREAD_RESIZE:
@@ -326,8 +326,8 @@ void WindowApp::RenderThreadFunc()
 		case RENDER_THREAD_LOAD_BOARD:
 		{
 			//Catch the pointer
-			//std::unique_ptr<std::wstring> boardFilenamePtr(reinterpret_cast<std::wstring*>(threadMsg.lParam));
-			//mFractalGen->LoadBoard(*boardFilenamePtr);
+			std::unique_ptr<std::wstring> boardFilenamePtr(reinterpret_cast<std::wstring*>(threadMsg.lParam));
+			mFractalGen->LoadBoardFromFile(*boardFilenamePtr);
 			break;
 		}
 		case RENDER_THREAD_SAVE_STABILITY:
@@ -617,6 +617,11 @@ void WindowApp::ParseCmdArgs(const CommandLineArguments& cmdArgs)
 	{
 		mFractalGen->InitDefaultClickRule();
 	}
+
+	if(!mFractalGen->LoadBoardFromFile(L"InitialBoard.png"))
+	{
+		mFractalGen->Init4CornersBoard();
+	}
 }
 
 int WindowApp::OnMenuItem(uint32_t menuItem)
@@ -644,6 +649,30 @@ int WindowApp::OnMenuItem(uint32_t menuItem)
 		{
 			std::unique_ptr<std::wstring> clickRuleFilenamePtr = std::make_unique<std::wstring>(clickRuleFilename);
 			PostThreadMessage(mRenderThreadID, RENDER_THREAD_LOAD_CLICK_RULE, 0, reinterpret_cast<LPARAM>(clickRuleFilenamePtr.release()));
+		}
+		break;
+	}
+	case MENU_SAVE_BOARD:
+	{
+		std::wstring boardFilename = L"Stability.png";
+
+		FileDialog fileDialog;
+		if(fileDialog.GetFilenameToSave(mMainWindowHandle, boardFilename))
+		{
+			std::unique_ptr<std::wstring> boardFilenamePtr = std::make_unique<std::wstring>(boardFilename);
+			PostThreadMessage(mRenderThreadID, RENDER_THREAD_SAVE_STABILITY, 0, reinterpret_cast<LPARAM>(boardFilenamePtr.release()));
+		}
+		break;
+	}
+	case MENU_OPEN_BOARD:
+	{
+		std::wstring boardFilename = L"Stability.png";
+
+		FileDialog fileDialog;
+		if (fileDialog.GetFilenameToOpen(mMainWindowHandle, boardFilename))
+		{
+			std::unique_ptr<std::wstring> boardFilenamePtr = std::make_unique<std::wstring>(boardFilename);
+			PostThreadMessage(mRenderThreadID, RENDER_THREAD_LOAD_BOARD, 0, reinterpret_cast<LPARAM>(boardFilenamePtr.release()));
 		}
 		break;
 	}

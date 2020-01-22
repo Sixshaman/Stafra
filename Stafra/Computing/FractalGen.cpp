@@ -10,7 +10,7 @@
 #include "Downscaler.hpp"
 #include "FinalTransform.hpp"
 #include "ClickRules.hpp"
-#include "InitialStates.hpp"
+#include "Boards.hpp"
 #include "BoardLoader.hpp"
 #include "BoardSaver.hpp"
 #include "../App/Renderer.hpp"
@@ -26,12 +26,14 @@ FractalGen::FractalGen(Renderer* renderer): mRenderer(renderer), mDefaultBoardWi
 	mFinalTransformer = std::make_unique<FinalTransformer>(device);
 	mEqualityChecker  = std::make_unique<EqualityChecker>(device);
 
+	mBoards        = std::make_unique<Boards>(device);
 	mClickRules    = std::make_unique<ClickRules>(device);
-	mInitialStates = std::make_unique<InitialStates>(device);
 	mBoardLoader   = std::make_unique<BoardLoader>(device);
 	mBoardSaver    = std::make_unique<BoardSaver>();
 
-	mClickRules->InitDefault(mRenderer->GetDevice()); //WORKAROUND
+	mBoards->Init4CornersBoard(mRenderer->GetDevice(), mRenderer->GetDeviceContext(), mDefaultBoardWidth, mDefaultBoardHeight);
+	mBoards->InitDefaultRestriction(mRenderer->GetDevice(), mRenderer->GetDeviceContext());
+	mClickRules->InitDefault(mRenderer->GetDevice());
 }
 
 FractalGen::~FractalGen()
@@ -78,9 +80,9 @@ void FractalGen::InitDefaultClickRule()
 bool FractalGen::LoadClickRuleFromFile(const std::wstring& clickRuleFile)
 {
 	Microsoft::WRL::ComPtr<ID3D11Texture2D> clickRuleTex;
-	mBoardLoader->LoadClickRuleFromFile(mRenderer->GetDevice(), mRenderer->GetDeviceContext(), clickRuleFile, clickRuleTex.GetAddressOf());
+	LoadError loadErr = mBoardLoader->LoadClickRuleFromFile(mRenderer->GetDevice(), mRenderer->GetDeviceContext(), clickRuleFile, clickRuleTex.GetAddressOf());
 
-	if(clickRuleTex)
+	if(loadErr == LoadError::LOAD_SUCCESS)
 	{
 		mClickRules->CreateFromTexture(mRenderer->GetDevice(), clickRuleTex.Get());
 		mRenderer->SetCurrentClickRule(mClickRules->GetClickRuleImageSRV());
@@ -106,36 +108,44 @@ uint32_t FractalGen::GetSolutionPeriod() const
 
 void FractalGen::EditClickRule(float normalizedX, float normalizedY)
 {
-	mCurrentlyComputing = true;
-
 	uint32_t clickRuleWidth = mClickRules->GetWidth();
 	uint32_t clickRuleHeight = mClickRules->GetHeight();
 
 	mClickRules->EditCellState(mRenderer->GetDeviceContext(), (uint32_t)(clickRuleWidth * normalizedX), (uint32_t)(clickRuleHeight * normalizedY));
 	mRenderer->SetCurrentClickRule(mClickRules->GetClickRuleImageSRV());
 	mRenderer->NeedRedrawClickRule();
-
-	mCurrentlyComputing = false;
 }
 
-void FractalGen::ResetComputingParameters(const std::wstring& initialBoardFile, const std::wstring& restrictionFile)
+void FractalGen::Init4CornersBoard()
 {
-	mCurrentlyComputing = true;
+	mBoards->Init4CornersBoard(mRenderer->GetDevice(), mRenderer->GetDeviceContext(), mDefaultBoardWidth, mDefaultBoardHeight);
+}
 
+void FractalGen::Init4SidesBoard()
+{
+	mBoards->Init4SidesBoard(mRenderer->GetDevice(), mRenderer->GetDeviceContext(), mDefaultBoardWidth, mDefaultBoardHeight);
+}
+
+bool FractalGen::LoadBoardFromFile(const std::wstring& boardFile)
+{
 	Microsoft::WRL::ComPtr<ID3D11Texture2D> initialBoardTex;
-	mBoardLoader->LoadBoardFromFile(mRenderer->GetDevice(), mRenderer->GetDeviceContext(), initialBoardFile, initialBoardTex.GetAddressOf());
+	LoadError loadErr = mBoardLoader->LoadBoardFromFile(mRenderer->GetDevice(), mRenderer->GetDeviceContext(), boardFile, initialBoardTex.GetAddressOf());
 
-	if(!initialBoardTex)
+	if(loadErr == LoadError::LOAD_SUCCESS)
 	{
-		mInitialStates->CreateBoard(mRenderer->GetDevice(), mRenderer->GetDeviceContext(), mDefaultBoardWidth, mDefaultBoardHeight, BoardClearMode::FOUR_CORNERS, initialBoardTex.GetAddressOf());
+		mBoards->InitBoardFromTexture(mRenderer->GetDevice(), mRenderer->GetDeviceContext(), initialBoardTex.Get());
+		return true;
 	}
+	else
+	{
+		return false;
+	}
+}
 
+void FractalGen::ResetComputingParameters()
+{
 	mClickRules->Bake(mRenderer->GetDeviceContext());
-
-	Microsoft::WRL::ComPtr<ID3D11Texture2D> restrictionTex;
-	mBoardLoader->LoadBoardFromFile(mRenderer->GetDevice(), mRenderer->GetDeviceContext(), restrictionFile, restrictionTex.GetAddressOf());
-
-	mStabilityCalculator->PrepareForCalculations(mRenderer->GetDevice(), mRenderer->GetDeviceContext(), initialBoardTex.Get(), restrictionTex.Get());
+	mStabilityCalculator->PrepareForCalculations(mRenderer->GetDevice(), mRenderer->GetDeviceContext(), mBoards->GetInitialBoardTex());
 
 	uint32_t boardWidth  = mStabilityCalculator->GetBoardWidth();
 	uint32_t boardHeight = mStabilityCalculator->GetBoardHeight();
@@ -152,13 +162,13 @@ void FractalGen::ResetComputingParameters(const std::wstring& initialBoardFile, 
 	mRenderer->SetCurrentClickRule(mClickRules->GetClickRuleImageSRV());
 	mRenderer->NeedRedrawClickRule();
 
-	mCurrentlyComputing = false;
+	mFinalTransformer->ComputeTransform(mRenderer->GetDeviceContext(), mStabilityCalculator->GetLastStabilityState(), mSpawnPeriod, mbUseSmoothTransform);
+	mRenderer->SetCurrentBoard(mFinalTransformer->GetTransformedSRV());
+	mRenderer->NeedRedraw();
 }
 
 void FractalGen::Tick()
 {
-	mCurrentlyComputing = true;
-
 	ID3D11ShaderResourceView* clickRuleBufferSRV  = nullptr;
 	ID3D11ShaderResourceView* clickRuleCounterSRV = nullptr;
 	if(!mClickRules->IsDefault())
@@ -167,49 +177,35 @@ void FractalGen::Tick()
 		clickRuleCounterSRV = mClickRules->GetClickRuleBufferCounterSRV();
 	}
 
-	mStabilityCalculator->StabilityNextStep(mRenderer->GetDeviceContext(), clickRuleBufferSRV, clickRuleCounterSRV, mSpawnPeriod);
+	mStabilityCalculator->StabilityNextStep(mRenderer->GetDeviceContext(), clickRuleBufferSRV, clickRuleCounterSRV, mBoards->GetRestrictionSRV(), mSpawnPeriod);
 	mFinalTransformer->ComputeTransform(mRenderer->GetDeviceContext(), mStabilityCalculator->GetLastStabilityState(), mSpawnPeriod, mbUseSmoothTransform);
 
 	mRenderer->SetCurrentBoard(mFinalTransformer->GetTransformedSRV());
 	mRenderer->NeedRedraw();
-
-	mCurrentlyComputing = false;
 }
 
 void FractalGen::SaveCurrentVideoFrame(const std::wstring& videoFrameFile)
 {
-	mCurrentlyComputing = true;
-
 	mDownscaler->DownscalePicture(mRenderer->GetDeviceContext(), mFinalTransformer->GetTransformedSRV());
 
 	Microsoft::WRL::ComPtr<ID3D11Texture2D> downscaledTex;
 	mDownscaler->GetDownscaledSRV()->GetResource(reinterpret_cast<ID3D11Resource**>(downscaledTex.GetAddressOf()));
 
 	mBoardSaver->SaveVideoFrameToFile(mRenderer->GetDevice(), mRenderer->GetDeviceContext(), downscaledTex.Get(), videoFrameFile);
-
-	mCurrentlyComputing = false;
 }
 
 void FractalGen::SaveCurrentStep(const std::wstring& stabilityFile)
 {
-	mCurrentlyComputing = true;
-
 	Microsoft::WRL::ComPtr<ID3D11Texture2D> stabilityTex;
 	mFinalTransformer->GetTransformedSRV()->GetResource(reinterpret_cast<ID3D11Resource**>(stabilityTex.GetAddressOf()));
 
 	mBoardSaver->SaveBoardToFile(mRenderer->GetDevice(), mRenderer->GetDeviceContext(), stabilityTex.Get(), stabilityFile);
-
-	mCurrentlyComputing = false;
 }
 
 void FractalGen::SaveClickRule(const std::wstring& clickRuleFile)
 {
-	mCurrentlyComputing = true;
-
 	Microsoft::WRL::ComPtr<ID3D11Texture2D> clickRuleTex;
 	mClickRules->GetClickRuleImageSRV()->GetResource(reinterpret_cast<ID3D11Resource**>(clickRuleTex.GetAddressOf()));
 
 	mBoardSaver->SaveClickRuleToFile(mRenderer->GetDevice(), mRenderer->GetDeviceContext(), clickRuleTex.Get(), clickRuleFile);
-	
-	mCurrentlyComputing = false;
 }

@@ -1,16 +1,16 @@
-#include "InitialStates.hpp"
+#include "DefaultBoards.hpp"
 #include "..\Util.hpp"
 
-InitialStates::InitialStates(ID3D11Device* device)
+DefaultBoards::DefaultBoards(ID3D11Device* device)
 {
 	LoadShaderData(device);
 }
 
-InitialStates::~InitialStates()
+DefaultBoards::~DefaultBoards()
 {
 }
 
-void InitialStates::CreateBoard(ID3D11Device* device, ID3D11DeviceContext* dc, uint32_t texWidth, uint32_t texHeight, BoardClearMode clearMode, ID3D11Texture2D** outBoardTex)
+void DefaultBoards::CreateBoard(ID3D11Device* device, ID3D11DeviceContext* dc, uint32_t texWidth, uint32_t texHeight, BoardClearMode clearMode, ID3D11Texture2D** outBoardTex)
 {
 	if(!device || !dc || !outBoardTex || *outBoardTex != nullptr)
 	{
@@ -62,7 +62,7 @@ void InitialStates::CreateBoard(ID3D11Device* device, ID3D11DeviceContext* dc, u
 	dc->CopyResource(*outBoardTex, boardTex.Get());
 }
 
-void InitialStates::InitialState4Corners(ID3D11DeviceContext* dc, ID3D11UnorderedAccessView* initialBoardUAV, uint32_t width, uint32_t height)
+void DefaultBoards::InitialState4Corners(ID3D11DeviceContext* dc, ID3D11UnorderedAccessView* initialBoardUAV, uint32_t width, uint32_t height)
 {
 	mCBufferParamsCopy.BoardSize.x = width;
 	mCBufferParamsCopy.BoardSize.y = height;
@@ -85,7 +85,7 @@ void InitialStates::InitialState4Corners(ID3D11DeviceContext* dc, ID3D11Unordere
 	dc->CSSetShader(nullptr, nullptr, 0);
 }
 
-void InitialStates::InitialState4Sides(ID3D11DeviceContext* dc, ID3D11UnorderedAccessView* initialBoardUAV, uint32_t width, uint32_t height)
+void DefaultBoards::InitialState4Sides(ID3D11DeviceContext* dc, ID3D11UnorderedAccessView* initialBoardUAV, uint32_t width, uint32_t height)
 {
 	mCBufferParamsCopy.BoardSize.x = width;
 	mCBufferParamsCopy.BoardSize.y = height;
@@ -108,7 +108,7 @@ void InitialStates::InitialState4Sides(ID3D11DeviceContext* dc, ID3D11UnorderedA
 	dc->CSSetShader(nullptr, nullptr, 0);
 }
 
-void InitialStates::LoadShaderData(ID3D11Device* device)
+void DefaultBoards::LoadShaderData(ID3D11Device* device)
 {
 	const std::wstring shaderDir = Utils::GetShaderPath() + L"ClearBoard\\";
 	ThrowIfFailed(Utils::LoadShaderFromFile(device, shaderDir + L"Clear4CornersCS.cso", mClear4CornersShader.GetAddressOf()));

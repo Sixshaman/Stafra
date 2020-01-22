@@ -18,8 +18,8 @@ class EqualityChecker;
 class Downscaler;
 class FinalTransformer;
 
+class Boards;
 class ClickRules;
-class InitialStates;
 class BoardLoader;
 class BoardSaver;
 
@@ -42,7 +42,11 @@ public:
 	bool LoadClickRuleFromFile(const std::wstring& clickRuleFile);
 	void EditClickRule(float normalizedX, float normalizedY);
 
-	void ResetComputingParameters(const std::wstring& initialBoardFile, const std::wstring& restrictionFile);
+	void Init4CornersBoard();
+	void Init4SidesBoard();
+	bool LoadBoardFromFile(const std::wstring& boardFile);
+
+	void ResetComputingParameters();
 	void Tick();
 
 	void SaveCurrentVideoFrame(const std::wstring& videoFrameFile); //Saves small image optimized for a video frame
@@ -61,10 +65,11 @@ private:
 	std::unique_ptr<FinalTransformer> mFinalTransformer;
 	std::unique_ptr<EqualityChecker>  mEqualityChecker;
 
-	std::unique_ptr<ClickRules>    mClickRules;
-	std::unique_ptr<InitialStates> mInitialStates;
-	std::unique_ptr<BoardLoader>   mBoardLoader;
-	std::unique_ptr<BoardSaver>    mBoardSaver;
+	std::unique_ptr<ClickRules> mClickRules;
+	std::unique_ptr<Boards>     mBoards;
+
+	std::unique_ptr<BoardLoader> mBoardLoader;
+	std::unique_ptr<BoardSaver>  mBoardSaver;
 
 	uint32_t mDefaultBoardWidth;
 	uint32_t mDefaultBoardHeight;
@@ -73,7 +78,6 @@ private:
 	uint32_t mVideoFrameHeight;
 
 	uint32_t mSpawnPeriod;
-	bool     mCurrentlyComputing;
 
 	bool mbUseSmoothTransform;
 };

@@ -18,7 +18,7 @@ enum class BoardClearMode
 	FOUR_SIDES
 };
 
-class InitialStates
+class DefaultBoards
 {
 	struct CBParamsStruct
 	{
@@ -26,8 +26,8 @@ class InitialStates
 	};
 
 public:
-	InitialStates(ID3D11Device* device);
-	~InitialStates();
+	DefaultBoards(ID3D11Device* device);
+	~DefaultBoards();
 
 	void CreateBoard(ID3D11Device* device, ID3D11DeviceContext* dc, uint32_t texWidth, uint32_t texHeight, BoardClearMode clearMode, ID3D11Texture2D** outBoardTex);
 
