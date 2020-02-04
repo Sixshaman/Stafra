@@ -1,12 +1,8 @@
 #include "Renderer.hpp"
 #include "..\Util.hpp"
 
-#define FLAG_CLICK_RULE_GRID_VISIBLE 0x01
-
 Renderer::Renderer(HWND previewWnd, HWND clickRuleWnd): mCurrentBoardSRV(nullptr), mCurrentClickRuleSRV(nullptr)
 {
-	mCBufferParamsClickRuleCopy.Flags = FLAG_CLICK_RULE_GRID_VISIBLE;
-
 	CreateDeviceAndSwapChains(previewWnd, clickRuleWnd);
 	LoadShaders();
 }
@@ -68,25 +64,6 @@ bool Renderer::ConsumeNeedRedrawClickRule()
 	}
 }
 
-bool Renderer::GetClickRuleGridVisible() const
-{
-	return mCBufferParamsClickRuleCopy.Flags & FLAG_CLICK_RULE_GRID_VISIBLE;
-}
-
-void Renderer::SetClickRuleGridVisible(bool bVisible)
-{
-	if(bVisible)
-	{
-		mCBufferParamsClickRuleCopy.Flags |= FLAG_CLICK_RULE_GRID_VISIBLE;
-	}
-	else
-	{
-		mCBufferParamsClickRuleCopy.Flags &= ~(FLAG_CLICK_RULE_GRID_VISIBLE);
-	}
-
-	NeedRedrawClickRule();
-}
-
 void Renderer::SetCurrentBoard(ID3D11ShaderResourceView* srv)
 {
 	mCurrentBoardSRV = srv;
@@ -139,8 +116,6 @@ void Renderer::DrawPreview()
 
 void Renderer::DrawClickRule()
 {
-	Utils::UpdateBuffer(mCBufferParamsClickRule.Get(), mCBufferParamsClickRuleCopy, mDeviceContext.Get());
-
 	ID3D11RenderTargetView* rtvs[] = { mClickRuleRTV.Get() };
 	mDeviceContext->OMSetRenderTargets(1, rtvs, nullptr);
 
@@ -163,16 +138,10 @@ void Renderer::DrawClickRule()
 	mDeviceContext->VSSetShader(mRenderVertexShader.Get(),         nullptr, 0);
 	mDeviceContext->PSSetShader(mRenderClickRulePixelShader.Get(), nullptr, 0);
 
-	ID3D11Buffer* cbuffers[] = { mCBufferParamsClickRule.Get() };
-	mDeviceContext->PSSetConstantBuffers(0, 1, cbuffers);
-
 	ID3D11ShaderResourceView* boardSRVs[] = {mCurrentClickRuleSRV};
 	mDeviceContext->PSSetShaderResources(0, 1, boardSRVs);
 
 	mDeviceContext->Draw(4, 0);
-
-	ID3D11Buffer* nullCbuffers[] = { nullptr };
-	mDeviceContext->PSSetConstantBuffers(0, 1, nullCbuffers);
 
 	ID3D11ShaderResourceView* nullSRVs[] = { nullptr };
 	mDeviceContext->PSSetShaderResources(0, 1, nullSRVs);
@@ -249,21 +218,6 @@ void Renderer::LoadShaders()
 	samDesc.Filter   = D3D11_FILTER_MIN_LINEAR_MAG_POINT_MIP_LINEAR;
 
 	ThrowIfFailed(mDevice->CreateSamplerState(&samDesc, mBoardSampler.GetAddressOf()));
-
-	D3D11_BUFFER_DESC cbDesc;
-	cbDesc.Usage               = D3D11_USAGE_DYNAMIC;
-	cbDesc.ByteWidth           = (sizeof(CBParamsClickRuleStruct) + 0xff) & (~0xff);
-	cbDesc.BindFlags           = D3D11_BIND_CONSTANT_BUFFER;
-	cbDesc.CPUAccessFlags      = D3D11_CPU_ACCESS_WRITE;
-	cbDesc.MiscFlags           = 0;
-	cbDesc.StructureByteStride = 0;
-
-	D3D11_SUBRESOURCE_DATA cbData;
-	cbData.pSysMem          = &mCBufferParamsClickRuleCopy;
-	cbData.SysMemPitch      = 0;
-	cbData.SysMemSlicePitch = 0;
-
-	ThrowIfFailed(mDevice->CreateBuffer(&cbDesc, &cbData, &mCBufferParamsClickRule));	
 }
 
 void Renderer::CreateSwapChain(IDXGIFactory* factory, HWND hwnd, uint32_t width, uint32_t height, IDXGISwapChain** outSwapChain)
