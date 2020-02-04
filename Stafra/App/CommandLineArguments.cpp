@@ -23,7 +23,15 @@ namespace
 	const uint32_t gMaximumSpawn = 9999;
 }
 
-CommandLineArguments::CommandLineArguments(const std::string& cmdArgs): mPowSize(gDefaultPSize), mSaveVideoFrames(gDefaultSaveVframes), mSmoothTransform(gDefaultSmooth), mEnlonging(gDefaultEnlonging), mSpawnPeriod(gDefaultSpawn)
+CommandLineArguments::CommandLineArguments(int argc, char* argv[]): CommandLineArguments()
+{
+	for(int i = 0; i < argc; i++)
+	{
+		mCmdLineArgs.push_back(std::string(argv[i]));
+	}
+}
+
+CommandLineArguments::CommandLineArguments(const std::string& cmdArgs): CommandLineArguments()
 {
 	auto prevArgEnd = cmdArgs.begin();
 	for(auto it = cmdArgs.begin(); it != cmdArgs.end(); ++it)
@@ -36,6 +44,10 @@ CommandLineArguments::CommandLineArguments(const std::string& cmdArgs): mPowSize
 	}
 
 	mCmdLineArgs.push_back(std::string(prevArgEnd, cmdArgs.end()));
+}
+
+CommandLineArguments::CommandLineArguments(): mPowSize(gDefaultPSize), mSaveVideoFrames(gDefaultSaveVframes), mSmoothTransform(gDefaultSmooth), mEnlonging(gDefaultEnlonging), mSpawnPeriod(gDefaultSpawn), mSilentMode(false)
+{
 }
 
 CommandLineArguments::~CommandLineArguments()
@@ -64,7 +76,12 @@ bool CommandLineArguments::SaveVideoFrames() const
 
 bool CommandLineArguments::SmoothTransform() const
 {
-	return mSmoothTransform;;
+	return mSmoothTransform;
+}
+
+bool CommandLineArguments::SilentMode() const
+{
+	return mSilentMode;
 }
 
 uint32_t CommandLineArguments::ParseInt(std::string intStr, uint32_t min, uint32_t max)
@@ -95,6 +112,10 @@ CmdParseResult CommandLineArguments::ParseArgs()
 		else if (mCmdLineArgs[i] == "-smooth")
 		{
 			mSmoothTransform = true;
+		}
+		else if (mCmdLineArgs[i] == "-silent")
+		{
+			mSilentMode = true;
 		}
 		else if(mCmdLineArgs[i] == "-psize")
 		{
@@ -151,8 +172,9 @@ CmdParseResult CommandLineArguments::ParseArgs()
 		}
 		else
 		{
-			res = CmdParseResult::PARSE_UNKNOWN_OPTION;
-			break;
+			//It's fine, don't finish
+			//res = CmdParseResult::PARSE_UNKNOWN_OPTION;
+			//break;
 		}
 	}
 

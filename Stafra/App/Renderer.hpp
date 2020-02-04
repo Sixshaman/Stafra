@@ -6,16 +6,11 @@
 
 class Renderer
 {
-	struct CBParamsClickRuleStruct
-	{
-		uint32_t Flags;
-	};
-
 public:
-	Renderer(HWND previewWnd, HWND clickRuleWnd);
-	~Renderer();
+	Renderer();
+	virtual ~Renderer();
 
-	void ResizePreviewArea(uint32_t newWidth, uint32_t newHeight);
+	virtual void ResizePreviewArea(uint32_t newWidth, uint32_t newHeight);
 
 	void NeedRedraw();
 	bool GetNeedRedraw() const;
@@ -25,49 +20,26 @@ public:
 	bool GetNeedRedrawClickRule() const;
 	bool ConsumeNeedRedrawClickRule();
 
-	bool GetClickRuleGridVisible() const;
-	void SetClickRuleGridVisible(bool bVisible);
+	virtual bool GetClickRuleGridVisible() const;
+	virtual void SetClickRuleGridVisible(bool bVisible);
 
-	void DrawPreview();   //Only to be called from the background thread
-	void DrawClickRule(); //Only to be called from the background thread
-
-	void SetCurrentBoard(ID3D11ShaderResourceView* srv);
-	void SetCurrentClickRule(ID3D11ShaderResourceView* srv);
+	virtual void DrawPreview();
+	virtual void DrawClickRule();
 
 	ID3D11Device*        GetDevice()        const;
 	ID3D11DeviceContext* GetDeviceContext() const;
 
-private:
-	void CreateDeviceAndSwapChains(HWND previewWnd, HWND clickRuleWnd);
-	void LoadShaders();
-
-	void CreateSwapChain(IDXGIFactory* factory, HWND hwnd, uint32_t width, uint32_t height, IDXGISwapChain** outSwapChain);
-	void InitRenderAreaSize(IDXGISwapChain* swapChain, uint32_t width, uint32_t height, ID3D11RenderTargetView** outRTV, D3D11_VIEWPORT* outViewport);
+	virtual void SetCurrentBoard(ID3D11ShaderResourceView* srv);
+	virtual void SetCurrentClickRule(ID3D11ShaderResourceView* srv);
 
 private:
+	void CreateDevice();
+
+protected:
+	Microsoft::WRL::ComPtr<IDXGIFactory1> mDXGIFactory;
+
 	Microsoft::WRL::ComPtr<ID3D11Device>        mDevice;
 	Microsoft::WRL::ComPtr<ID3D11DeviceContext> mDeviceContext;
-
-	Microsoft::WRL::ComPtr<IDXGISwapChain> mPreviewSwapChain;
-	Microsoft::WRL::ComPtr<IDXGISwapChain> mClickRuleSwapChain;
-
-	Microsoft::WRL::ComPtr<ID3D11RenderTargetView> mPreviewRTV;
-	Microsoft::WRL::ComPtr<ID3D11RenderTargetView> mClickRuleRTV;
-
-	D3D11_VIEWPORT mPreviewViewport;
-	D3D11_VIEWPORT mClickRuleViewport;
-
-	Microsoft::WRL::ComPtr<ID3D11SamplerState> mBoardSampler;
-
-	Microsoft::WRL::ComPtr<ID3D11VertexShader> mRenderVertexShader;
-	Microsoft::WRL::ComPtr<ID3D11PixelShader>  mRenderPixelShader;
-	Microsoft::WRL::ComPtr<ID3D11PixelShader>  mRenderClickRulePixelShader;
-
-	Microsoft::WRL::ComPtr<ID3D11Buffer> mCBufferParamsClickRule;
-	CBParamsClickRuleStruct              mCBufferParamsClickRuleCopy;
-
-	ID3D11ShaderResourceView* mCurrentBoardSRV;     //Non-owning observer pointer
-	ID3D11ShaderResourceView* mCurrentClickRuleSRV; //Non-owning observer pointer
 
 	bool mNeedRedraw;
 	bool mNeedRedrawClickRule;

@@ -111,6 +111,15 @@
     <ClCompile Include="Computing\Boards.cpp">
       <Filter>Computing</Filter>
     </ClCompile>
+    <ClCompile Include="App\DisplayRenderer.cpp">
+      <Filter>App</Filter>
+    </ClCompile>
+    <ClCompile Include="App\ConsoleApp.cpp">
+      <Filter>App</Filter>
+    </ClCompile>
+    <ClCompile Include="App\StafraApp.cpp">
+      <Filter>App</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Util.hpp">
@@ -169,6 +178,15 @@
     </ClInclude>
     <ClInclude Include="Computing\Boards.hpp">
       <Filter>Computing</Filter>
+    </ClInclude>
+    <ClInclude Include="App\DisplayRenderer.hpp">
+      <Filter>App</Filter>
+    </ClInclude>
+    <ClInclude Include="App\ConsoleApp.hpp">
+      <Filter>App</Filter>
+    </ClInclude>
+    <ClInclude Include="App\StafraApp.hpp">
+      <Filter>App</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

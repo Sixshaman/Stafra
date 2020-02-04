@@ -4,9 +4,10 @@
 
 #include <Windows.h>
 #include <memory>
-#include "Renderer.hpp"
+#include "DisplayRenderer.hpp"
 #include "CommandLineArguments.hpp"
 #include "..\Computing\FractalGen.hpp"
+#include "StafraApp.hpp"
 
 enum class PlayMode
 {
@@ -16,13 +17,16 @@ enum class PlayMode
 	MODE_CONTINUOUS_FRAMES
 };
 
-class WindowApp
+class WindowApp: public StafraApp
 {
 public:
 	WindowApp(HINSTANCE hInstance, const CommandLineArguments& cmdArgs);
 	~WindowApp();
 
 	int Run();
+
+protected:
+	void Init(HINSTANCE hInstance, const CommandLineArguments& cmdArgs);
 
 private:
 	void CreateMainWindow(HINSTANCE hInstance);
@@ -36,10 +40,6 @@ private:
 
 	void UpdateRendererForPreview();
 
-	std::wstring IntermediateStateString(uint32_t frameNumber) const;
-	
-	void ParseCmdArgs(const CommandLineArguments& cmdArgs);
-
 	int OnMenuItem(uint32_t menuItem);
 	int OnHotkey(uint32_t hotkey);
 
@@ -49,9 +49,6 @@ private:
 	void TickThreadFunc();
 
 private:
-	std::unique_ptr<FractalGen> mFractalGen;
-	std::unique_ptr<Renderer>   mRenderer;
-
 	HWND mMainWindowHandle;
 	HWND mPreviewAreaHandle;
 	HWND mClickRuleAreaHandle;
@@ -70,5 +67,4 @@ private:
 	PlayMode mPlayMode;
 
 	bool mResizing;
-	bool mSaveVideoFrames;
 };

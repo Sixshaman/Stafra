@@ -67,19 +67,10 @@ namespace
 WindowApp::WindowApp(HINSTANCE hInstance, const CommandLineArguments& cmdArgs): mMainWindowHandle(nullptr), mPreviewAreaHandle(nullptr), mClickRuleAreaHandle(nullptr), 
                                                                                 mRenderThreadHandle(nullptr), mCreateRenderThreadEvent(nullptr), mPlayMode(PlayMode::MODE_CONTINUOUS_FRAMES)
 {
-	ThrowIfFailed(CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED)); //Shell functions (file save/open dialogs) don't like multithreaded environment, so use COINIT_APARTMENTTHREADED instead of COINIT_MULTITHREADED
-
-	CreateMainWindow(hInstance);
-	CreateChildWindows(hInstance);
-
-	mRenderer   = std::make_unique<Renderer>(mPreviewAreaHandle, mClickRuleAreaHandle);
-	mFractalGen = std::make_unique<FractalGen>(mRenderer.get());
+	Init(hInstance, cmdArgs);
 
 	LayoutChildWindows();
 	UpdateRendererForPreview();
-
-	ParseCmdArgs(cmdArgs);
-	mFractalGen->ResetComputingParameters();
 
 	CreateBackgroundTaskThreads();
 }
@@ -106,6 +97,15 @@ int WindowApp::Run()
 	}
 
 	return (int)msg.wParam;
+}
+
+void WindowApp::Init(HINSTANCE hInstance, const CommandLineArguments& cmdArgs)
+{
+	CreateMainWindow(hInstance);
+	CreateChildWindows(hInstance);
+
+	mRenderer = std::make_unique<DisplayRenderer>(mPreviewAreaHandle, mClickRuleAreaHandle);
+	StafraApp::Init(cmdArgs);
 }
 
 LRESULT CALLBACK WindowApp::AppProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam)
@@ -618,37 +618,6 @@ void WindowApp::UpdateRendererForPreview()
 	PostThreadMessage(mRenderThreadID, RENDER_THREAD_RESIZE, 0, lparam);
 }
 
-void WindowApp::ParseCmdArgs(const CommandLineArguments& cmdArgs)
-{
-	uint32_t powSize   = cmdArgs.PowSize();
-	uint32_t boardSize = (1 << powSize) - 1;
-
-	mFractalGen->SetDefaultBoardWidth(boardSize);
-	mFractalGen->SetDefaultBoardHeight(boardSize);
-
-	mFractalGen->SetVideoFrameWidth(1024);
-	mFractalGen->SetVideoFrameHeight(1024);
-
-	mFractalGen->SetSpawnPeriod(cmdArgs.SpawnPeriod());
-	mFractalGen->SetUseSmooth(cmdArgs.SmoothTransform());
-
-	mSaveVideoFrames = cmdArgs.SaveVideoFrames();
-	if(mSaveVideoFrames)
-	{
-		CreateDirectory(L"DiffStabil", nullptr);
-	}
-
-	if(!mFractalGen->LoadClickRuleFromFile(L"ClickRule.png"))
-	{
-		mFractalGen->InitDefaultClickRule();
-	}
-
-	if(!mFractalGen->LoadBoardFromFile(L"InitialBoard.png"))
-	{
-		mFractalGen->Init4CornersBoard();
-	}
-}
-
 int WindowApp::OnMenuItem(uint32_t menuItem)
 {
 	switch (menuItem)
@@ -775,16 +744,4 @@ int WindowApp::OnHotkey(uint32_t hotkey)
 	}
 
 	return 0;
-}
-
-std::wstring WindowApp::IntermediateStateString(uint32_t frameNumber) const
-{
-	const int zerosPadding = 7; //Good enough
-
-	std::wostringstream namestr;
-	namestr.fill('0');
-	namestr.width(zerosPadding);
-	namestr << frameNumber;
-
-	return namestr.str();
 }

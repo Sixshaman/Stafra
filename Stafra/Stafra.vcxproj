@@ -110,7 +110,7 @@
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
-      <SubSystem>Windows</SubSystem>
+      <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>d3d11.lib;d3dcompiler.lib;dxgi.lib;dxguid.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
@@ -149,7 +149,7 @@
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
-      <SubSystem>Windows</SubSystem>
+      <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -161,7 +161,10 @@
       <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">26812;%(DisableSpecificWarnings)</DisableSpecificWarnings>
       <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Release|x64'">26812;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
+    <ClCompile Include="App\StafraApp.cpp" />
     <ClCompile Include="App\CommandLineArguments.cpp" />
+    <ClCompile Include="App\ConsoleApp.cpp" />
+    <ClCompile Include="App\DisplayRenderer.cpp" />
     <ClCompile Include="App\FileDialog.cpp" />
     <ClCompile Include="App\Renderer.cpp" />
     <ClCompile Include="App\WindowApp.cpp" />
@@ -183,7 +186,10 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="3rd party\WICTextureLoader.h" />
+    <ClInclude Include="App\StafraApp.hpp" />
     <ClInclude Include="App\CommandLineArguments.hpp" />
+    <ClInclude Include="App\ConsoleApp.hpp" />
+    <ClInclude Include="App\DisplayRenderer.hpp" />
     <ClInclude Include="App\FileDialog.hpp" />
     <ClInclude Include="App\Renderer.hpp" />
     <ClInclude Include="App\WindowApp.hpp" />

@@ -1,11 +1,29 @@
 ﻿#include "App/WindowApp.hpp"
+#include "App/ConsoleApp.hpp"
 #include "App/CommandLineArguments.hpp"
 
-int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
+#include <iostream>
+
+int main(int argc, char* argv[])
 {
-	CommandLineArguments cmdArgs(lpCmdLine);
+	CommandLineArguments cmdArgs(argc, argv);
 	cmdArgs.ParseArgs();
 
-	WindowApp app(hInstance, cmdArgs);
-	return app.Run();
+	if(cmdArgs.SilentMode())
+	{
+		ConsoleApp app(cmdArgs);
+		app.ComputeFractal();
+		return 0;
+	}
+	else
+	{
+		fclose(stdin);
+		fclose(stdout);
+		fclose(stderr);
+
+		FreeConsole();
+
+		WindowApp app((HINSTANCE)GetModuleHandle(nullptr), cmdArgs);
+		return app.Run();
+	}
 }
