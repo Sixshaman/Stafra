@@ -10,11 +10,13 @@
 #undef min
 #undef max
 
-#define MENU_SAVE_CLICK_RULE  1001
-#define MENU_OPEN_CLICK_RULE  1002
-#define MENU_OPEN_BOARD       1003
-#define MENU_SAVE_BOARD       1004
-#define MENU_OPEN_RESTRICTION 1005
+#define MENU_SAVE_CLICK_RULE      1001
+#define MENU_OPEN_CLICK_RULE      1002
+#define MENU_OPEN_BOARD           1003
+#define MENU_SAVE_BOARD           1004
+#define MENU_OPEN_RESTRICTION     1005
+#define MENU_SHOW_CLICK_RULE_GRID 1006
+#define MENU_HIDE_CLICK_RULE_GRID 1007
 
 #define RENDER_THREAD_EXIT              (WM_APP + 1)
 #define RENDER_THREAD_REINIT            (WM_APP + 2)
@@ -199,15 +201,26 @@ LRESULT CALLBACK WindowApp::AppProc(HWND hwnd, UINT message, WPARAM wparam, LPAR
 
 		if(PtInRect(&clickRuleRect, pt))
 		{
-			UINT clickRuleMenuFlags = MF_BYCOMMAND | MF_STRING;
+			UINT clickRuleMenuFlags     = MF_BYCOMMAND | MF_STRING;
+			UINT clickRuleMenuFileFlags = MF_BYCOMMAND | MF_STRING;
 			if(mPlayMode != PlayMode::MODE_STOP)
 			{
-				clickRuleMenuFlags = clickRuleMenuFlags | MF_DISABLED;
+				clickRuleMenuFileFlags = clickRuleMenuFlags | MF_DISABLED;
 			}
 
 			HMENU popupMenu = CreatePopupMenu();
-			InsertMenu(popupMenu, 0, clickRuleMenuFlags, MENU_OPEN_CLICK_RULE, L"Open click rule...");
-			InsertMenu(popupMenu, 0, clickRuleMenuFlags, MENU_SAVE_CLICK_RULE, L"Save click rule...");
+			InsertMenu(popupMenu, 0, clickRuleMenuFileFlags, MENU_OPEN_CLICK_RULE, L"Open click rule...");
+			InsertMenu(popupMenu, 0, clickRuleMenuFileFlags, MENU_SAVE_CLICK_RULE, L"Save click rule...");
+
+			if(mRenderer->GetClickRuleGridVisible())
+			{
+				InsertMenu(popupMenu, 0, clickRuleMenuFlags, MENU_HIDE_CLICK_RULE_GRID, L"Hide grid");
+			}
+			else
+			{
+				InsertMenu(popupMenu, 0, clickRuleMenuFlags, MENU_SHOW_CLICK_RULE_GRID, L"Show grid");
+			}
+
 			TrackPopupMenu(popupMenu, TPM_LEFTALIGN | TPM_TOPALIGN | TPM_LEFTBUTTON | TPM_NOANIMATION, pt.x, pt.y, 0, mMainWindowHandle, nullptr);
 		}
 		else if(PtInRect(&previewRect, pt))
@@ -686,6 +699,16 @@ int WindowApp::OnMenuItem(uint32_t menuItem)
 			std::unique_ptr<std::wstring> boardFilenamePtr = std::make_unique<std::wstring>(boardFilename);
 			PostThreadMessage(mRenderThreadID, RENDER_THREAD_LOAD_BOARD, 0, reinterpret_cast<LPARAM>(boardFilenamePtr.release()));
 		}
+		break;
+	}
+	case MENU_HIDE_CLICK_RULE_GRID:
+	{
+		mRenderer->SetClickRuleGridVisible(false);
+		break;
+	}
+	case MENU_SHOW_CLICK_RULE_GRID:
+	{
+		mRenderer->SetClickRuleGridVisible(true);
 		break;
 	}
 	default:

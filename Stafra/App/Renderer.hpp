@@ -6,6 +6,11 @@
 
 class Renderer
 {
+	struct CBParamsClickRuleStruct
+	{
+		uint32_t Flags;
+	};
+
 public:
 	Renderer(HWND previewWnd, HWND clickRuleWnd);
 	~Renderer();
@@ -19,6 +24,9 @@ public:
 	void NeedRedrawClickRule();
 	bool GetNeedRedrawClickRule() const;
 	bool ConsumeNeedRedrawClickRule();
+
+	bool GetClickRuleGridVisible() const;
+	void SetClickRuleGridVisible(bool bVisible);
 
 	void DrawPreview();   //Only to be called from the background thread
 	void DrawClickRule(); //Only to be called from the background thread
@@ -54,6 +62,9 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11VertexShader> mRenderVertexShader;
 	Microsoft::WRL::ComPtr<ID3D11PixelShader>  mRenderPixelShader;
 	Microsoft::WRL::ComPtr<ID3D11PixelShader>  mRenderClickRulePixelShader;
+
+	Microsoft::WRL::ComPtr<ID3D11Buffer> mCBufferParamsClickRule;
+	CBParamsClickRuleStruct              mCBufferParamsClickRuleCopy;
 
 	ID3D11ShaderResourceView* mCurrentBoardSRV;     //Non-owning observer pointer
 	ID3D11ShaderResourceView* mCurrentClickRuleSRV; //Non-owning observer pointer
