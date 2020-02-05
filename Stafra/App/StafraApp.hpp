@@ -26,4 +26,6 @@ protected:
 	std::unique_ptr<Renderer>   mRenderer;
 
 	bool mSaveVideoFrames;
+
+	uint32_t mFrameNumberToSave;
 };

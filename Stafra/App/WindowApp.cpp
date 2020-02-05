@@ -300,6 +300,7 @@ void WindowApp::RenderThreadFunc()
 		case RENDER_THREAD_REINIT:
 		{
 			mFractalGen->ResetComputingParameters();
+			mFrameNumberToSave = mFractalGen->GetSolutionPeriod();
 			break;
 		}
 		case RENDER_THREAD_RESIZE:
@@ -427,7 +428,7 @@ void WindowApp::TickThreadFunc()
 					PostThreadMessage(mRenderThreadID, RENDER_THREAD_SAVE_VIDEO_FRAME, 0, reinterpret_cast<LPARAM>(frameFilenamePtr.release()));
 				}
 
-				if(mFractalGen->GetCurrentFrame() == mFractalGen->GetSolutionPeriod())
+				if(mFractalGen->GetCurrentFrame() == mFrameNumberToSave)
 				{
 					std::unique_ptr<std::wstring> stabilityFilenamePtr = std::make_unique<std::wstring>(L"Stability.png");
 					PostThreadMessage(mRenderThreadID, RENDER_THREAD_SAVE_STABILITY, 0, reinterpret_cast<LPARAM>(stabilityFilenamePtr.release()));

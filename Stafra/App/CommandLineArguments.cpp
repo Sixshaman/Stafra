@@ -5,9 +5,9 @@
 
 namespace
 {
-	const uint32_t gDefaultPSize     = 10;
-	const uint32_t gDefaultEnlonging = 1;
-	const uint32_t gDefaultSpawn     = 0;
+	const uint32_t gDefaultPSize      = 10;
+	const uint32_t gDefaultFinalFrame = 0;
+	const uint32_t gDefaultSpawn      = 0;
 
 	const bool gDefaultSaveVframes = false;
 	const bool gDefaultSmooth      = false;
@@ -16,8 +16,8 @@ namespace
 	const uint32_t gMinimumPSize = 2;
 	const uint32_t gMaximumPSize = 14;
 
-	const uint32_t gMinimumEnlonging = 1;
-	const uint32_t gMaximumEnlonging = 50;
+	const uint32_t gMinimumFinalFrame = 1;
+	const uint32_t gMaximumFinalFrame = UINT_MAX;
 
 	const uint32_t gMinimumSpawn = 0;
 	const uint32_t gMaximumSpawn = 9999;
@@ -46,7 +46,7 @@ CommandLineArguments::CommandLineArguments(const std::string& cmdArgs): CommandL
 	mCmdLineArgs.push_back(std::string(prevArgEnd, cmdArgs.end()));
 }
 
-CommandLineArguments::CommandLineArguments(): mPowSize(gDefaultPSize), mSaveVideoFrames(gDefaultSaveVframes), mSmoothTransform(gDefaultSmooth), mEnlonging(gDefaultEnlonging), mSpawnPeriod(gDefaultSpawn), mSilentMode(false)
+CommandLineArguments::CommandLineArguments(): mPowSize(gDefaultPSize), mSaveVideoFrames(gDefaultSaveVframes), mSmoothTransform(gDefaultSmooth), mFinalFrame(gDefaultFinalFrame), mSpawnPeriod(gDefaultSpawn), mSilentMode(false)
 {
 }
 
@@ -59,9 +59,9 @@ uint32_t CommandLineArguments::PowSize() const
 	return mPowSize;
 }
 
-uint32_t CommandLineArguments::Enlonging() const
+uint32_t CommandLineArguments::FinalFrame() const
 {
-	return mEnlonging;
+	return mFinalFrame;
 }
 
 uint32_t CommandLineArguments::SpawnPeriod() const
@@ -137,23 +137,23 @@ CmdParseResult CommandLineArguments::ParseArgs()
 				}
 			}
 		}
-		else if(mCmdLineArgs[i] == "-enlonging")
+		else if(mCmdLineArgs[i] == "-final_frame")
 		{
 			if((i + 1) >= mCmdLineArgs.size())
 			{
-				res = CmdParseResult::PARSE_WRONG_ENLONGING;
+				res = CmdParseResult::PARSE_WRONG_FINAL_FRAME;
 				break;
 			}
 			else
 			{
-				uint32_t enlong = ParseInt(mCmdLineArgs[++i], gMinimumEnlonging, gMaximumEnlonging);
-				if(enlong == 0)
+				uint32_t finalFrame = ParseInt(mCmdLineArgs[++i], gMinimumFinalFrame, gMaximumFinalFrame);
+				if(finalFrame == 0)
 				{
-					res = CmdParseResult::PARSE_WRONG_ENLONGING;
+					res = CmdParseResult::PARSE_WRONG_FINAL_FRAME;
 				}
 				else
 				{
-					mEnlonging = enlong;
+					mFinalFrame = finalFrame;
 				}
 			}
 		}
@@ -188,7 +188,7 @@ std::string CommandLineArguments::GetHelpMessage() const
 		   "-save_vframes: Save all intermediate states to the ./DiffStabil folder;  \r\n"
 		   "-smooth:       Use smooth transformation for the spawn-stability;        \r\n"
 		   "-psize:        The log2 of size of the board. Acceptable range: 2-14;    \r\n"
-		   "-enlonging:    Enlonging of the number of steps. Acceptable range: 1-50; \r\n"
+		   "-final_frame:  The frame number that will be saved.                      \r\n"
 		   "-spawn:        Spawn stability period. Enter 0 for no spawn at all.      \r\n";
 }
 
@@ -201,8 +201,8 @@ std::string CommandLineArguments::GetErrorMessage(CmdParseResult parseRes) const
 		return "";
 	case CmdParseResult::PARSE_WRONG_PSIZE:
 		return "Wrong pow size entered. Acceptable range: 2-14";
-	case CmdParseResult::PARSE_WRONG_ENLONGING:
-		return "Wrong enlonging entered. Acceptable range: 1-50";
+	case CmdParseResult::PARSE_WRONG_FINAL_FRAME:
+		return "Wrong final frame entered. Enter the number greater than zero.";
 	case CmdParseResult::PARSE_WRONG_SPAWN:
 		return "Wrong spawn period entered";
 	case CmdParseResult::PARSE_UNKNOWN_OPTION:

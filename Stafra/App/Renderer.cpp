@@ -71,6 +71,7 @@ void Renderer::SetClickRuleGridVisible(bool bVisible)
 
 void Renderer::DrawPreview()
 {
+	mDeviceContext->Flush(); //Just to not make the console version stall
 }
 
 void Renderer::DrawClickRule()
