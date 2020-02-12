@@ -64,7 +64,7 @@ namespace
 	const int gMinRightSideHeight = gClickRuleAreaHeight + gSpacing + gMinLogAreaHeight;
 }
 
-WindowApp::WindowApp(HINSTANCE hInstance, const CommandLineArguments& cmdArgs): mMainWindowHandle(nullptr), mPreviewAreaHandle(nullptr), mClickRuleAreaHandle(nullptr), 
+WindowApp::WindowApp(HINSTANCE hInstance, const CommandLineArguments& cmdArgs): mMainWindowHandle(nullptr), mPreviewAreaHandle(nullptr), mClickRuleAreaHandle(nullptr), mLogAreaHandle(nullptr),
                                                                                 mRenderThreadHandle(nullptr), mCreateRenderThreadEvent(nullptr), mPlayMode(PlayMode::MODE_CONTINUOUS_FRAMES)
 {
 	Init(hInstance, cmdArgs);
@@ -77,6 +77,7 @@ WindowApp::WindowApp(HINSTANCE hInstance, const CommandLineArguments& cmdArgs): 
 
 WindowApp::~WindowApp()
 {
+	DestroyWindow(mLogAreaHandle);
 	DestroyWindow(mPreviewAreaHandle);
 	DestroyWindow(mClickRuleAreaHandle);
 	DestroyWindow(mMainWindowHandle);
@@ -300,7 +301,7 @@ void WindowApp::RenderThreadFunc()
 		case RENDER_THREAD_REINIT:
 		{
 			mFractalGen->ResetComputingParameters();
-			mFrameNumberToSave = mFractalGen->GetSolutionPeriod();
+			mFinalFrameNumber = mFractalGen->GetSolutionPeriod();
 			break;
 		}
 		case RENDER_THREAD_RESIZE:
@@ -420,15 +421,15 @@ void WindowApp::TickThreadFunc()
 					mPlayMode = PlayMode::MODE_PAUSED;
 				}
 
-				if(mSaveVideoFrames)
+				if(mSaveVideoFrames && mFractalGen->GetLastFrameNumber() <= mFinalFrameNumber)
 				{
-					std::wstring frameNumberStr = IntermediateStateString(mFractalGen->GetCurrentFrame());
+					std::wstring frameNumberStr = IntermediateStateString(mFractalGen->GetLastFrameNumber());
 
 					std::unique_ptr<std::wstring> frameFilenamePtr = std::make_unique<std::wstring>(L"DiffStabil\\Stabl" + frameNumberStr + L".png");
 					PostThreadMessage(mRenderThreadID, RENDER_THREAD_SAVE_VIDEO_FRAME, 0, reinterpret_cast<LPARAM>(frameFilenamePtr.release()));
 				}
 
-				if(mFractalGen->GetCurrentFrame() == mFrameNumberToSave)
+				if(mFractalGen->GetLastFrameNumber() == mFinalFrameNumber)
 				{
 					std::unique_ptr<std::wstring> stabilityFilenamePtr = std::make_unique<std::wstring>(L"Stability.png");
 					PostThreadMessage(mRenderThreadID, RENDER_THREAD_SAVE_STABILITY, 0, reinterpret_cast<LPARAM>(stabilityFilenamePtr.release()));
@@ -504,14 +505,22 @@ void WindowApp::CreateMainWindow(HINSTANCE hInstance)
 
 void WindowApp::CreateChildWindows(HINSTANCE hInstance)
 {
-	mPreviewAreaHandle   = CreateWindowEx(0, WC_STATIC, L"Preview",   WS_CHILD, 0, 0, gPreviewAreaMinWidth, gPreviewAreaMinHeight, mMainWindowHandle, nullptr, hInstance, nullptr);
-	mClickRuleAreaHandle = CreateWindowEx(0, WC_STATIC, L"ClickRule", WS_CHILD, 0, 0, gClickRuleAreaWidth,  gClickRuleAreaHeight,  mMainWindowHandle, nullptr, hInstance, nullptr);
+	DWORD previewStyle   = 0;
+	DWORD clickRuleStyle = 0;
+	DWORD logStyle       = ES_AUTOHSCROLL | ES_AUTOVSCROLL | ES_LEFT | ES_MULTILINE | ES_UPPERCASE /*The best one!*/ | ES_WANTRETURN;
+
+	mPreviewAreaHandle   = CreateWindowEx(0, WC_STATIC, L"Preview",   WS_CHILD |              previewStyle,   0, 0, gPreviewAreaMinWidth, gPreviewAreaMinHeight, mMainWindowHandle, nullptr, hInstance, nullptr);
+	mClickRuleAreaHandle = CreateWindowEx(0, WC_STATIC, L"ClickRule", WS_CHILD |              clickRuleStyle, 0, 0, gClickRuleAreaWidth,  gClickRuleAreaHeight,  mMainWindowHandle, nullptr, hInstance, nullptr);
+	mLogAreaHandle       = CreateWindowEx(0, WC_EDIT,   L"",          WS_CHILD | WS_VSCROLL | logStyle,       0, 0, gMinLogAreaWidth,     gMinLogAreaHeight,     mMainWindowHandle, nullptr, hInstance, nullptr);
 
 	UpdateWindow(mPreviewAreaHandle);
 	ShowWindow(mPreviewAreaHandle, SW_SHOW);
 
 	UpdateWindow(mClickRuleAreaHandle);
 	ShowWindow(mClickRuleAreaHandle, SW_SHOW);
+
+	UpdateWindow(mLogAreaHandle);
+	ShowWindow(mLogAreaHandle, SW_SHOW);
 }
 
 void WindowApp::CreateBackgroundTaskThreads()
@@ -590,15 +599,21 @@ void WindowApp::LayoutChildWindows()
 	int wndHeight = wndRect.bottom - wndRect.top;
 
 	int rightSideWidth  = gClickRuleAreaWidth;
-	int rightSideHeight = gClickRuleAreaHeight;
+	int rightSideHeight = gMinLogAreaHeight + gSpacing + gClickRuleAreaHeight;
 
 	int previewHeight = wndHeight - gMarginTop - gMarginBottom;
 	int previewWidth  = wndWidth  - rightSideWidth - gSpacing - gMarginLeft - gMarginRight;
 
 	int sizePreview = std::min(previewWidth, previewHeight);
+	previewWidth    = sizePreview;
+	previewHeight   = sizePreview;
 
-	SetWindowPos(mPreviewAreaHandle,   HWND_TOP, gMarginLeft,                          gMarginTop,                                      sizePreview,         sizePreview,          0);
-	SetWindowPos(mClickRuleAreaHandle, HWND_TOP, gMarginLeft + sizePreview + gSpacing, gMarginTop + sizePreview - gClickRuleAreaHeight, gClickRuleAreaWidth, gClickRuleAreaHeight, 0);
+	int logWidth  = wndWidth  - gSpacing - previewWidth - gMarginLeft - gMarginRight;
+	int logHeight = wndHeight - gSpacing - gClickRuleAreaHeight - gMarginTop - gMarginBottom;
+
+	SetWindowPos(mPreviewAreaHandle,   HWND_TOP, gMarginLeft,                           gMarginTop,                                      sizePreview,         sizePreview,          0);
+	SetWindowPos(mClickRuleAreaHandle, HWND_TOP, gMarginLeft + previewWidth + gSpacing, gMarginTop + sizePreview - gClickRuleAreaHeight, gClickRuleAreaWidth, gClickRuleAreaHeight, 0);
+	SetWindowPos(mLogAreaHandle,       HWND_TOP, gMarginLeft + previewWidth + gSpacing, gMarginTop,                                      logWidth,            logHeight,            0);
 }
 
 void WindowApp::CalculateMinWindowSize()

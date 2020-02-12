@@ -83,7 +83,7 @@ void Downscaler::LoadShaderData(ID3D11Device* device)
 	samDesc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
 	samDesc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
 	samDesc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
-	samDesc.Filter   = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+	samDesc.Filter   = D3D11_FILTER_MIN_LINEAR_MAG_POINT_MIP_LINEAR;
 
 	ThrowIfFailed(device->CreateSamplerState(&samDesc, mBestSamplerEver.GetAddressOf()));
 }

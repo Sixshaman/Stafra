@@ -52,6 +52,7 @@ private:
 	HWND mMainWindowHandle;
 	HWND mPreviewAreaHandle;
 	HWND mClickRuleAreaHandle;
+	HWND mLogAreaHandle;
 
 	DWORD  mRenderThreadID;
 	HANDLE mRenderThreadHandle;

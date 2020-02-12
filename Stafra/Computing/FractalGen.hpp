@@ -53,7 +53,7 @@ public:
 	void SaveCurrentStep(const std::wstring& stabilityFile);        //Saves full image, without downscaling
 	void SaveClickRule(const std::wstring& clickRuleFile);          //Saves click rule
 
-	uint32_t GetCurrentFrame()   const;
+	uint32_t GetLastFrameNumber()   const;
 	uint32_t GetSolutionPeriod() const;
 
 private:

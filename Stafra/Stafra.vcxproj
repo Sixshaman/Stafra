@@ -161,6 +161,7 @@
       <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">26812;%(DisableSpecificWarnings)</DisableSpecificWarnings>
       <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Release|x64'">26812;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
+    <ClCompile Include="App\ConsoleLogger.cpp" />
     <ClCompile Include="App\StafraApp.cpp" />
     <ClCompile Include="App\CommandLineArguments.cpp" />
     <ClCompile Include="App\ConsoleApp.cpp" />
@@ -186,6 +187,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="3rd party\WICTextureLoader.h" />
+    <ClInclude Include="App\ConsoleLogger.hpp" />
+    <ClInclude Include="App\Logger.hpp" />
     <ClInclude Include="App\StafraApp.hpp" />
     <ClInclude Include="App\CommandLineArguments.hpp" />
     <ClInclude Include="App\ConsoleApp.hpp" />

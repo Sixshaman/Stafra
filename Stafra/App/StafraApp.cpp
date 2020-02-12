@@ -2,7 +2,7 @@
 #include <sstream>
 #include "..\Util.hpp"
 
-StafraApp::StafraApp(): mSaveVideoFrames(false), mFrameNumberToSave(1)
+StafraApp::StafraApp(): mSaveVideoFrames(false), mFinalFrameNumber(1)
 {
 	ThrowIfFailed(CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED)); //Shell functions (file save/open dialogs) don't like multithreaded environment, so use COINIT_APARTMENTTHREADED instead of COINIT_MULTITHREADED
 }
@@ -18,15 +18,15 @@ void StafraApp::Init(const CommandLineArguments& cmdArgs)
 	ParseCmdArgs(cmdArgs);
 	mFractalGen->ResetComputingParameters();
 
-	if(mFrameNumberToSave == 0)
+	if(mFinalFrameNumber == 0)
 	{
-		mFrameNumberToSave = mFractalGen->GetSolutionPeriod();
+		mFinalFrameNumber = mFractalGen->GetSolutionPeriod();
 	}
 }
 
 std::wstring StafraApp::IntermediateStateString(uint32_t frameNumber) const
 {
-	const int zerosPadding = log10f((float)mFrameNumberToSave) + 1;
+	const int zerosPadding = log10f((float)mFinalFrameNumber) + 1;
 
 	std::wostringstream namestr;
 	namestr.fill('0');
@@ -50,7 +50,7 @@ void StafraApp::ParseCmdArgs(const CommandLineArguments& cmdArgs)
 	mFractalGen->SetSpawnPeriod(cmdArgs.SpawnPeriod());
 	mFractalGen->SetUseSmooth(cmdArgs.SmoothTransform());
 
-	mFrameNumberToSave = cmdArgs.FinalFrame();
+	mFinalFrameNumber = cmdArgs.FinalFrame();
 
 	mSaveVideoFrames = cmdArgs.SaveVideoFrames();
 	if(mSaveVideoFrames)

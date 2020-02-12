@@ -96,7 +96,7 @@ bool FractalGen::LoadClickRuleFromFile(const std::wstring& clickRuleFile)
 	}
 }
 
-uint32_t FractalGen::GetCurrentFrame() const
+uint32_t FractalGen::GetLastFrameNumber() const
 {
 	return mStabilityCalculator->GetCurrentStep();
 }

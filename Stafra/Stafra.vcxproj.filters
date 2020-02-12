@@ -120,6 +120,9 @@
     <ClCompile Include="App\StafraApp.cpp">
       <Filter>App</Filter>
     </ClCompile>
+    <ClCompile Include="App\ConsoleLogger.cpp">
+      <Filter>App</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Util.hpp">
@@ -186,6 +189,12 @@
       <Filter>App</Filter>
     </ClInclude>
     <ClInclude Include="App\StafraApp.hpp">
+      <Filter>App</Filter>
+    </ClInclude>
+    <ClInclude Include="App\Logger.hpp">
+      <Filter>App</Filter>
+    </ClInclude>
+    <ClInclude Include="App\ConsoleLogger.hpp">
       <Filter>App</Filter>
     </ClInclude>
   </ItemGroup>

@@ -4,9 +4,10 @@
 
 #include <Windows.h>
 #include <memory>
-#include "DisplayRenderer.hpp"
+#include "Renderer.hpp"
 #include "CommandLineArguments.hpp"
 #include "..\Computing\FractalGen.hpp"
+#include "Logger.hpp"
 
 class StafraApp
 {
@@ -24,8 +25,9 @@ protected:
 protected:
 	std::unique_ptr<FractalGen> mFractalGen;
 	std::unique_ptr<Renderer>   mRenderer;
+	std::unique_ptr<Logger>     mLogger;
 
 	bool mSaveVideoFrames;
 
-	uint32_t mFrameNumberToSave;
+	uint32_t mFinalFrameNumber;
 };
