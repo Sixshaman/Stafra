@@ -54,6 +54,8 @@ private:
 	HWND mClickRuleAreaHandle;
 	HWND mLogAreaHandle;
 
+	HFONT mLogAreaFont;
+
 	DWORD  mRenderThreadID;
 	HANDLE mRenderThreadHandle;
 	HANDLE mCreateRenderThreadEvent;

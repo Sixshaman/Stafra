@@ -19,22 +19,25 @@
 #define MENU_SHOW_CLICK_RULE_GRID 1006
 #define MENU_HIDE_CLICK_RULE_GRID 1007
 
-#define RENDER_THREAD_EXIT              (WM_APP + 1)
-#define RENDER_THREAD_REINIT            (WM_APP + 2)
-#define RENDER_THREAD_CLICK_RULE        (WM_APP + 3)
-#define RENDER_THREAD_LOAD_CLICK_RULE   (WM_APP + 4)
-#define RENDER_THREAD_SAVE_CLICK_RULE   (WM_APP + 5)
-#define RENDER_THREAD_LOAD_BOARD        (WM_APP + 6)
-#define RENDER_THREAD_SAVE_STABILITY    (WM_APP + 7)
-#define RENDER_THREAD_SAVE_VIDEO_FRAME  (WM_APP + 8)
-#define RENDER_THREAD_REDRAW            (WM_APP + 9)
-#define RENDER_THREAD_REDRAW_CLICK_RULE (WM_APP + 10)
-#define RENDER_THREAD_COMPUTE_TICK      (WM_APP + 11)
-#define RENDER_THREAD_RESIZE            (WM_APP + 12)
-#define RENDER_THREAD_SYNC              (WM_APP + 100)
+#define MAIN_THREAD_APPEND_TO_LOG_A (WM_APP + 1)
+#define MAIN_THREAD_APPEND_TO_LOG_W (WM_APP + 2)
 
-#define TICK_THREAD_EXIT (WM_APP + 101)
-#define TICK_THREAD_SYNC (WM_APP + 200)
+#define RENDER_THREAD_EXIT              (WM_APP + 101)
+#define RENDER_THREAD_REINIT            (WM_APP + 102)
+#define RENDER_THREAD_CLICK_RULE        (WM_APP + 103)
+#define RENDER_THREAD_LOAD_CLICK_RULE   (WM_APP + 104)
+#define RENDER_THREAD_SAVE_CLICK_RULE   (WM_APP + 105)
+#define RENDER_THREAD_LOAD_BOARD        (WM_APP + 106)
+#define RENDER_THREAD_SAVE_STABILITY    (WM_APP + 107)
+#define RENDER_THREAD_SAVE_VIDEO_FRAME  (WM_APP + 108)
+#define RENDER_THREAD_REDRAW            (WM_APP + 109)
+#define RENDER_THREAD_REDRAW_CLICK_RULE (WM_APP + 110)
+#define RENDER_THREAD_COMPUTE_TICK      (WM_APP + 111)
+#define RENDER_THREAD_RESIZE            (WM_APP + 112)
+#define RENDER_THREAD_SYNC              (WM_APP + 200)
+
+#define TICK_THREAD_EXIT (WM_APP + 201)
+#define TICK_THREAD_SYNC (WM_APP + 300)
 
 namespace
 {
@@ -55,7 +58,7 @@ namespace
 	const int gClickRuleAreaWidth  = gClickRuleImageWidth  * 9;
 	const int gClickRuleAreaHeight = gClickRuleImageHeight * 9;
 
-	const int gMinLogAreaWidth  = gClickRuleAreaWidth * 3;
+	const int gMinLogAreaWidth  = gClickRuleAreaWidth * 2;
 	const int gMinLogAreaHeight = gPreviewAreaMinHeight - gClickRuleAreaHeight - gSpacing;
 
 	const int gMinLeftSideWidth  = gPreviewAreaMinWidth;
@@ -78,6 +81,8 @@ WindowApp::WindowApp(HINSTANCE hInstance, const CommandLineArguments& cmdArgs): 
 
 WindowApp::~WindowApp()
 {
+	DeleteObject(mLogAreaFont);
+
 	DestroyWindow(mLogAreaHandle);
 	DestroyWindow(mPreviewAreaHandle);
 	DestroyWindow(mClickRuleAreaHandle);
@@ -93,8 +98,27 @@ int WindowApp::Run()
 		msgRes = GetMessage(&msg, nullptr, 0, 0);
 		if(msgRes > 0)
 		{
-			TranslateMessage(&msg);
-			DispatchMessage(&msg);
+			if(msg.message == MAIN_THREAD_APPEND_TO_LOG_A)
+			{
+				int currTextLength = GetWindowTextLengthA(mLogAreaHandle);
+
+				SendMessageA(mLogAreaHandle, EM_SETSEL,     currTextLength, currTextLength);
+				SendMessageA(mLogAreaHandle, EM_REPLACESEL, FALSE,          msg.lParam);
+				SendMessageA(mLogAreaHandle, EM_SCROLL,     SB_LINEDOWN,    0);
+			}
+			else if(msg.message == MAIN_THREAD_APPEND_TO_LOG_W)
+			{
+				int currTextLength = GetWindowTextLengthW(mLogAreaHandle);
+
+				SendMessageW(mLogAreaHandle, EM_SETSEL,     currTextLength, currTextLength);
+				SendMessageW(mLogAreaHandle, EM_REPLACESEL, FALSE,          msg.lParam);
+				SendMessageW(mLogAreaHandle, EM_SCROLL,     SB_LINEDOWN,    0);
+			}
+			else
+			{
+				TranslateMessage(&msg);
+				DispatchMessage(&msg);
+			}
 		}
 	}
 
@@ -107,7 +131,7 @@ void WindowApp::Init(HINSTANCE hInstance, const CommandLineArguments& cmdArgs)
 	CreateChildWindows(hInstance);
 
 	mRenderer = std::make_unique<DisplayRenderer>(mPreviewAreaHandle, mClickRuleAreaHandle);
-	mLogger   = std::make_unique<WindowLogger>(mLogAreaHandle);
+	mLogger   = std::make_unique<WindowLogger>(GetCurrentThreadId());
 
 	StafraApp::Init(cmdArgs);
 }
@@ -536,6 +560,32 @@ void WindowApp::CreateChildWindows(HINSTANCE hInstance)
 
 	UpdateWindow(mLogAreaHandle);
 	ShowWindow(mLogAreaHandle, SW_SHOW);
+
+	std::wstring logFontName = L"Lucida Console";
+
+	LOGFONT logFontDesc;
+	logFontDesc.lfHeight         = 20;
+	logFontDesc.lfWidth          = 0;
+	logFontDesc.lfEscapement     = 0;
+	logFontDesc.lfOrientation    = 0;
+	logFontDesc.lfWeight         = FW_NORMAL;
+	logFontDesc.lfItalic         = FALSE;
+	logFontDesc.lfUnderline      = FALSE;
+	logFontDesc.lfStrikeOut      = FALSE;
+	logFontDesc.lfCharSet        = OEM_CHARSET;
+	logFontDesc.lfOutPrecision   = OUT_DEFAULT_PRECIS;
+	logFontDesc.lfClipPrecision  = CLIP_DEFAULT_PRECIS;
+	logFontDesc.lfQuality        = PROOF_QUALITY;
+	logFontDesc.lfPitchAndFamily = FF_MODERN | FIXED_PITCH;
+	memcpy_s(logFontDesc.lfFaceName, 32, logFontName.c_str(), logFontName.length() + 1);
+
+	mLogAreaFont = CreateFontIndirect(&logFontDesc);
+	if(mLogAreaFont)
+	{
+		SendMessage(mLogAreaHandle, WM_SETFONT, (WPARAM)mLogAreaFont, TRUE);
+	}
+
+	SetFocus(mMainWindowHandle);
 }
 
 void WindowApp::CreateBackgroundTaskThreads()
