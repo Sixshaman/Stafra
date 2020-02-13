@@ -5,14 +5,7 @@
 #include <DirectXMath.h>
 #include <wrl/client.h>
 #include <string>
-
-enum class LoadError
-{
-	LOAD_SUCCESS,
-	ERROR_CANT_READ_FILE,
-	ERROR_WRONG_SIZE,
-	ERROR_INVALID_ARGUMENT
-};
+#include "..\Util.hpp"
 
 /*
 The class for loading initial state from file.
@@ -28,8 +21,8 @@ public:
 	BoardLoader(ID3D11Device* device);
 	~BoardLoader();
 
-	LoadError LoadBoardFromFile(ID3D11Device* device, ID3D11DeviceContext* dc, const std::wstring& filename, ID3D11Texture2D** outBoardTex);
-	LoadError LoadClickRuleFromFile(ID3D11Device* device, ID3D11DeviceContext* dc, const std::wstring& filename, ID3D11Texture2D** outClickRule);
+	Utils::BoardLoadError LoadBoardFromFile(ID3D11Device* device, ID3D11DeviceContext* dc, const std::wstring& filename, ID3D11Texture2D** outBoardTex);
+	Utils::BoardLoadError LoadClickRuleFromFile(ID3D11Device* device, ID3D11DeviceContext* dc, const std::wstring& filename, ID3D11Texture2D** outClickRule);
 
 private:
 	void LoadShaderData(ID3D11Device* device);

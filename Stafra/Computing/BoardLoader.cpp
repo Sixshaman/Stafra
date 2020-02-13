@@ -11,11 +11,11 @@ BoardLoader::~BoardLoader()
 {
 }
 
-LoadError BoardLoader::LoadBoardFromFile(ID3D11Device* device, ID3D11DeviceContext* dc, const std::wstring& filename, ID3D11Texture2D** outBoardTex)
+Utils::BoardLoadError BoardLoader::LoadBoardFromFile(ID3D11Device* device, ID3D11DeviceContext* dc, const std::wstring& filename, ID3D11Texture2D** outBoardTex)
 {
 	if(!device || !dc || !outBoardTex || *outBoardTex != nullptr)
 	{
-		return LoadError::ERROR_INVALID_ARGUMENT;
+		return Utils::BoardLoadError::ERROR_INVALID_ARGUMENT;
 	}
 
 	//Attempt to load the initial state
@@ -24,7 +24,7 @@ LoadError BoardLoader::LoadBoardFromFile(ID3D11Device* device, ID3D11DeviceConte
 	HRESULT hr = DirectX::CreateWICTextureFromFile(device, filename.c_str(), reinterpret_cast<ID3D11Resource**>(initialTex.GetAddressOf()), initialStateSRV.GetAddressOf());
 	if(FAILED(hr))
 	{
-		return LoadError::ERROR_CANT_READ_FILE;
+		return Utils::BoardLoadError::ERROR_CANT_READ_FILE;
 	}
 
 	D3D11_TEXTURE2D_DESC texDesc;
@@ -34,7 +34,7 @@ LoadError BoardLoader::LoadBoardFromFile(ID3D11Device* device, ID3D11DeviceConte
 	|| ((texDesc.Width  + 1) & texDesc.Width)  != 0  //Check if texDesc.Width is power of 2 minus 1
 	|| ((texDesc.Height + 1) & texDesc.Height) != 0) //Check if texDesc.Width is power of 2 minus 1
 	{
-		return LoadError::ERROR_WRONG_SIZE;
+		return Utils::BoardLoadError::ERROR_WRONG_SIZE;
 	}
 
 	uint32_t texWidth  = texDesc.Width;
@@ -73,14 +73,14 @@ LoadError BoardLoader::LoadBoardFromFile(ID3D11Device* device, ID3D11DeviceConte
 	ThrowIfFailed(device->CreateTexture2D(&outBoardTexDesc, nullptr, outBoardTex));
 	dc->CopyResource(*outBoardTex, boardTex.Get());
 
-	return LoadError::LOAD_SUCCESS;
+	return Utils::BoardLoadError::LOAD_SUCCESS;
 }
 
-LoadError BoardLoader::LoadClickRuleFromFile(ID3D11Device* device, ID3D11DeviceContext* dc, const std::wstring& filename, ID3D11Texture2D** outClickRuleTex)
+Utils::BoardLoadError BoardLoader::LoadClickRuleFromFile(ID3D11Device* device, ID3D11DeviceContext* dc, const std::wstring& filename, ID3D11Texture2D** outClickRuleTex)
 {
 	if(!device || !dc || !outClickRuleTex || *outClickRuleTex != nullptr)
 	{
-		return LoadError::ERROR_INVALID_ARGUMENT;
+		return Utils::BoardLoadError::ERROR_INVALID_ARGUMENT;
 	}
 
 	//Attempt to load the initial state
@@ -89,7 +89,7 @@ LoadError BoardLoader::LoadClickRuleFromFile(ID3D11Device* device, ID3D11DeviceC
 	HRESULT hr = DirectX::CreateWICTextureFromFile(device, filename.c_str(), reinterpret_cast<ID3D11Resource**>(clickRuleTex.GetAddressOf()), clickruleSRV.GetAddressOf());
 	if(FAILED(hr))
 	{
-		return LoadError::ERROR_CANT_READ_FILE;
+		return Utils::BoardLoadError::ERROR_CANT_READ_FILE;
 	}
 
 	D3D11_TEXTURE2D_DESC texDesc;
@@ -97,7 +97,7 @@ LoadError BoardLoader::LoadClickRuleFromFile(ID3D11Device* device, ID3D11DeviceC
 
 	if(texDesc.Width != 32 || texDesc.Height != 32) //Acceptable click rule sizes: 32x32
 	{
-		return LoadError::ERROR_WRONG_SIZE;
+		return Utils::BoardLoadError::ERROR_WRONG_SIZE;
 	}
 
 	D3D11_TEXTURE2D_DESC clickRuleTexDesc;
@@ -134,7 +134,7 @@ LoadError BoardLoader::LoadClickRuleFromFile(ID3D11Device* device, ID3D11DeviceC
 	ThrowIfFailed(device->CreateTexture2D(&outClickRuleTexDesc, nullptr, outClickRuleTex));
 	dc->CopyResource(*outClickRuleTex, clickRuleTransformedTex.Get());
 
-	return LoadError::LOAD_SUCCESS;
+	return Utils::BoardLoadError::LOAD_SUCCESS;
 }
 
 void BoardLoader::InitialStateTransform(ID3D11DeviceContext* dc, ID3D11ShaderResourceView* initialStateSRV, ID3D11UnorderedAccessView* initialBoardUAV, uint32_t width, uint32_t height)

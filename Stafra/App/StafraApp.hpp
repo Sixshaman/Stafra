@@ -20,6 +20,17 @@ protected:
 
 	std::wstring IntermediateStateString(uint32_t frameNumber) const;
 
+	void ComputeFractalTick();
+	void SaveCurrentVideoFrame(const std::wstring& filename);
+	void SaveStability(const std::wstring& filename);
+
+	bool LoadBoardFromFile(const std::wstring& filename);
+	void InitBoard4Corners();
+
+	bool LoadClickRuleFromFile(const std::wstring& filename);
+	void InitDefaultClickRule();
+
+private:
 	void ParseCmdArgs(const CommandLineArguments& cmdArgs);
 
 protected:

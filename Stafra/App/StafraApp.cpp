@@ -58,13 +58,103 @@ void StafraApp::ParseCmdArgs(const CommandLineArguments& cmdArgs)
 		CreateDirectory(L"DiffStabil", nullptr);
 	}
 
-	if(!mFractalGen->LoadClickRuleFromFile(L"ClickRule.png"))
+	if(!LoadClickRuleFromFile(L"ClickRule.png"))
 	{
-		mFractalGen->InitDefaultClickRule();
+		InitDefaultClickRule();
 	}
 
-	if(!mFractalGen->LoadBoardFromFile(L"InitialBoard.png"))
+	if(!LoadBoardFromFile(L"InitialBoard.png"))
 	{
-		mFractalGen->Init4CornersBoard();
+		InitBoard4Corners();
 	}
+}
+
+void StafraApp::ComputeFractalTick()
+{
+	std::wstring currFrameNumberStr = IntermediateStateString(mFractalGen->GetLastFrameNumber() + 1);
+	mLogger->WriteToLog(L"Computing the frame " + currFrameNumberStr + L"/" + std::to_wstring(mFinalFrameNumber) + L"...");
+
+	mFractalGen->Tick();
+}
+
+void StafraApp::SaveCurrentVideoFrame(const std::wstring& filename)
+{
+	mLogger->WriteToLog(L"Saving the video frame " + filename + L"...");
+	mFractalGen->SaveCurrentVideoFrame(filename);
+}
+
+void StafraApp::SaveStability(const std::wstring& filename)
+{
+	mLogger->WriteToLog(L"Saving the stability state " + filename + L"...");
+	mFractalGen->SaveCurrentStep(filename);
+}
+
+bool StafraApp::LoadBoardFromFile(const std::wstring& filename)
+{
+	mLogger->WriteToLog(L"Loading the board from " + filename + L"...");
+
+	Utils::BoardLoadError loadErr = mFractalGen->LoadBoardFromFile(filename);
+	switch (loadErr)
+	{
+	case Utils::BoardLoadError::ERROR_CANT_READ_FILE:
+	{
+		mLogger->WriteToLog(L"Cannot read file!");
+		return false;
+	}
+	case Utils::BoardLoadError::ERROR_WRONG_SIZE:
+	{
+		mLogger->WriteToLog(L"Incorrect board dimensions! Acceptable dimensions: 1x1, 3x3, 7x7, 15x15, 31x31, 63x63, 127x127, 255x255, 511x511, 1023x1023, 2047x2047, 4095x4095, 8191x8191, 16383x16383.");
+		return false;
+	}
+	case Utils::BoardLoadError::ERROR_INVALID_ARGUMENT:
+	{
+		mLogger->WriteToLog(L"Unknown error!");
+		return false;
+	}
+	default:
+	{
+		return true;
+	}
+	}
+}
+
+void StafraApp::InitBoard4Corners()
+{
+	mLogger->WriteToLog(L"Initializing default state: 4 CORNERS...");
+	mFractalGen->Init4CornersBoard();
+}
+
+bool StafraApp::LoadClickRuleFromFile(const std::wstring& filename)
+{
+	mLogger->WriteToLog(L"Loading the click rule from " + filename + L"...");
+
+	Utils::BoardLoadError loadErr = mFractalGen->LoadClickRuleFromFile(filename);
+	switch (loadErr)
+	{
+	case Utils::BoardLoadError::ERROR_CANT_READ_FILE:
+	{
+		mLogger->WriteToLog(L"Cannot read file!");
+		return false;
+	}
+	case Utils::BoardLoadError::ERROR_WRONG_SIZE:
+	{
+		mLogger->WriteToLog(L"Incorrect click rule dimensions! Acceptable dimensions: 32x32.");
+		return false;
+	}
+	case Utils::BoardLoadError::ERROR_INVALID_ARGUMENT:
+	{
+		mLogger->WriteToLog(L"Unknown error!");
+		return false;
+	}
+	default:
+	{
+		return true;
+	}
+	}
+}
+
+void StafraApp::InitDefaultClickRule()
+{
+	mLogger->WriteToLog(L"Initializing default click rule...");
+	mFractalGen->InitDefaultClickRule();
 }

@@ -77,23 +77,19 @@ void FractalGen::InitDefaultClickRule()
 	mRenderer->NeedRedrawClickRule();
 }
 
-bool FractalGen::LoadClickRuleFromFile(const std::wstring& clickRuleFile)
+Utils::BoardLoadError FractalGen::LoadClickRuleFromFile(const std::wstring& clickRuleFile)
 {
 	Microsoft::WRL::ComPtr<ID3D11Texture2D> clickRuleTex;
-	LoadError loadErr = mBoardLoader->LoadClickRuleFromFile(mRenderer->GetDevice(), mRenderer->GetDeviceContext(), clickRuleFile, clickRuleTex.GetAddressOf());
+	Utils::BoardLoadError loadErr = mBoardLoader->LoadClickRuleFromFile(mRenderer->GetDevice(), mRenderer->GetDeviceContext(), clickRuleFile, clickRuleTex.GetAddressOf());
 
-	if(loadErr == LoadError::LOAD_SUCCESS)
+	if(loadErr == Utils::BoardLoadError::LOAD_SUCCESS)
 	{
 		mClickRules->CreateFromTexture(mRenderer->GetDevice(), clickRuleTex.Get());
 		mRenderer->SetCurrentClickRule(mClickRules->GetClickRuleImageSRV());
 		mRenderer->NeedRedrawClickRule();
+	}
 
-		return true;
-	}
-	else
-	{
-		return false;
-	}
+	return loadErr;
 }
 
 uint32_t FractalGen::GetLastFrameNumber() const
@@ -126,20 +122,17 @@ void FractalGen::Init4SidesBoard()
 	mBoards->Init4SidesBoard(mRenderer->GetDevice(), mRenderer->GetDeviceContext(), mDefaultBoardWidth, mDefaultBoardHeight);
 }
 
-bool FractalGen::LoadBoardFromFile(const std::wstring& boardFile)
+Utils::BoardLoadError FractalGen::LoadBoardFromFile(const std::wstring& boardFile)
 {
 	Microsoft::WRL::ComPtr<ID3D11Texture2D> initialBoardTex;
-	LoadError loadErr = mBoardLoader->LoadBoardFromFile(mRenderer->GetDevice(), mRenderer->GetDeviceContext(), boardFile, initialBoardTex.GetAddressOf());
+	Utils::BoardLoadError loadErr = mBoardLoader->LoadBoardFromFile(mRenderer->GetDevice(), mRenderer->GetDeviceContext(), boardFile, initialBoardTex.GetAddressOf());
 
-	if(loadErr == LoadError::LOAD_SUCCESS)
+	if(loadErr == Utils::BoardLoadError::LOAD_SUCCESS)
 	{
 		mBoards->InitBoardFromTexture(mRenderer->GetDevice(), mRenderer->GetDeviceContext(), initialBoardTex.Get());
-		return true;
 	}
-	else
-	{
-		return false;
-	}
+
+	return loadErr;
 }
 
 void FractalGen::ResetComputingParameters()

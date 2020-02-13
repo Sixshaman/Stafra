@@ -10,6 +10,7 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include "..\Util.hpp"
 
 class Renderer;
 
@@ -38,13 +39,13 @@ public:
 	void SetSpawnPeriod(uint32_t spawn);
 	void SetUseSmooth(bool smooth);
 
-	void InitDefaultClickRule();
-	bool LoadClickRuleFromFile(const std::wstring& clickRuleFile);
-	void EditClickRule(float normalizedX, float normalizedY);
+	void                  InitDefaultClickRule();
+	Utils::BoardLoadError LoadClickRuleFromFile(const std::wstring& clickRuleFile);
+	void                  EditClickRule(float normalizedX, float normalizedY);
 
-	void Init4CornersBoard();
-	void Init4SidesBoard();
-	bool LoadBoardFromFile(const std::wstring& boardFile);
+	void                  Init4CornersBoard();
+	void                  Init4SidesBoard();
+	Utils::BoardLoadError LoadBoardFromFile(const std::wstring& boardFile);
 
 	void ResetComputingParameters();
 	void Tick();

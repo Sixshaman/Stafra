@@ -169,6 +169,7 @@
     <ClCompile Include="App\FileDialog.cpp" />
     <ClCompile Include="App\Renderer.cpp" />
     <ClCompile Include="App\WindowApp.cpp" />
+    <ClCompile Include="App\WindowLogger.cpp" />
     <ClCompile Include="Computing\BoardLoader.cpp" />
     <ClCompile Include="Computing\Boards.cpp" />
     <ClCompile Include="Computing\BoardSaver.cpp" />
@@ -196,6 +197,7 @@
     <ClInclude Include="App\FileDialog.hpp" />
     <ClInclude Include="App\Renderer.hpp" />
     <ClInclude Include="App\WindowApp.hpp" />
+    <ClInclude Include="App\WindowLogger.h" />
     <ClInclude Include="Computing\BoardLoader.hpp" />
     <ClInclude Include="Computing\Boards.hpp" />
     <ClInclude Include="Computing\BoardSaver.hpp" />

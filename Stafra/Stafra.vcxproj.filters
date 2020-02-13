@@ -123,6 +123,9 @@
     <ClCompile Include="App\ConsoleLogger.cpp">
       <Filter>App</Filter>
     </ClCompile>
+    <ClCompile Include="App\WindowLogger.cpp">
+      <Filter>App</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Util.hpp">
@@ -195,6 +198,9 @@
       <Filter>App</Filter>
     </ClInclude>
     <ClInclude Include="App\ConsoleLogger.hpp">
+      <Filter>App</Filter>
+    </ClInclude>
+    <ClInclude Include="App\WindowLogger.h">
       <Filter>App</Filter>
     </ClInclude>
   </ItemGroup>

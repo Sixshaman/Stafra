@@ -14,12 +14,9 @@ ConsoleApp::~ConsoleApp()
 
 void ConsoleApp::ComputeFractal()
 {
-	while(true)
+	while(mFractalGen->GetLastFrameNumber() != mFinalFrameNumber)
 	{
-		std::wstring currFrameNumberStr = IntermediateStateString(mFractalGen->GetLastFrameNumber() + 1);
-		mLogger->WriteToLog(L"Computing the frame " + currFrameNumberStr + L"/" + std::to_wstring(mFinalFrameNumber) + L"...");
-
-		mFractalGen->Tick();
+		ComputeFractalTick();
 		if(mRenderer->ConsumeNeedRedraw())
 		{
 			mRenderer->DrawPreview(); //Flushes the device context
@@ -27,21 +24,14 @@ void ConsoleApp::ComputeFractal()
 
 		if(mSaveVideoFrames)
 		{
-			std::wstring videoFrameName = L"DiffStabil\\Stabl" + currFrameNumberStr + L".png";
-			mLogger->WriteToLog(L"Saving the video frame " + videoFrameName + L"...");
+			std::wstring frameNumberStr     = IntermediateStateString(mFractalGen->GetLastFrameNumber());
+			std::wstring videoFrameFilename = L"DiffStabil\\Stabl" + frameNumberStr + L".png";
 
-			mFractalGen->SaveCurrentVideoFrame(videoFrameName);
-		}
-
-		if(mFractalGen->GetLastFrameNumber() == mFinalFrameNumber)
-		{
-			std::wstring stablFilename = L"Stability.png";
-			mLogger->WriteToLog(L"Saving the stability state " + stablFilename + L"...");
-
-			mFractalGen->SaveCurrentStep(stablFilename);
-			break;
+			SaveCurrentVideoFrame(videoFrameFilename);
 		}
 	}
+
+	SaveStability(L"Stability.png");
 }
 
 void ConsoleApp::Init(const CommandLineArguments& cmdArgs)

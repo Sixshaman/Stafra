@@ -26,6 +26,14 @@ namespace Utils
 	HRESULT LoadShaderFromFile(ID3D11Device* device, const std::wstring& path, ID3D11ComputeShader** shader);
 	HRESULT LoadShaderFromFile(ID3D11Device* device, const std::wstring& path, ID3D11VertexShader**  shader);
 	HRESULT LoadShaderFromFile(ID3D11Device* device, const std::wstring& path, ID3D11PixelShader**   shader);
+
+	enum class BoardLoadError
+	{
+		LOAD_SUCCESS,
+		ERROR_CANT_READ_FILE,
+		ERROR_WRONG_SIZE,
+		ERROR_INVALID_ARGUMENT
+	};
 }
 
 #ifndef ThrowIfFailed

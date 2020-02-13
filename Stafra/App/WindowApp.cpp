@@ -5,6 +5,7 @@
 #include <sstream>
 #include <Windowsx.h>
 #include "FileDialog.hpp"
+#include "WindowLogger.h"
 #include "..\Util.hpp"
 
 #undef min
@@ -106,6 +107,8 @@ void WindowApp::Init(HINSTANCE hInstance, const CommandLineArguments& cmdArgs)
 	CreateChildWindows(hInstance);
 
 	mRenderer = std::make_unique<DisplayRenderer>(mPreviewAreaHandle, mClickRuleAreaHandle);
+	mLogger   = std::make_unique<WindowLogger>(mLogAreaHandle);
+
 	StafraApp::Init(cmdArgs);
 }
 
@@ -271,6 +274,18 @@ LRESULT CALLBACK WindowApp::AppProc(HWND hwnd, UINT message, WPARAM wparam, LPAR
 		minmaxInfo->ptMinTrackSize.y = mMinWindowHeight;
 		return 0;
 	}
+	case WM_CTLCOLORSTATIC: //To paint the log white
+	{
+		if((HWND)lparam == mLogAreaHandle)
+		{
+			HBRUSH whiteBrush = GetSysColorBrush(COLOR_WINDOW);
+			return (LRESULT)(whiteBrush);
+		}
+		else
+		{
+			return DefWindowProc(hwnd, message, wparam, lparam);
+		}
+	}
 	default:
 	{
 		break;
@@ -337,28 +352,28 @@ void WindowApp::RenderThreadFunc()
 		{
 			//Catch the pointer
 			std::unique_ptr<std::wstring> clickRuleFilenamePtr(reinterpret_cast<std::wstring*>(threadMsg.lParam));
-			mFractalGen->LoadClickRuleFromFile(*clickRuleFilenamePtr);
+			LoadClickRuleFromFile(*clickRuleFilenamePtr);
 			break;
 		}
 		case RENDER_THREAD_LOAD_BOARD:
 		{
 			//Catch the pointer
 			std::unique_ptr<std::wstring> boardFilenamePtr(reinterpret_cast<std::wstring*>(threadMsg.lParam));
-			mFractalGen->LoadBoardFromFile(*boardFilenamePtr);
+			LoadBoardFromFile(*boardFilenamePtr);
 			break;
 		}
 		case RENDER_THREAD_SAVE_STABILITY:
 		{
 			//Catch the pointer
 			std::unique_ptr<std::wstring> stabilityFilenamePtr(reinterpret_cast<std::wstring*>(threadMsg.lParam));
-			mFractalGen->SaveCurrentStep(*stabilityFilenamePtr);
+			SaveStability(*stabilityFilenamePtr);
 			break;
 		}
 		case RENDER_THREAD_SAVE_VIDEO_FRAME:
 		{
 			//Catch the pointer
 			std::unique_ptr<std::wstring> frameFilenamePtr(reinterpret_cast<std::wstring*>(threadMsg.lParam));
-			mFractalGen->SaveCurrentVideoFrame(*frameFilenamePtr);
+			SaveCurrentVideoFrame(*frameFilenamePtr);
 			break;
 		}
 		case RENDER_THREAD_REDRAW:
@@ -373,7 +388,7 @@ void WindowApp::RenderThreadFunc()
 		}
 		case RENDER_THREAD_COMPUTE_TICK:
 		{
-			mFractalGen->Tick();
+			ComputeFractalTick();
 			break;
 		}
 		case RENDER_THREAD_SYNC:
@@ -507,7 +522,7 @@ void WindowApp::CreateChildWindows(HINSTANCE hInstance)
 {
 	DWORD previewStyle   = 0;
 	DWORD clickRuleStyle = 0;
-	DWORD logStyle       = ES_AUTOHSCROLL | ES_AUTOVSCROLL | ES_LEFT | ES_MULTILINE | ES_UPPERCASE /*The best one!*/ | ES_WANTRETURN;
+	DWORD logStyle       = ES_AUTOHSCROLL | ES_AUTOVSCROLL | ES_LEFT | ES_MULTILINE | ES_READONLY /* | ES_UPPERCASE /*The best one!*/ | ES_WANTRETURN;
 
 	mPreviewAreaHandle   = CreateWindowEx(0, WC_STATIC, L"Preview",   WS_CHILD |              previewStyle,   0, 0, gPreviewAreaMinWidth, gPreviewAreaMinHeight, mMainWindowHandle, nullptr, hInstance, nullptr);
 	mClickRuleAreaHandle = CreateWindowEx(0, WC_STATIC, L"ClickRule", WS_CHILD |              clickRuleStyle, 0, 0, gClickRuleAreaWidth,  gClickRuleAreaHeight,  mMainWindowHandle, nullptr, hInstance, nullptr);
