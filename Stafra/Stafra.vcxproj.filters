@@ -200,7 +200,7 @@
     <ClInclude Include="App\ConsoleLogger.hpp">
       <Filter>App</Filter>
     </ClInclude>
-    <ClInclude Include="App\WindowLogger.h">
+    <ClInclude Include="App\WindowLogger.hpp">
       <Filter>App</Filter>
     </ClInclude>
   </ItemGroup>

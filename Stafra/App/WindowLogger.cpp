@@ -1,8 +1,8 @@
-#include "WindowLogger.h"
+#include "WindowLogger.hpp"
 
 WindowLogger::WindowLogger(HWND logAreaHandle): mLogTextAreaHandle(logAreaHandle)
 {
-	mCharacterLimit = SendMessage(mLogTextAreaHandle, EM_GETLIMITTEXT, 0, 0);
+	SendMessage(mLogTextAreaHandle, EM_SETLIMITTEXT, 20000000, 0);
 }
 
 WindowLogger::~WindowLogger()

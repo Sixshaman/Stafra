@@ -14,6 +14,4 @@ public:
 
 private:
 	HWND mLogTextAreaHandle;
-
-	uint32_t mCharacterLimit;
 };
