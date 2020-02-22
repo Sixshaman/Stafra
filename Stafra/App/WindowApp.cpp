@@ -5,7 +5,7 @@
 #include <sstream>
 #include <Windowsx.h>
 #include "FileDialog.hpp"
-#include "WindowLogger.h"
+#include "WindowLogger.hpp"
 #include "..\Util.hpp"
 
 #undef min

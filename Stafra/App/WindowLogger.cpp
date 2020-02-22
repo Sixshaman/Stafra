@@ -1,7 +1,8 @@
-#include "WindowLogger.h"
+#include "WindowLogger.hpp"
 
-WindowLogger::WindowLogger(DWORD mainThreadId): mMainThreadId(mainThreadId)
+WindowLogger::WindowLogger(HWND logAreaHandle): mLogTextAreaHandle(logAreaHandle)
 {
+	SendMessage(mLogTextAreaHandle, EM_SETLIMITTEXT, 20000000, 0);
 }
 
 WindowLogger::~WindowLogger()
@@ -10,16 +11,16 @@ WindowLogger::~WindowLogger()
 
 void WindowLogger::WriteToLog(const std::wstring& message)
 {
-	uint32_t currMessageLength = mMessageBufferW.length();
-	mMessageBufferW           += message + L"\r\n";
-	
-	PostThreadMessageW(mMainThreadId, WM_APP + 2, 0, (LPARAM)(mMessageBufferW.c_str() + currMessageLength));
+	int endPos = GetWindowTextLength(mLogTextAreaHandle);
+
+	SendMessageW(mLogTextAreaHandle, EM_SETSEL,     endPos, endPos);
+	SendMessageW(mLogTextAreaHandle, EM_REPLACESEL, FALSE,  (LPARAM)(message + L"\r\n").c_str());
 }
 
 void WindowLogger::WriteToLog(const std::string& message)
 {
-	uint32_t currMessageLength = mMessageBufferA.length();
-	mMessageBufferA           += message + "\r\n";
-	
-	PostThreadMessageW(mMainThreadId, WM_APP + 1, 0, (LPARAM)(mMessageBufferA.c_str() + currMessageLength));
+	int endPos = GetWindowTextLength(mLogTextAreaHandle);
+
+	SendMessageA(mLogTextAreaHandle, EM_SETSEL, endPos, endPos);
+	SendMessageA(mLogTextAreaHandle, EM_REPLACESEL, FALSE, (LPARAM)(message + "\r\n").c_str());
 }
