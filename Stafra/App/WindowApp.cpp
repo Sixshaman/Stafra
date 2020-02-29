@@ -19,8 +19,7 @@
 #define MENU_SHOW_CLICK_RULE_GRID 1006
 #define MENU_HIDE_CLICK_RULE_GRID 1007
 
-#define MAIN_THREAD_APPEND_TO_LOG_A (WM_APP + 1)
-#define MAIN_THREAD_APPEND_TO_LOG_W (WM_APP + 2)
+#define MAIN_THREAD_APPEND_TO_LOG (WM_APP + 1)
 
 #define RENDER_THREAD_EXIT              (WM_APP + 101)
 #define RENDER_THREAD_REINIT            (WM_APP + 102)
@@ -98,27 +97,8 @@ int WindowApp::Run()
 		msgRes = GetMessage(&msg, nullptr, 0, 0);
 		if(msgRes > 0)
 		{
-			if(msg.message == MAIN_THREAD_APPEND_TO_LOG_A)
-			{
-				int currTextLength = GetWindowTextLengthA(mLogAreaHandle);
-
-				SendMessageA(mLogAreaHandle, EM_SETSEL,     currTextLength, currTextLength);
-				SendMessageA(mLogAreaHandle, EM_REPLACESEL, FALSE,          msg.lParam);
-				SendMessageA(mLogAreaHandle, EM_SCROLL,     SB_LINEDOWN,    0);
-			}
-			else if(msg.message == MAIN_THREAD_APPEND_TO_LOG_W)
-			{
-				int currTextLength = GetWindowTextLengthW(mLogAreaHandle);
-
-				SendMessageW(mLogAreaHandle, EM_SETSEL,     currTextLength, currTextLength);
-				SendMessageW(mLogAreaHandle, EM_REPLACESEL, FALSE,          msg.lParam);
-				SendMessageW(mLogAreaHandle, EM_SCROLL,     SB_LINEDOWN,    0);
-			}
-			else
-			{
-				TranslateMessage(&msg);
-				DispatchMessage(&msg);
-			}
+			TranslateMessage(&msg);
+			DispatchMessage(&msg);
 		}
 	}
 
@@ -131,7 +111,7 @@ void WindowApp::Init(HINSTANCE hInstance, const CommandLineArguments& cmdArgs)
 	CreateChildWindows(hInstance);
 
 	mRenderer = std::make_unique<DisplayRenderer>(mPreviewAreaHandle, mClickRuleAreaHandle);
-	mLogger   = std::make_unique<WindowLogger>(GetCurrentThreadId());
+	mLogger   = std::make_unique<WindowLogger>(mMainWindowHandle);
 
 	StafraApp::Init(cmdArgs);
 }
@@ -309,6 +289,33 @@ LRESULT CALLBACK WindowApp::AppProc(HWND hwnd, UINT message, WPARAM wparam, LPAR
 		{
 			return DefWindowProc(hwnd, message, wparam, lparam);
 		}
+	}
+	case WM_APP + 1:
+	{
+		dynamic_cast<WindowLogger*>(mLogger.get())->Block(); //Enter the internal critical section in logger (will refactor later)
+
+		mLogger->Flush(); //Tell the logger that we've processed the message
+
+		//We can't unfortunately do it in logger because it will create a deadlock during window destruction and thread closing,
+		//because we use WaitForSingleObject to wait for background threads to finish. If during that time we call SendMessage()
+		//from a background thread, deadlock will occur since background thread waits for the main thread to process the message
+		//while the main thread waits for the background thread to close. 
+		//Solution: handle log window updates in the main thread only.
+		int currTextLength = GetWindowTextLength(mLogAreaHandle);
+
+		//Just for debugging
+		OutputDebugString(L"RECIEVED: ");
+		OutputDebugString((WCHAR*)lparam);
+		OutputDebugString(L"\n");
+
+		//Update the logger area
+		SendMessage(mLogAreaHandle, EM_SETSEL,     currTextLength, currTextLength);
+		SendMessage(mLogAreaHandle, EM_REPLACESEL, FALSE,          lparam);
+		SendMessage(mLogAreaHandle, EM_SCROLL,     SB_LINEDOWN,    0);
+
+		dynamic_cast<WindowLogger*>(mLogger.get())->Unblock();
+
+		return 0;
 	}
 	default:
 	{
@@ -584,6 +591,8 @@ void WindowApp::CreateChildWindows(HINSTANCE hInstance)
 	{
 		SendMessage(mLogAreaHandle, WM_SETFONT, (WPARAM)mLogAreaFont, TRUE);
 	}
+
+	SendMessage(mLogAreaHandle, EM_SETLIMITTEXT, 20000000, 0);
 
 	SetFocus(mMainWindowHandle);
 }

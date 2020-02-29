@@ -10,4 +10,6 @@ public:
 
 	void WriteToLog(const std::wstring& message) override;
 	void WriteToLog(const std::string&  message) override;
+
+	void Flush() override;
 };

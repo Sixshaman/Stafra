@@ -6,12 +6,21 @@
 class WindowLogger : public Logger
 {
 public:
-	WindowLogger(HWND logAreaHandle);
+	WindowLogger(HWND mainWindow);
 	~WindowLogger();
 
 	void WriteToLog(const std::wstring& message) override;
 	void WriteToLog(const std::string& message)  override;
 
+	void Block();
+	void Unblock();
+
+	void Flush() override;
+
 private:
-	HWND mLogTextAreaHandle;
+	HWND         mMainWindowHandle;
+	std::wstring mMessageBufferW;
+
+	bool             mLastMessageProcessed;
+	CRITICAL_SECTION mMessageCriticalSection;
 };

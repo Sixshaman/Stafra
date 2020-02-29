@@ -66,7 +66,7 @@ private:
 
 	int mMinWindowWidth;
 	int mMinWindowHeight;
-	 
+
 	PlayMode mPlayMode;
 
 	bool mResizing;

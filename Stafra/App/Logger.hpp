@@ -10,4 +10,6 @@ public:
 
 	virtual void WriteToLog(const std::wstring& message) = 0;
 	virtual void WriteToLog(const std::string&  message) = 0;
+
+	virtual void Flush() = 0;
 };
