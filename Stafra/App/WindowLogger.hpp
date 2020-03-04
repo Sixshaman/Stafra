@@ -12,8 +12,8 @@ public:
 	void WriteToLog(const std::wstring& message) override;
 	void WriteToLog(const std::string& message)  override;
 
-	void Block();
-	void Unblock();
+	void Block()   override;
+	void Unblock() override;
 
 	void Flush() override;
 
@@ -23,4 +23,6 @@ private:
 
 	bool             mLastMessageProcessed;
 	CRITICAL_SECTION mMessageCriticalSection;
+
+	uint32_t mSentMessageCount;
 };

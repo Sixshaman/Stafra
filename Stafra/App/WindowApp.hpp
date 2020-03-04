@@ -67,6 +67,8 @@ private:
 	int mMinWindowWidth;
 	int mMinWindowHeight;
 
+	uint32_t mLoggerMessageCount;
+
 	PlayMode mPlayMode;
 
 	bool mResizing;

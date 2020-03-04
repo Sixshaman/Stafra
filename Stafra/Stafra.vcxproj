@@ -197,6 +197,7 @@
     <ClInclude Include="App\FileDialog.hpp" />
     <ClInclude Include="App\Renderer.hpp" />
     <ClInclude Include="App\WindowApp.hpp" />
+    <ClInclude Include="App\WindowConstants.hpp" />
     <ClInclude Include="App\WindowLogger.hpp" />
     <ClInclude Include="Computing\BoardLoader.hpp" />
     <ClInclude Include="Computing\Boards.hpp" />

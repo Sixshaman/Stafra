@@ -1,6 +1,7 @@
 #include "WindowLogger.hpp"
+#include "WindowConstants.hpp"
 
-WindowLogger::WindowLogger(HWND mainWindow): mMainWindowHandle(mainWindow), mLastMessageProcessed(true)
+WindowLogger::WindowLogger(HWND mainWindow): mMainWindowHandle(mainWindow), mLastMessageProcessed(true), mSentMessageCount(0)
 {
 	InitializeCriticalSection(&mMessageCriticalSection);
 
@@ -21,18 +22,14 @@ void WindowLogger::WriteToLog(const std::wstring& message)
 	//Solution: keep updating the internal message buffer until we're sure the logger area can process the message.
 	if(mLastMessageProcessed)
 	{
+		mSentMessageCount++;
 		mLastMessageProcessed = false;
 		mMessageBufferW.clear();
 	}
 	
 	mMessageBufferW += message + L"\r\n";
 
-	//Just for debugging
-	OutputDebugString(L"SENT: ");
-	OutputDebugString(mMessageBufferW.c_str());
-	OutputDebugString(L"\n");
-
-	PostMessage(mMainWindowHandle, WM_APP + 1, 0, (LPARAM)(mMessageBufferW.c_str()));
+	PostMessage(mMainWindowHandle, MAIN_THREAD_APPEND_TO_LOG, mSentMessageCount, (LPARAM)(mMessageBufferW.c_str()));
 
 	LeaveCriticalSection(&mMessageCriticalSection);
 }

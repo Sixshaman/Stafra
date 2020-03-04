@@ -6,37 +6,11 @@
 #include <Windowsx.h>
 #include "FileDialog.hpp"
 #include "WindowLogger.hpp"
+#include "WindowConstants.hpp"
 #include "..\Util.hpp"
 
 #undef min
 #undef max
-
-#define MENU_SAVE_CLICK_RULE      1001
-#define MENU_OPEN_CLICK_RULE      1002
-#define MENU_OPEN_BOARD           1003
-#define MENU_SAVE_BOARD           1004
-#define MENU_OPEN_RESTRICTION     1005
-#define MENU_SHOW_CLICK_RULE_GRID 1006
-#define MENU_HIDE_CLICK_RULE_GRID 1007
-
-#define MAIN_THREAD_APPEND_TO_LOG (WM_APP + 1)
-
-#define RENDER_THREAD_EXIT              (WM_APP + 101)
-#define RENDER_THREAD_REINIT            (WM_APP + 102)
-#define RENDER_THREAD_CLICK_RULE        (WM_APP + 103)
-#define RENDER_THREAD_LOAD_CLICK_RULE   (WM_APP + 104)
-#define RENDER_THREAD_SAVE_CLICK_RULE   (WM_APP + 105)
-#define RENDER_THREAD_LOAD_BOARD        (WM_APP + 106)
-#define RENDER_THREAD_SAVE_STABILITY    (WM_APP + 107)
-#define RENDER_THREAD_SAVE_VIDEO_FRAME  (WM_APP + 108)
-#define RENDER_THREAD_REDRAW            (WM_APP + 109)
-#define RENDER_THREAD_REDRAW_CLICK_RULE (WM_APP + 110)
-#define RENDER_THREAD_COMPUTE_TICK      (WM_APP + 111)
-#define RENDER_THREAD_RESIZE            (WM_APP + 112)
-#define RENDER_THREAD_SYNC              (WM_APP + 200)
-
-#define TICK_THREAD_EXIT (WM_APP + 201)
-#define TICK_THREAD_SYNC (WM_APP + 300)
 
 namespace
 {
@@ -68,7 +42,8 @@ namespace
 }
 
 WindowApp::WindowApp(HINSTANCE hInstance, const CommandLineArguments& cmdArgs): mMainWindowHandle(nullptr), mPreviewAreaHandle(nullptr), mClickRuleAreaHandle(nullptr), mLogAreaHandle(nullptr),
-                                                                                mRenderThreadHandle(nullptr), mCreateRenderThreadEvent(nullptr), mPlayMode(PlayMode::MODE_CONTINUOUS_FRAMES)
+                                                                                mRenderThreadHandle(nullptr), mCreateRenderThreadEvent(nullptr), mPlayMode(PlayMode::MODE_CONTINUOUS_FRAMES),
+	                                                                            mLoggerMessageCount(0)
 {
 	Init(hInstance, cmdArgs);
 
@@ -290,30 +265,34 @@ LRESULT CALLBACK WindowApp::AppProc(HWND hwnd, UINT message, WPARAM wparam, LPAR
 			return DefWindowProc(hwnd, message, wparam, lparam);
 		}
 	}
-	case WM_APP + 1:
+	case MAIN_THREAD_APPEND_TO_LOG:
 	{
-		dynamic_cast<WindowLogger*>(mLogger.get())->Block(); //Enter the internal critical section in logger (will refactor later)
+		//Sometimes the same message for unknown reasons is processed multiple times.
+		//Dirty workaround: additional check process the message ONLY if it wasn't processed yet.
+		//How do we know if it was processed? Keep the amount of processed messages in mLoggerMessageCount 
+		//and the id of the currently processed message in wparam
+		if(mLoggerMessageCount < wparam)
+		{
+			mLogger->Block(); //Can't let the logger update while we're processing the logger message
 
-		mLogger->Flush(); //Tell the logger that we've processed the message
+			mLogger->Flush(); //Tell the logger that we've processed the message
 
-		//We can't unfortunately do it in logger because it will create a deadlock during window destruction and thread closing,
-		//because we use WaitForSingleObject to wait for background threads to finish. If during that time we call SendMessage()
-		//from a background thread, deadlock will occur since background thread waits for the main thread to process the message
-		//while the main thread waits for the background thread to close. 
-		//Solution: handle log window updates in the main thread only.
-		int currTextLength = GetWindowTextLength(mLogAreaHandle);
+			//We can't unfortunately do it in logger because it will create a deadlock during window destruction and thread closing,
+			//because we use WaitForSingleObject to wait for background threads to finish. If during that time we call SendMessage()
+			//from a background thread, deadlock will occur since background thread waits for the main thread to process the message
+			//while the main thread waits for the background thread to close. 
+			//Solution: handle log window updates in the main thread only.
+			int currTextLength = GetWindowTextLength(mLogAreaHandle);
 
-		//Just for debugging
-		OutputDebugString(L"RECIEVED: ");
-		OutputDebugString((WCHAR*)lparam);
-		OutputDebugString(L"\n");
+			//Update the logger area
+			SendMessage(mLogAreaHandle, EM_SETSEL,     currTextLength, currTextLength);
+			SendMessage(mLogAreaHandle, EM_REPLACESEL, FALSE,          lparam);
+			SendMessage(mLogAreaHandle, EM_SCROLL,     SB_LINEDOWN,    0);
 
-		//Update the logger area
-		SendMessage(mLogAreaHandle, EM_SETSEL,     currTextLength, currTextLength);
-		SendMessage(mLogAreaHandle, EM_REPLACESEL, FALSE,          lparam);
-		SendMessage(mLogAreaHandle, EM_SCROLL,     SB_LINEDOWN,    0);
+			mLogger->Unblock();
 
-		dynamic_cast<WindowLogger*>(mLogger.get())->Unblock();
+			mLoggerMessageCount++;
+		}
 
 		return 0;
 	}

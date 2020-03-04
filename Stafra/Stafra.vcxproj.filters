@@ -203,6 +203,9 @@
     <ClInclude Include="App\WindowLogger.hpp">
       <Filter>App</Filter>
     </ClInclude>
+    <ClInclude Include="App\WindowConstants.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Shaders\ClearBoard\Clear4SidesCS.hlsl">
