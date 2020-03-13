@@ -547,6 +547,22 @@ void WindowApp::CreateChildWindows(HINSTANCE hInstance)
 	UpdateWindow(mLogAreaHandle);
 	ShowWindow(mLogAreaHandle, SW_SHOW);
 
+	//We need to redirect WM_KEYUP messages from the logger window to the main window
+	auto loggerSubclassProc = [](HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData)
+	{
+		if(message == WM_KEYUP)
+		{
+			HWND parentWnd = GetParent(hwnd);
+			SendMessage(parentWnd, message, wparam, lparam);
+		}
+
+		return DefSubclassProc(hwnd, message, wparam, lparam);
+	};
+
+	//Subclass the logger window procedure to redirect WM_KEYUP messages
+	SetWindowSubclass(mLogAreaHandle, loggerSubclassProc, 0, 0);
+
+	//Set logger area font
 	std::wstring logFontName = L"Lucida Console";
 
 	LOGFONT logFontDesc;

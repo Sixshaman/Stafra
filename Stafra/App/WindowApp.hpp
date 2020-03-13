@@ -64,6 +64,8 @@ private:
 	HANDLE mTickThreadHandle;
 	HANDLE mCreateTickThreadEvent;
 
+	WNDPROC mLoggerWindowProc;
+
 	int mMinWindowWidth;
 	int mMinWindowHeight;
 
