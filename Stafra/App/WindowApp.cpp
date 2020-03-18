@@ -12,6 +12,7 @@
 #undef min
 #undef max
 
+//TODO different reset modes
 namespace
 {
 	const int gMarginLeft = 5;
@@ -821,7 +822,21 @@ int WindowApp::OnHotkey(uint32_t hotkey)
 		}
 		break;
 	}
-
+	case VK_OEM_1:
+	{
+		mResetMode = ResetBoardModeApp::RESET_4_CORNERS;
+		break;
+	}
+	case VK_OEM_2:
+	{
+		mResetMode = ResetBoardModeApp::RESET_4_SIDES;
+		break;
+	}
+	case VK_OEM_3:
+	{
+		mResetMode = ResetBoardModeApp::RESET_CENTER;
+		break;
+	}
 	default:
 	{
 		break;

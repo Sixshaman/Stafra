@@ -15,7 +15,8 @@ Possible expansions: More different initial state configurations (1 mClear*Shade
 enum class BoardClearMode
 {
 	FOUR_CORNERS,
-	FOUR_SIDES
+	FOUR_SIDES,
+	CENTER
 };
 
 class DefaultBoards
@@ -35,11 +36,13 @@ private:
 	void LoadShaderData(ID3D11Device* device);
 
 	void InitialState4Corners(ID3D11DeviceContext* dc, ID3D11UnorderedAccessView* boardUAV, uint32_t width, uint32_t height);
-	void InitialState4Sides(ID3D11DeviceContext* dc, ID3D11UnorderedAccessView* boardUAV, uint32_t width, uint32_t height);
+	void InitialState4Sides(ID3D11DeviceContext* dc,   ID3D11UnorderedAccessView* boardUAV, uint32_t width, uint32_t height);
+	void InitialStateCenter(ID3D11DeviceContext* dc,   ID3D11UnorderedAccessView* boardUAV, uint32_t width, uint32_t height);
 
 private:
 	Microsoft::WRL::ComPtr<ID3D11ComputeShader> mClear4CornersShader;
 	Microsoft::WRL::ComPtr<ID3D11ComputeShader> mClear4SidesShader;
+	Microsoft::WRL::ComPtr<ID3D11ComputeShader> mClearCenterShader;
 
 	Microsoft::WRL::ComPtr<ID3D11Buffer> mCBufferParams;
 	CBParamsStruct                       mCBufferParamsCopy;

@@ -2,7 +2,7 @@
 #include <sstream>
 #include "..\Util.hpp"
 
-StafraApp::StafraApp(): mSaveVideoFrames(false), mFinalFrameNumber(1)
+StafraApp::StafraApp(): mSaveVideoFrames(false), mFinalFrameNumber(1), mResetMode(ResetBoardModeApp::RESET_4_CORNERS)
 {
 	ThrowIfFailed(CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED)); //Shell functions (file save/open dialogs) don't like multithreaded environment, so use COINIT_APARTMENTTHREADED instead of COINIT_MULTITHREADED
 }
@@ -50,6 +50,19 @@ void StafraApp::ParseCmdArgs(const CommandLineArguments& cmdArgs)
 	mFractalGen->SetSpawnPeriod(cmdArgs.SpawnPeriod());
 	mFractalGen->SetUseSmooth(cmdArgs.SmoothTransform());
 
+	switch (cmdArgs.ResetMode())
+	{
+	case CmdResetMode::RESET_4_CORNERS:
+		mResetMode = ResetBoardModeApp::RESET_4_CORNERS;
+		break;
+	case CmdResetMode::RESET_4_SIDES:
+		mResetMode = ResetBoardModeApp::RESET_4_SIDES;
+		break;
+	case CmdResetMode::RESET_CENTER:
+		mResetMode = ResetBoardModeApp::RESET_CENTER;
+		break;
+	}
+
 	mFinalFrameNumber = cmdArgs.FinalFrame();
 
 	mSaveVideoFrames = cmdArgs.SaveVideoFrames();
@@ -65,7 +78,7 @@ void StafraApp::ParseCmdArgs(const CommandLineArguments& cmdArgs)
 
 	if(!LoadBoardFromFile(L"InitialBoard.png"))
 	{
-		InitBoard4Corners();
+		InitBoard();
 	}
 }
 
@@ -118,10 +131,31 @@ bool StafraApp::LoadBoardFromFile(const std::wstring& filename)
 	}
 }
 
-void StafraApp::InitBoard4Corners()
+void StafraApp::InitBoard()
 {
-	mLogger->WriteToLog(L"Initializing default state: 4 CORNERS...");
-	mFractalGen->Init4CornersBoard();
+	switch (mResetMode)
+	{
+	case ResetBoardModeApp::RESET_4_CORNERS:
+	{
+		mLogger->WriteToLog(L"Initializing default state: 4 CORNERS...");
+		mFractalGen->Init4CornersBoard();
+		break;
+	}
+	case ResetBoardModeApp::RESET_4_SIDES:
+	{
+		mLogger->WriteToLog(L"Initializing default state: 4 SIDES...");
+		mFractalGen->Init4SidesBoard();
+		break;
+	}
+	case ResetBoardModeApp::RESET_CENTER:
+	{
+		mLogger->WriteToLog(L"Initializing default state: CENTER...");
+		mFractalGen->InitCenterBoard();
+		break;
+	}
+	default:
+		break;
+	}
 }
 
 bool StafraApp::LoadClickRuleFromFile(const std::wstring& filename)

@@ -51,7 +51,29 @@ void Boards::Init4SidesBoard(ID3D11Device* device, ID3D11DeviceContext* context,
 	mBoardWidth  = width;
 	mBoardHeight = height;
 
-	mDefaultBoards->CreateBoard(device, context, width, height, BoardClearMode::FOUR_CORNERS, mInitialBoardTex.GetAddressOf());
+	mDefaultBoards->CreateBoard(device, context, width, height, BoardClearMode::FOUR_SIDES, mInitialBoardTex.GetAddressOf());
+
+	D3D11_TEXTURE2D_DESC boardDesc;
+	mInitialBoardTex->GetDesc(&boardDesc);
+
+	D3D11_SHADER_RESOURCE_VIEW_DESC boardSrvDesc;
+	boardSrvDesc.Format                    = boardDesc.Format;
+	boardSrvDesc.ViewDimension             = D3D11_SRV_DIMENSION_TEXTURE2D;
+	boardSrvDesc.Texture2D.MipLevels       = 1;
+	boardSrvDesc.Texture2D.MostDetailedMip = 0;
+
+	ThrowIfFailed(device->CreateShaderResourceView(mInitialBoardTex.Get(), &boardSrvDesc, mInitialBoardSRV.GetAddressOf()));
+}
+
+void Boards::InitCenterBoard(ID3D11Device* device, ID3D11DeviceContext* context, uint32_t width, uint32_t height)
+{
+	mRestrictionSRV.Reset(); //Restriction may be invalid for the new size
+	mInitialBoardTex.Reset();
+
+	mBoardWidth  = width;
+	mBoardHeight = height;
+
+	mDefaultBoards->CreateBoard(device, context, width, height, BoardClearMode::CENTER, mInitialBoardTex.GetAddressOf());
 
 	D3D11_TEXTURE2D_DESC boardDesc;
 	mInitialBoardTex->GetDesc(&boardDesc);

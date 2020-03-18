@@ -46,7 +46,7 @@ CommandLineArguments::CommandLineArguments(const std::string& cmdArgs): CommandL
 	mCmdLineArgs.push_back(std::string(prevArgEnd, cmdArgs.end()));
 }
 
-CommandLineArguments::CommandLineArguments(): mPowSize(gDefaultPSize), mSaveVideoFrames(gDefaultSaveVframes), mSmoothTransform(gDefaultSmooth), mFinalFrame(gDefaultFinalFrame), mSpawnPeriod(gDefaultSpawn), mSilentMode(false)
+CommandLineArguments::CommandLineArguments(): mPowSize(gDefaultPSize), mSaveVideoFrames(gDefaultSaveVframes), mSmoothTransform(gDefaultSmooth), mFinalFrame(gDefaultFinalFrame), mSpawnPeriod(gDefaultSpawn), mSilentMode(false), mResetMode(CmdResetMode::RESET_4_CORNERS)
 {
 }
 
@@ -84,6 +84,11 @@ bool CommandLineArguments::SilentMode() const
 	return mSilentMode;
 }
 
+CmdResetMode CommandLineArguments::ResetMode() const
+{
+	return mResetMode;
+}
+
 uint32_t CommandLineArguments::ParseInt(std::string intStr, uint32_t min, uint32_t max)
 {
 	uint32_t parsedNumber = std::strtoul(intStr.c_str(), nullptr, 0);
@@ -116,6 +121,35 @@ CmdParseResult CommandLineArguments::ParseArgs()
 		else if (mCmdLineArgs[i] == "-silent")
 		{
 			mSilentMode = true;
+		}
+		else if(mCmdLineArgs[i] == "-reset_mode")
+		{
+			if((i + 1) >= mCmdLineArgs.size())
+			{
+				res = CmdParseResult::PARSE_WRONG_RESET_MODE;
+				break;
+			}
+			else
+			{
+				std::string resetModeStr = mCmdLineArgs[++i];
+				if(resetModeStr == "4corners")
+				{
+					mResetMode = CmdResetMode::RESET_4_CORNERS;
+				}
+				else if(resetModeStr == "4sides")
+				{
+					mResetMode = CmdResetMode::RESET_4_SIDES;
+				}
+				else if(resetModeStr == "center")
+				{
+					mResetMode = CmdResetMode::RESET_CENTER;
+				}
+				else
+				{
+					res = CmdParseResult::PARSE_WRONG_RESET_MODE;
+					break;
+				}
+			}
 		}
 		else if(mCmdLineArgs[i] == "-psize")
 		{
@@ -189,7 +223,8 @@ std::string CommandLineArguments::GetHelpMessage() const
 		   "-smooth:       Use smooth transformation for the spawn-stability;        \r\n"
 		   "-psize:        The log2 of size of the board. Acceptable range: 2-14;    \r\n"
 		   "-final_frame:  The frame number that will be saved.                      \r\n"
-		   "-spawn:        Spawn stability period. Enter 0 for no spawn at all.      \r\n";
+		   "-spawn:        Spawn stability period. Enter 0 for no spawn at all.      \r\n"
+		   "-reset_mode:   Reset mode. Available values: 4corners | 4sides | center. \r\n";
 }
 
 std::string CommandLineArguments::GetErrorMessage(CmdParseResult parseRes) const

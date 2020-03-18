@@ -49,6 +49,9 @@ void DefaultBoards::CreateBoard(ID3D11Device* device, ID3D11DeviceContext* dc, u
 	case BoardClearMode::FOUR_SIDES:
 		InitialState4Sides(dc, boardUAV.Get(), texWidth, texHeight);
 		break;
+	case BoardClearMode::CENTER:
+		InitialStateCenter(dc, boardUAV.Get(), texWidth, texHeight);
+		break;
 	default:
 		InitialState4Corners(dc, boardUAV.Get(), texWidth, texHeight);
 		break;
@@ -108,11 +111,35 @@ void DefaultBoards::InitialState4Sides(ID3D11DeviceContext* dc, ID3D11UnorderedA
 	dc->CSSetShader(nullptr, nullptr, 0);
 }
 
+void DefaultBoards::InitialStateCenter(ID3D11DeviceContext* dc, ID3D11UnorderedAccessView* initialBoardUAV, uint32_t width, uint32_t height)
+{
+	mCBufferParamsCopy.BoardSize.x = width;
+	mCBufferParamsCopy.BoardSize.y = height;
+	Utils::UpdateBuffer(mCBufferParams.Get(), mCBufferParamsCopy, dc);
+
+	ID3D11Buffer* clear4CornersCbuffers[] = { mCBufferParams.Get() };
+	dc->CSSetConstantBuffers(0, 1, clear4CornersCbuffers);
+
+	ID3D11UnorderedAccessView* clear4CornersInitUAVs[] = { initialBoardUAV };
+	dc->CSSetUnorderedAccessViews(0, 1, clear4CornersInitUAVs, nullptr);
+
+	dc->CSSetShader(mClearCenterShader.Get(), nullptr, 0);
+	dc->Dispatch((uint32_t)(ceilf(width / 32.0f)), (uint32_t)(ceilf(height / 32.0f)), 1);
+
+	ID3D11Buffer*          nullCbuffers[] = { nullptr };
+	ID3D11UnorderedAccessView* nullUAVs[] = { nullptr };
+
+	dc->CSSetConstantBuffers(0, 1, nullCbuffers);
+	dc->CSSetUnorderedAccessViews(0, 1, nullUAVs, nullptr);
+	dc->CSSetShader(nullptr, nullptr, 0);
+}
+
 void DefaultBoards::LoadShaderData(ID3D11Device* device)
 {
 	const std::wstring shaderDir = Utils::GetShaderPath() + L"ClearBoard\\";
 	ThrowIfFailed(Utils::LoadShaderFromFile(device, shaderDir + L"Clear4CornersCS.cso", mClear4CornersShader.GetAddressOf()));
 	ThrowIfFailed(Utils::LoadShaderFromFile(device, shaderDir + L"Clear4SidesCS.cso",   mClear4SidesShader.GetAddressOf()));
+	ThrowIfFailed(Utils::LoadShaderFromFile(device, shaderDir + L"ClearCenterCS.cso",   mClearCenterShader.GetAddressOf()));
 
 	D3D11_BUFFER_DESC cbDesc;
 	cbDesc.Usage               = D3D11_USAGE_DYNAMIC;

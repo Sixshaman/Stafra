@@ -122,6 +122,11 @@ void FractalGen::Init4SidesBoard()
 	mBoards->Init4SidesBoard(mRenderer->GetDevice(), mRenderer->GetDeviceContext(), mDefaultBoardWidth, mDefaultBoardHeight);
 }
 
+void FractalGen::InitCenterBoard()
+{
+	mBoards->InitCenterBoard(mRenderer->GetDevice(), mRenderer->GetDeviceContext(), mDefaultBoardWidth, mDefaultBoardHeight);
+}
+
 Utils::BoardLoadError FractalGen::LoadBoardFromFile(const std::wstring& boardFile)
 {
 	Microsoft::WRL::ComPtr<ID3D11Texture2D> initialBoardTex;

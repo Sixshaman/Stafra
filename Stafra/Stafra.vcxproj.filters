@@ -277,5 +277,8 @@
     <FxCompile Include="Shaders\StateTransform\FinalStateTransformSmoothCS.hlsl">
       <Filter>Shaders\StateTransform</Filter>
     </FxCompile>
+    <FxCompile Include="Shaders\ClearBoard\ClearCenterCS.hlsl">
+      <Filter>Shaders\ClearBoard</Filter>
+    </FxCompile>
   </ItemGroup>
 </Project>

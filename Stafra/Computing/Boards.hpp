@@ -18,6 +18,8 @@ public:
 
 	void Init4CornersBoard(ID3D11Device* device, ID3D11DeviceContext* context, uint32_t width, uint32_t height);
 	void Init4SidesBoard(ID3D11Device* device, ID3D11DeviceContext* context, uint32_t width, uint32_t height);
+	void InitCenterBoard(ID3D11Device* device, ID3D11DeviceContext* context, uint32_t width, uint32_t height);
+
 	void InitBoardFromTexture(ID3D11Device* device, ID3D11DeviceContext* context, ID3D11Texture2D* boardTex);
 
 	void InitDefaultRestriction(ID3D11Device* device, ID3D11DeviceContext* context); //Just resets the pointer

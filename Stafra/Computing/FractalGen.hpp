@@ -45,6 +45,7 @@ public:
 
 	void                  Init4CornersBoard();
 	void                  Init4SidesBoard();
+	void                  InitCenterBoard();
 	Utils::BoardLoadError LoadBoardFromFile(const std::wstring& boardFile);
 
 	void ResetComputingParameters();

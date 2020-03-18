@@ -9,6 +9,13 @@
 #include "..\Computing\FractalGen.hpp"
 #include "Logger.hpp"
 
+enum class ResetBoardModeApp
+{
+	RESET_4_CORNERS,
+	RESET_4_SIDES,
+	RESET_CENTER
+};
+
 class StafraApp
 {
 public:
@@ -25,7 +32,7 @@ protected:
 	void SaveStability(const std::wstring& filename);
 
 	bool LoadBoardFromFile(const std::wstring& filename);
-	void InitBoard4Corners();
+	void InitBoard();
 
 	bool LoadClickRuleFromFile(const std::wstring& filename);
 	void InitDefaultClickRule();
@@ -37,6 +44,8 @@ protected:
 	std::unique_ptr<FractalGen> mFractalGen;
 	std::unique_ptr<Renderer>   mRenderer;
 	std::unique_ptr<Logger>     mLogger;
+
+	ResetBoardModeApp mResetMode;
 
 	bool mSaveVideoFrames;
 
