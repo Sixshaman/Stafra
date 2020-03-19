@@ -13,6 +13,6 @@ void main(uint3 DTid: SV_DispatchThreadID)
 	uint2 bottomLeft  = uint2(0,                gBoardSize.y - 1);
 	uint2 bottomRight = uint2(gBoardSize.x - 1, gBoardSize.y - 1);
 
-	bool res = (DTid.x == topLeft.x && DTid.y == topLeft.y) || (DTid.x == topRight.x && DTid.y == topRight.y) || (DTid.x == bottomLeft.x && DTid.y == bottomLeft.y) || (DTid.x == bottomRight.x && DTid.y == bottomRight.y);
+	bool res = all(DTid.xy == topLeft) || all(DTid.xy == topRight) || all(DTid.xy == bottomLeft) || all(DTid.xy == bottomRight);
 	gInitialBoard[DTid.xy] = res;
 }

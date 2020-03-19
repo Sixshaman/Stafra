@@ -10,6 +10,6 @@ void main(uint3 DTid: SV_DispatchThreadID)
 {
 	uint2 center = uint2(gBoardSize.x / 2, gBoardSize.y / 2);
 
-	bool res = (DTid.x == center.x && DTid.y == center.y);
+	bool res = all(DTid.xy == center);
 	gInitialBoard[DTid.xy] = res;
 }
