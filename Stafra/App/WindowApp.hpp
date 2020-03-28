@@ -54,6 +54,11 @@ private:
 	HWND mClickRuleAreaHandle;
 	HWND mLogAreaHandle;
 
+	HWND mButtonPausePlay;
+	HWND mButtonStop;
+	HWND mButtonReset;
+	HWND mButtonNextFrame;
+
 	HFONT mLogAreaFont;
 
 	DWORD  mRenderThreadID;

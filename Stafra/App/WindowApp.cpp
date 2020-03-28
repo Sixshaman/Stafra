@@ -32,7 +32,10 @@ namespace
 	const int gClickRuleAreaWidth  = gClickRuleImageWidth  * 9;
 	const int gClickRuleAreaHeight = gClickRuleImageHeight * 9;
 
-	const int gMinLogAreaWidth  = gClickRuleAreaWidth * 2;
+	const int gButtonWidth  = 48;
+	const int gButtonHeight = 48;
+
+	const int gMinLogAreaWidth  = gClickRuleAreaWidth + gButtonWidth * 4 + gSpacing * 5;
 	const int gMinLogAreaHeight = gPreviewAreaMinHeight - gClickRuleAreaHeight - gSpacing;
 
 	const int gMinLeftSideWidth  = gPreviewAreaMinWidth;
@@ -534,10 +537,16 @@ void WindowApp::CreateChildWindows(HINSTANCE hInstance)
 	DWORD previewStyle   = 0;
 	DWORD clickRuleStyle = 0;
 	DWORD logStyle       = ES_AUTOHSCROLL | ES_AUTOVSCROLL | ES_LEFT | ES_MULTILINE | ES_READONLY /* | ES_UPPERCASE /*The best one!*/ | ES_WANTRETURN;
+	DWORD buttonStyle    = BS_ICON | BS_FLAT | BS_PUSHBUTTON;
 
 	mPreviewAreaHandle   = CreateWindowEx(0, WC_STATIC, L"Preview",   WS_CHILD |              previewStyle,   0, 0, gPreviewAreaMinWidth, gPreviewAreaMinHeight, mMainWindowHandle, nullptr, hInstance, nullptr);
 	mClickRuleAreaHandle = CreateWindowEx(0, WC_STATIC, L"ClickRule", WS_CHILD |              clickRuleStyle, 0, 0, gClickRuleAreaWidth,  gClickRuleAreaHeight,  mMainWindowHandle, nullptr, hInstance, nullptr);
 	mLogAreaHandle       = CreateWindowEx(0, WC_EDIT,   L"",          WS_CHILD | WS_VSCROLL | logStyle,       0, 0, gMinLogAreaWidth,     gMinLogAreaHeight,     mMainWindowHandle, nullptr, hInstance, nullptr);
+
+	mButtonReset     = CreateWindowEx(0, WC_BUTTON, L"", WS_CHILD | buttonStyle, 0, 0, gButtonWidth, gButtonHeight, mMainWindowHandle, nullptr, hInstance, nullptr);
+	mButtonPausePlay = CreateWindowEx(0, WC_BUTTON, L"", WS_CHILD | buttonStyle, 0, 0, gButtonWidth, gButtonHeight, mMainWindowHandle, nullptr, hInstance, nullptr);
+	mButtonStop      = CreateWindowEx(0, WC_BUTTON, L"", WS_CHILD | buttonStyle, 0, 0, gButtonWidth, gButtonHeight, mMainWindowHandle, nullptr, hInstance, nullptr);
+	mButtonNextFrame = CreateWindowEx(0, WC_BUTTON, L"", WS_CHILD | buttonStyle, 0, 0, gButtonWidth, gButtonHeight, mMainWindowHandle, nullptr, hInstance, nullptr);
 
 	UpdateWindow(mPreviewAreaHandle);
 	ShowWindow(mPreviewAreaHandle, SW_SHOW);
@@ -547,6 +556,16 @@ void WindowApp::CreateChildWindows(HINSTANCE hInstance)
 
 	UpdateWindow(mLogAreaHandle);
 	ShowWindow(mLogAreaHandle, SW_SHOW);
+
+	UpdateWindow(mButtonReset);
+	UpdateWindow(mButtonPausePlay);
+	UpdateWindow(mButtonStop);
+	UpdateWindow(mButtonNextFrame);
+
+	ShowWindow(mButtonReset,     SW_SHOW);
+	ShowWindow(mButtonPausePlay, SW_SHOW);
+	ShowWindow(mButtonStop,      SW_SHOW);
+	ShowWindow(mButtonNextFrame, SW_SHOW);
 
 	//We need to redirect WM_KEYUP messages from the logger window to the main window
 	auto loggerSubclassProc = [](HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData)
@@ -680,10 +699,26 @@ void WindowApp::LayoutChildWindows()
 
 	int logWidth  = wndWidth  - gSpacing - previewWidth - gMarginLeft - gMarginRight;
 	int logHeight = wndHeight - gSpacing - gClickRuleAreaHeight - gMarginTop - gMarginBottom;
+	
+	//Buttons: placed below the log and right of the click rule, centered
+	int buttonLeftRightSpace = (logWidth - gClickRuleAreaWidth - gButtonWidth * 4.0f - gSpacing * 3.0f) / 2;
+
+	int buttonsPosY      = gMarginTop + sizePreview - gClickRuleAreaHeight;
+	int buttonsStartPosX = gMarginLeft + previewWidth + gSpacing + gClickRuleAreaWidth + buttonLeftRightSpace;
+
+	int buttonResetPosX     = buttonsStartPosX;
+	int buttonPausePlayPosX = buttonResetPosX     + gButtonWidth + gSpacing;
+	int buttonStopPosX      = buttonPausePlayPosX + gButtonWidth + gSpacing;
+	int buttonNextFramePosX = buttonStopPosX      + gButtonWidth + gSpacing;
 
 	SetWindowPos(mPreviewAreaHandle,   HWND_TOP, gMarginLeft,                           gMarginTop,                                      sizePreview,         sizePreview,          0);
 	SetWindowPos(mClickRuleAreaHandle, HWND_TOP, gMarginLeft + previewWidth + gSpacing, gMarginTop + sizePreview - gClickRuleAreaHeight, gClickRuleAreaWidth, gClickRuleAreaHeight, 0);
 	SetWindowPos(mLogAreaHandle,       HWND_TOP, gMarginLeft + previewWidth + gSpacing, gMarginTop,                                      logWidth,            logHeight,            0);
+
+	SetWindowPos(mButtonReset,     HWND_TOP, buttonResetPosX,     buttonsPosY, gButtonWidth, gButtonHeight, 0);
+	SetWindowPos(mButtonPausePlay, HWND_TOP, buttonPausePlayPosX, buttonsPosY, gButtonWidth, gButtonHeight, 0);
+	SetWindowPos(mButtonStop,      HWND_TOP, buttonStopPosX,      buttonsPosY, gButtonWidth, gButtonHeight, 0);
+	SetWindowPos(mButtonNextFrame, HWND_TOP, buttonNextFramePosX, buttonsPosY, gButtonWidth, gButtonHeight, 0);
 }
 
 void WindowApp::CalculateMinWindowSize()
