@@ -141,10 +141,31 @@ LRESULT CALLBACK WindowApp::AppProc(HWND hwnd, UINT message, WPARAM wparam, LPAR
 	}
 	case WM_COMMAND:
 	{
-		if(HIWORD(wparam) == 0)
+		if(lparam == 0)
 		{
 			return OnMenuItem(LOWORD(wparam));
 		}
+		else
+		{
+			HWND btnHandle = (HWND)lparam;
+			if(btnHandle == mButtonReset)
+			{
+				OnCommandReset();
+			}
+			else if(btnHandle == mButtonPausePlay)
+			{
+				OnCommandPause();
+			}
+			else if(btnHandle == mButtonStop)
+			{
+				OnCommandStop();
+			}
+			else if(btnHandle == mButtonNextFrame)
+			{
+				OnCommandNextFrame();
+			}
+		}
+
 		break;
 	}
 	case WM_LBUTTONDOWN:
@@ -190,6 +211,7 @@ LRESULT CALLBACK WindowApp::AppProc(HWND hwnd, UINT message, WPARAM wparam, LPAR
 		{
 			UINT clickRuleMenuFlags     = MF_BYCOMMAND | MF_STRING;
 			UINT clickRuleMenuFileFlags = MF_BYCOMMAND | MF_STRING;
+
 			if(mPlayMode != PlayMode::MODE_STOP)
 			{
 				clickRuleMenuFileFlags = clickRuleMenuFlags | MF_DISABLED;
@@ -543,10 +565,10 @@ void WindowApp::CreateChildWindows(HINSTANCE hInstance)
 	mClickRuleAreaHandle = CreateWindowEx(0, WC_STATIC, L"ClickRule", WS_CHILD |              clickRuleStyle, 0, 0, gClickRuleAreaWidth,  gClickRuleAreaHeight,  mMainWindowHandle, nullptr, hInstance, nullptr);
 	mLogAreaHandle       = CreateWindowEx(0, WC_EDIT,   L"",          WS_CHILD | WS_VSCROLL | logStyle,       0, 0, gMinLogAreaWidth,     gMinLogAreaHeight,     mMainWindowHandle, nullptr, hInstance, nullptr);
 
-	mButtonReset     = CreateWindowEx(0, WC_BUTTON, L"", WS_CHILD | buttonStyle, 0, 0, gButtonWidth, gButtonHeight, mMainWindowHandle, nullptr, hInstance, nullptr);
-	mButtonPausePlay = CreateWindowEx(0, WC_BUTTON, L"", WS_CHILD | buttonStyle, 0, 0, gButtonWidth, gButtonHeight, mMainWindowHandle, nullptr, hInstance, nullptr);
-	mButtonStop      = CreateWindowEx(0, WC_BUTTON, L"", WS_CHILD | buttonStyle, 0, 0, gButtonWidth, gButtonHeight, mMainWindowHandle, nullptr, hInstance, nullptr);
-	mButtonNextFrame = CreateWindowEx(0, WC_BUTTON, L"", WS_CHILD | buttonStyle, 0, 0, gButtonWidth, gButtonHeight, mMainWindowHandle, nullptr, hInstance, nullptr);
+	mButtonReset     = CreateWindowEx(0, WC_BUTTON, L"", WS_CHILD | buttonStyle, 0, 0, gButtonWidth, gButtonHeight, mMainWindowHandle, (HMENU)(MENU_RESET),      hInstance, nullptr);
+	mButtonPausePlay = CreateWindowEx(0, WC_BUTTON, L"", WS_CHILD | buttonStyle, 0, 0, gButtonWidth, gButtonHeight, mMainWindowHandle, (HMENU)(MENU_PAUSE),      hInstance, nullptr);
+	mButtonStop      = CreateWindowEx(0, WC_BUTTON, L"", WS_CHILD | buttonStyle, 0, 0, gButtonWidth, gButtonHeight, mMainWindowHandle, (HMENU)(MENU_STOP),       hInstance, nullptr);
+	mButtonNextFrame = CreateWindowEx(0, WC_BUTTON, L"", WS_CHILD | buttonStyle, 0, 0, gButtonWidth, gButtonHeight, mMainWindowHandle, (HMENU)(MENU_NEXT_FRAME), hInstance, nullptr);
 
 	UpdateWindow(mPreviewAreaHandle);
 	ShowWindow(mPreviewAreaHandle, SW_SHOW);
@@ -816,45 +838,22 @@ int WindowApp::OnHotkey(uint32_t hotkey)
 	{
 	case 'R':
 	{
-		mPlayMode = PlayMode::MODE_CONTINUOUS_FRAMES;
-		PostThreadMessage(mRenderThreadID, RENDER_THREAD_REINIT, 0, 0);
-		mRenderer->NeedRedraw();
+		OnCommandReset();
 		break;
 	}
 	case 'P':
 	{
-		if(mPlayMode != PlayMode::MODE_STOP)
-		{
-			if(mPlayMode == PlayMode::MODE_PAUSED)
-			{
-				mPlayMode = PlayMode::MODE_CONTINUOUS_FRAMES;
-			}
-			else
-			{
-				mPlayMode = PlayMode::MODE_PAUSED;
-			}
-		}
+		OnCommandPause();
 		break;
 	}
 	case 'N':
 	{
-		if(mPlayMode == PlayMode::MODE_PAUSED)
-		{
-			mPlayMode = PlayMode::MODE_SINGLE_FRAME;
-		}
+		OnCommandNextFrame();
 		break;
 	}
 	case 'S':
 	{
-		if(mPlayMode == PlayMode::MODE_STOP)
-		{
-			PostThreadMessage(mRenderThreadID, RENDER_THREAD_REINIT, 0, 0);
-			mPlayMode = PlayMode::MODE_CONTINUOUS_FRAMES;
-		}
-		else
-		{
-			mPlayMode = PlayMode::MODE_STOP;
-		}
+		OnCommandStop();
 		break;
 	}
 	case VK_OEM_1:
@@ -879,4 +878,47 @@ int WindowApp::OnHotkey(uint32_t hotkey)
 	}
 
 	return 0;
+}
+
+void WindowApp::OnCommandReset()
+{
+	mPlayMode = PlayMode::MODE_CONTINUOUS_FRAMES;
+	PostThreadMessage(mRenderThreadID, RENDER_THREAD_REINIT, 0, 0);
+	mRenderer->NeedRedraw();
+}
+
+void WindowApp::OnCommandPause()
+{
+	if(mPlayMode != PlayMode::MODE_STOP)
+	{
+		if(mPlayMode == PlayMode::MODE_PAUSED)
+		{
+			mPlayMode = PlayMode::MODE_CONTINUOUS_FRAMES;
+		}
+		else
+		{
+			mPlayMode = PlayMode::MODE_PAUSED;
+		}
+	}
+}
+
+void WindowApp::OnCommandStop()
+{
+	if (mPlayMode == PlayMode::MODE_STOP)
+	{
+		PostThreadMessage(mRenderThreadID, RENDER_THREAD_REINIT, 0, 0);
+		mPlayMode = PlayMode::MODE_CONTINUOUS_FRAMES;
+	}
+	else
+	{
+		mPlayMode = PlayMode::MODE_STOP;
+	}
+}
+
+void WindowApp::OnCommandNextFrame()
+{
+	if(mPlayMode == PlayMode::MODE_PAUSED)
+	{
+		mPlayMode = PlayMode::MODE_SINGLE_FRAME;
+	}
 }

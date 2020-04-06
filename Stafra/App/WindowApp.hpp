@@ -43,6 +43,11 @@ private:
 	int OnMenuItem(uint32_t menuItem);
 	int OnHotkey(uint32_t hotkey);
 
+	void OnCommandReset();
+	void OnCommandPause();
+	void OnCommandStop();
+	void OnCommandNextFrame();
+
 	LRESULT CALLBACK AppProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam);
 
 	void RenderThreadFunc();

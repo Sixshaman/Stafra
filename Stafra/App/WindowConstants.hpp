@@ -8,6 +8,11 @@
 #define MENU_SHOW_CLICK_RULE_GRID 1006
 #define MENU_HIDE_CLICK_RULE_GRID 1007
 
+#define MENU_RESET      2001
+#define MENU_PAUSE      2002
+#define MENU_STOP       2003
+#define MENU_NEXT_FRAME 2004
+
 #define MAIN_THREAD_APPEND_TO_LOG (WM_APP + 1)
 
 #define RENDER_THREAD_EXIT              (WM_APP + 101)
