@@ -1,4 +1,4 @@
-#include "WindowApp.hpp"
+﻿#include "WindowApp.hpp"
 #include <comdef.h>
 #include <CommCtrl.h>
 #include <algorithm>
@@ -559,16 +559,16 @@ void WindowApp::CreateChildWindows(HINSTANCE hInstance)
 	DWORD previewStyle   = 0;
 	DWORD clickRuleStyle = 0;
 	DWORD logStyle       = ES_AUTOHSCROLL | ES_AUTOVSCROLL | ES_LEFT | ES_MULTILINE | ES_READONLY /* | ES_UPPERCASE /*The best one!*/ | ES_WANTRETURN;
-	DWORD buttonStyle    = BS_ICON | BS_FLAT | BS_PUSHBUTTON;
+	DWORD buttonStyle    = BS_TEXT | BS_FLAT | BS_PUSHBUTTON;
 
 	mPreviewAreaHandle   = CreateWindowEx(0, WC_STATIC, L"Preview",   WS_CHILD |              previewStyle,   0, 0, gPreviewAreaMinWidth, gPreviewAreaMinHeight, mMainWindowHandle, nullptr, hInstance, nullptr);
 	mClickRuleAreaHandle = CreateWindowEx(0, WC_STATIC, L"ClickRule", WS_CHILD |              clickRuleStyle, 0, 0, gClickRuleAreaWidth,  gClickRuleAreaHeight,  mMainWindowHandle, nullptr, hInstance, nullptr);
 	mLogAreaHandle       = CreateWindowEx(0, WC_EDIT,   L"",          WS_CHILD | WS_VSCROLL | logStyle,       0, 0, gMinLogAreaWidth,     gMinLogAreaHeight,     mMainWindowHandle, nullptr, hInstance, nullptr);
 
-	mButtonReset     = CreateWindowEx(0, WC_BUTTON, L"", WS_CHILD | buttonStyle, 0, 0, gButtonWidth, gButtonHeight, mMainWindowHandle, (HMENU)(MENU_RESET),      hInstance, nullptr);
-	mButtonPausePlay = CreateWindowEx(0, WC_BUTTON, L"", WS_CHILD | buttonStyle, 0, 0, gButtonWidth, gButtonHeight, mMainWindowHandle, (HMENU)(MENU_PAUSE),      hInstance, nullptr);
-	mButtonStop      = CreateWindowEx(0, WC_BUTTON, L"", WS_CHILD | buttonStyle, 0, 0, gButtonWidth, gButtonHeight, mMainWindowHandle, (HMENU)(MENU_STOP),       hInstance, nullptr);
-	mButtonNextFrame = CreateWindowEx(0, WC_BUTTON, L"", WS_CHILD | buttonStyle, 0, 0, gButtonWidth, gButtonHeight, mMainWindowHandle, (HMENU)(MENU_NEXT_FRAME), hInstance, nullptr);
+	mButtonReset     = CreateWindowEx(0, WC_BUTTON, L"🔄", WS_CHILD | buttonStyle, 0, 0, gButtonWidth, gButtonHeight, mMainWindowHandle, (HMENU)(MENU_RESET),      hInstance, nullptr);
+	mButtonPausePlay = CreateWindowEx(0, WC_BUTTON, L"⏸", WS_CHILD | buttonStyle, 0, 0, gButtonWidth, gButtonHeight, mMainWindowHandle, (HMENU)(MENU_PAUSE),      hInstance, nullptr);
+	mButtonStop      = CreateWindowEx(0, WC_BUTTON, L"⏹", WS_CHILD | buttonStyle, 0, 0, gButtonWidth, gButtonHeight, mMainWindowHandle, (HMENU)(MENU_STOP),       hInstance, nullptr);
+	mButtonNextFrame = CreateWindowEx(0, WC_BUTTON, L"⏭️", WS_CHILD | buttonStyle, 0, 0, gButtonWidth, gButtonHeight, mMainWindowHandle, (HMENU)(MENU_NEXT_FRAME), hInstance, nullptr);
 
 	UpdateWindow(mPreviewAreaHandle);
 	ShowWindow(mPreviewAreaHandle, SW_SHOW);
