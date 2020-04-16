@@ -631,6 +631,23 @@ void WindowApp::CreateChildWindows(HINSTANCE hInstance)
 
 	SendMessage(mLogAreaHandle, EM_SETLIMITTEXT, 20000000, 0);
 
+	//Change the size of the buttons font
+	HFONT fontDefault = (HFONT)GetStockObject(DEFAULT_GUI_FONT);
+
+	LOGFONT btnFont;
+	GetObject(fontDefault, sizeof(LOGFONT), (void*)&btnFont);
+
+	btnFont.lfHeight = 28;
+	mButtonsFont = CreateFontIndirect(&btnFont);
+
+	if(mButtonsFont)
+	{
+		SendMessage(mButtonReset,     WM_SETFONT, (WPARAM)mButtonsFont, TRUE);
+		SendMessage(mButtonPausePlay, WM_SETFONT, (WPARAM)mButtonsFont, TRUE);
+		SendMessage(mButtonStop,      WM_SETFONT, (WPARAM)mButtonsFont, TRUE);
+		SendMessage(mButtonNextFrame, WM_SETFONT, (WPARAM)mButtonsFont, TRUE);
+	}
+
 	SetFocus(mMainWindowHandle);
 }
 

@@ -65,6 +65,7 @@ private:
 	HWND mButtonNextFrame;
 
 	HFONT mLogAreaFont;
+	HFONT mButtonsFont;
 
 	DWORD  mRenderThreadID;
 	HANDLE mRenderThreadHandle;
