@@ -30,33 +30,33 @@ public:
 	FractalGen(Renderer* renderer);
 	~FractalGen();
 
-	void SetDefaultBoardWidth(uint32_t width);
-	void SetDefaultBoardHeight(uint32_t height);
-
-	void SetVideoFrameWidth(uint32_t width);
-	void SetVideoFrameHeight(uint32_t height);
+	void SetVideoFrameWidth(uint32_t width);   //Sets the width of downscaled video frames
+	void SetVideoFrameHeight(uint32_t height); //Sets the height of downscaled video frames
 
 	void SetSpawnPeriod(uint32_t spawn);
 	void SetUseSmooth(bool smooth);
 
-	void                  InitDefaultClickRule();
-	Utils::BoardLoadError LoadClickRuleFromFile(const std::wstring& clickRuleFile);
-	void                  EditClickRule(float normalizedX, float normalizedY);
+	void                  InitDefaultClickRule();                                   //Changes the click rule to the default "cross" one
+	Utils::BoardLoadError LoadClickRuleFromFile(const std::wstring& clickRuleFile); //Loads a click rule from a file
+	void                  EditClickRule(float normalizedX, float normalizedY);      //Toggles a click rule bit at (clickRuleWidth * normalizedX, clickRuleHeight * normalizedY) on/off
 
-	void                  Init4CornersBoard();
-	void                  Init4SidesBoard();
-	void                  InitCenterBoard();
-	Utils::BoardLoadError LoadBoardFromFile(const std::wstring& boardFile);
+	void                  Init4CornersBoard(uint32_t width, uint32_t height); //Resets the system with the default "4 corners" initial board 
+	void                  Init4SidesBoard(uint32_t width, uint32_t height);   //Resets the system with "4 sides" initial board
+	void                  InitCenterBoard(uint32_t width, uint32_t height);   //Resets the system with "center" initial board
+	Utils::BoardLoadError LoadBoardFromFile(const std::wstring& boardFile);   //Resets the system with the initial board loaded from file
 
-	void ResetComputingParameters();
-	void Tick();
+	void ResetComputingParameters(); //Prepares all data for the simulation
+	void Tick();                     //A single step of the simulation
 
 	void SaveCurrentVideoFrame(const std::wstring& videoFrameFile); //Saves small image optimized for a video frame
 	void SaveCurrentStep(const std::wstring& stabilityFile);        //Saves full image, without downscaling
 	void SaveClickRule(const std::wstring& clickRuleFile);          //Saves click rule
 
-	uint32_t GetLastFrameNumber()   const;
-	uint32_t GetSolutionPeriod() const;
+	uint32_t GetLastFrameNumber() const; //Returns the number of the last frame
+	uint32_t GetSolutionPeriod()  const; //Returns the (fake) solution period (if the board size is 2^p - 1, then this function retuns 2^(p-1))
+
+	uint32_t GetWidth()  const; //Returns the width of the board
+	uint32_t GetHeight() const; //Returns the height of the board
 
 private:
 	Renderer* mRenderer; //Non-owning observer pointer
@@ -72,9 +72,6 @@ private:
 
 	std::unique_ptr<BoardLoader> mBoardLoader;
 	std::unique_ptr<BoardSaver>  mBoardSaver;
-
-	uint32_t mDefaultBoardWidth;
-	uint32_t mDefaultBoardHeight;
 
 	uint32_t mVideoFrameWidth;
 	uint32_t mVideoFrameHeight;

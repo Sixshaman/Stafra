@@ -15,7 +15,7 @@
 #include "BoardSaver.hpp"
 #include "../App/Renderer.hpp"
 
-FractalGen::FractalGen(Renderer* renderer): mRenderer(renderer), mDefaultBoardWidth(1023), mDefaultBoardHeight(1023), mVideoFrameWidth(1), mVideoFrameHeight(1), mSpawnPeriod(0), mbUseSmoothTransform(false)
+FractalGen::FractalGen(Renderer* renderer): mRenderer(renderer), mVideoFrameWidth(1), mVideoFrameHeight(1), mSpawnPeriod(0), mbUseSmoothTransform(false)
 {
 	ID3D11Device*    device = mRenderer->GetDevice();
 	ID3D11DeviceContext* dc = mRenderer->GetDeviceContext();
@@ -31,23 +31,13 @@ FractalGen::FractalGen(Renderer* renderer): mRenderer(renderer), mDefaultBoardWi
 	mBoardLoader   = std::make_unique<BoardLoader>(device);
 	mBoardSaver    = std::make_unique<BoardSaver>();
 
-	mBoards->Init4CornersBoard(mRenderer->GetDevice(), mRenderer->GetDeviceContext(), mDefaultBoardWidth, mDefaultBoardHeight);
+	Init4CornersBoard(1023, 1023);
 	mBoards->InitDefaultRestriction(mRenderer->GetDevice(), mRenderer->GetDeviceContext());
-	mClickRules->InitDefault(mRenderer->GetDevice());
+	InitDefaultClickRule();
 }
 
 FractalGen::~FractalGen()
 {
-}
-
-void FractalGen::SetDefaultBoardWidth(uint32_t width)
-{
-	mDefaultBoardWidth = width;
-}
-
-void FractalGen::SetDefaultBoardHeight(uint32_t height)
-{
-	mDefaultBoardHeight = height;
 }
 
 void FractalGen::SetVideoFrameWidth(uint32_t width)
@@ -102,9 +92,19 @@ uint32_t FractalGen::GetSolutionPeriod() const
 	return mStabilityCalculator->GetDefaultSolutionPeriod();
 }
 
+uint32_t FractalGen::GetWidth() const
+{
+	return mBoards->GetWidth();
+}
+
+uint32_t FractalGen::GetHeight() const
+{
+	return mBoards->GetHeight();
+}
+
 void FractalGen::EditClickRule(float normalizedX, float normalizedY)
 {
-	uint32_t clickRuleWidth = mClickRules->GetWidth();
+	uint32_t clickRuleWidth  = mClickRules->GetWidth();
 	uint32_t clickRuleHeight = mClickRules->GetHeight();
 
 	mClickRules->EditCellState(mRenderer->GetDeviceContext(), (uint32_t)(clickRuleWidth * normalizedX), (uint32_t)(clickRuleHeight * normalizedY));
@@ -112,19 +112,19 @@ void FractalGen::EditClickRule(float normalizedX, float normalizedY)
 	mRenderer->NeedRedrawClickRule();
 }
 
-void FractalGen::Init4CornersBoard()
+void FractalGen::Init4CornersBoard(uint32_t width, uint32_t height)
 {
-	mBoards->Init4CornersBoard(mRenderer->GetDevice(), mRenderer->GetDeviceContext(), mDefaultBoardWidth, mDefaultBoardHeight);
+	mBoards->Init4CornersBoard(mRenderer->GetDevice(), mRenderer->GetDeviceContext(), width, height);
 }
 
-void FractalGen::Init4SidesBoard()
+void FractalGen::Init4SidesBoard(uint32_t width, uint32_t height)
 {
-	mBoards->Init4SidesBoard(mRenderer->GetDevice(), mRenderer->GetDeviceContext(), mDefaultBoardWidth, mDefaultBoardHeight);
+	mBoards->Init4SidesBoard(mRenderer->GetDevice(), mRenderer->GetDeviceContext(), width, height);
 }
 
-void FractalGen::InitCenterBoard()
+void FractalGen::InitCenterBoard(uint32_t width, uint32_t height)
 {
-	mBoards->InitCenterBoard(mRenderer->GetDevice(), mRenderer->GetDeviceContext(), mDefaultBoardWidth, mDefaultBoardHeight);
+	mBoards->InitCenterBoard(mRenderer->GetDevice(), mRenderer->GetDeviceContext(), width, height);
 }
 
 Utils::BoardLoadError FractalGen::LoadBoardFromFile(const std::wstring& boardFile)

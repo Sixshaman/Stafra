@@ -93,6 +93,9 @@ void WindowApp::Init(HINSTANCE hInstance, const CommandLineArguments& cmdArgs)
 	mLogger   = std::make_unique<WindowLogger>(mMainWindowHandle);
 
 	StafraApp::Init(cmdArgs);
+
+	std::wstring wndTitle = L"Stability fractal " + std::to_wstring(mFractalGen->GetWidth()) + L"x" + std::to_wstring(mFractalGen->GetHeight());
+	SetWindowText(mMainWindowHandle, wndTitle.c_str());
 }
 
 LRESULT CALLBACK WindowApp::AppProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam)
@@ -353,6 +356,10 @@ void WindowApp::RenderThreadFunc()
 		{
 			mFractalGen->ResetComputingParameters();
 			mFinalFrameNumber = mFractalGen->GetSolutionPeriod();
+
+			std::wstring wndTitle = L"Stability fractal " + std::to_wstring(mFractalGen->GetWidth()) + L"x" + std::to_wstring(mFractalGen->GetHeight());
+			SetWindowText(mMainWindowHandle, wndTitle.c_str());
+
 			break;
 		}
 		case RENDER_THREAD_RESIZE:
@@ -396,6 +403,9 @@ void WindowApp::RenderThreadFunc()
 			//Catch the pointer
 			std::unique_ptr<std::wstring> boardFilenamePtr(reinterpret_cast<std::wstring*>(threadMsg.lParam));
 			LoadBoardFromFile(*boardFilenamePtr);
+
+			std::wstring wndTitle = L"Stability fractal " + std::to_wstring(mFractalGen->GetWidth()) + L"x" + std::to_wstring(mFractalGen->GetHeight());
+			SetWindowText(mMainWindowHandle, wndTitle.c_str());
 			break;
 		}
 		case RENDER_THREAD_SAVE_STABILITY:
@@ -548,7 +558,7 @@ void WindowApp::CreateMainWindow(HINSTANCE hInstance)
 	mMinWindowWidth  = clientRect.right  - clientRect.left;
 	mMinWindowHeight = clientRect.bottom - clientRect.top;
 
-	mMainWindowHandle = CreateWindowEx(wndStyleEx, windowClassName, L"Stability fractal", wndStyle, clientRect.left, clientRect.top, mMinWindowWidth, mMinWindowHeight, nullptr, nullptr, hInstance, this);
+	mMainWindowHandle = CreateWindowEx(wndStyleEx, windowClassName, L"Stability Fractal", wndStyle, clientRect.left, clientRect.top, mMinWindowWidth, mMinWindowHeight, nullptr, nullptr, hInstance, this);
 
 	UpdateWindow(mMainWindowHandle);
 	ShowWindow(mMainWindowHandle, SW_SHOW);

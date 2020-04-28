@@ -41,9 +41,6 @@ void StafraApp::ParseCmdArgs(const CommandLineArguments& cmdArgs)
 	uint32_t powSize   = cmdArgs.PowSize();
 	uint32_t boardSize = (1 << powSize) - 1;
 
-	mFractalGen->SetDefaultBoardWidth(boardSize);
-	mFractalGen->SetDefaultBoardHeight(boardSize);
-
 	mFractalGen->SetVideoFrameWidth(1024);
 	mFractalGen->SetVideoFrameHeight(1024);
 
@@ -78,7 +75,7 @@ void StafraApp::ParseCmdArgs(const CommandLineArguments& cmdArgs)
 
 	if(!LoadBoardFromFile(L"InitialBoard.png"))
 	{
-		InitBoard();
+		InitBoard(boardSize);
 	}
 }
 
@@ -131,26 +128,26 @@ bool StafraApp::LoadBoardFromFile(const std::wstring& filename)
 	}
 }
 
-void StafraApp::InitBoard()
+void StafraApp::InitBoard(uint32_t boardSize)
 {
 	switch (mResetMode)
 	{
 	case ResetBoardModeApp::RESET_4_CORNERS:
 	{
 		mLogger->WriteToLog(L"Initializing default state: 4 CORNERS...");
-		mFractalGen->Init4CornersBoard();
+		mFractalGen->Init4CornersBoard(boardSize, boardSize);
 		break;
 	}
 	case ResetBoardModeApp::RESET_4_SIDES:
 	{
 		mLogger->WriteToLog(L"Initializing default state: 4 SIDES...");
-		mFractalGen->Init4SidesBoard();
+		mFractalGen->Init4SidesBoard(boardSize, boardSize);
 		break;
 	}
 	case ResetBoardModeApp::RESET_CENTER:
 	{
 		mLogger->WriteToLog(L"Initializing default state: CENTER...");
-		mFractalGen->InitCenterBoard();
+		mFractalGen->InitCenterBoard(boardSize, boardSize);
 		break;
 	}
 	default:

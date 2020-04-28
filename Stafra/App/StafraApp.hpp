@@ -32,7 +32,7 @@ protected:
 	void SaveStability(const std::wstring& filename);
 
 	bool LoadBoardFromFile(const std::wstring& filename);
-	void InitBoard();
+	void InitBoard(uint32_t boardSize);
 
 	bool LoadClickRuleFromFile(const std::wstring& filename);
 	void InitDefaultClickRule();
