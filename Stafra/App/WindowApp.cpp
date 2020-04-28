@@ -223,6 +223,8 @@ LRESULT CALLBACK WindowApp::AppProc(HWND hwnd, UINT message, WPARAM wparam, LPAR
 			HMENU popupMenu = CreatePopupMenu();
 			InsertMenu(popupMenu, 0, clickRuleMenuFileFlags, MENU_OPEN_CLICK_RULE, L"Open click rule...");
 			InsertMenu(popupMenu, 0, clickRuleMenuFileFlags, MENU_SAVE_CLICK_RULE, L"Save click rule...");
+		
+			InsertMenu(popupMenu, 0, clickRuleMenuFileFlags, MENU_RESET_CLICK_RULE, L"Reset click rule");
 
 			if(mRenderer->GetClickRuleGridVisible())
 			{
@@ -848,6 +850,11 @@ int WindowApp::OnMenuItem(uint32_t menuItem)
 	case MENU_SHOW_CLICK_RULE_GRID:
 	{
 		mRenderer->SetClickRuleGridVisible(true);
+		break;
+	}
+	case MENU_RESET_CLICK_RULE:
+	{
+		mFractalGen->InitDefaultClickRule();
 		break;
 	}
 	default:
