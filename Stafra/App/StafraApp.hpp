@@ -13,7 +13,8 @@ enum class ResetBoardModeApp
 {
 	RESET_4_CORNERS,
 	RESET_4_SIDES,
-	RESET_CENTER
+	RESET_CENTER,
+	RESET_CUSTOM_IMAGE
 };
 
 class StafraApp
@@ -32,7 +33,7 @@ protected:
 	void SaveStability(const std::wstring& filename);
 
 	bool LoadBoardFromFile(const std::wstring& filename);
-	void InitBoard(uint32_t boardSize);
+	void InitBoard(uint32_t boardWidth, uint32_t boardHeight);
 
 	bool LoadClickRuleFromFile(const std::wstring& filename);
 	void InitDefaultClickRule();

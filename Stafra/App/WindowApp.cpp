@@ -356,6 +356,8 @@ void WindowApp::RenderThreadFunc()
 		}
 		case RENDER_THREAD_REINIT:
 		{
+			InitBoard(mFractalGen->GetWidth(), mFractalGen->GetHeight());
+
 			mFractalGen->ResetComputingParameters();
 			mFinalFrameNumber = mFractalGen->GetSolutionPeriod();
 
@@ -408,6 +410,8 @@ void WindowApp::RenderThreadFunc()
 
 			std::wstring wndTitle = L"Stability fractal " + std::to_wstring(mFractalGen->GetWidth()) + L"x" + std::to_wstring(mFractalGen->GetHeight());
 			SetWindowText(mMainWindowHandle, wndTitle.c_str());
+
+			mResetMode = ResetBoardModeApp::RESET_CUSTOM_IMAGE;
 			break;
 		}
 		case RENDER_THREAD_SAVE_STABILITY:
@@ -890,17 +894,17 @@ int WindowApp::OnHotkey(uint32_t hotkey)
 		OnCommandStop();
 		break;
 	}
-	case VK_OEM_1:
+	case '1':
 	{
 		mResetMode = ResetBoardModeApp::RESET_4_CORNERS;
 		break;
 	}
-	case VK_OEM_2:
+	case '2':
 	{
 		mResetMode = ResetBoardModeApp::RESET_4_SIDES;
 		break;
 	}
-	case VK_OEM_3:
+	case '3':
 	{
 		mResetMode = ResetBoardModeApp::RESET_CENTER;
 		break;
