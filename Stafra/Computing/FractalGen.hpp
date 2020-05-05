@@ -36,6 +36,8 @@ public:
 	void SetSpawnPeriod(uint32_t spawn);
 	void SetUseSmooth(bool smooth);
 
+	void ChangeSize(uint32_t newWidth, uint32_t newHeight); //Change the board size while keeping the initial state centered
+
 	void                  InitDefaultClickRule();                                   //Changes the click rule to the default "cross" one
 	Utils::BoardLoadError LoadClickRuleFromFile(const std::wstring& clickRuleFile); //Loads a click rule from a file
 	void                  EditClickRule(float normalizedX, float normalizedY);      //Toggles a click rule bit at (clickRuleWidth * normalizedX, clickRuleHeight * normalizedY) on/off

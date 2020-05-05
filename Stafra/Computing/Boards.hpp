@@ -22,6 +22,8 @@ public:
 
 	void InitBoardFromTexture(ID3D11Device* device, ID3D11DeviceContext* context, ID3D11Texture2D* boardTex);
 
+	void ChangeBoardSize(ID3D11Device* device, ID3D11DeviceContext* context, uint32_t newWidth, uint32_t newHeight); //Changes the size of the textures while keeping the contents centered
+
 	void InitDefaultRestriction(ID3D11Device* device, ID3D11DeviceContext* context); //Just resets the pointer
 	void InitRestrictionFromTexture(ID3D11Device* device, ID3D11DeviceContext* context, ID3D11Texture2D* restrictionTex);
 
@@ -31,9 +33,14 @@ public:
 	ID3D11ShaderResourceView* GetRestrictionSRV()  const;
 
 private:
+	void LoadShaderData(ID3D11Device* device);
+
+private:
 	Microsoft::WRL::ComPtr<ID3D11Texture2D>          mInitialBoardTex;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> mInitialBoardSRV;
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> mRestrictionSRV;
+
+	Microsoft::WRL::ComPtr<ID3D11ComputeShader> mSizeTransformShader;
 
 	std::unique_ptr<DefaultBoards> mDefaultBoards;
 

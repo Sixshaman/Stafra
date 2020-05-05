@@ -48,6 +48,9 @@ private:
 	void OnCommandStop();
 	void OnCommandNextFrame();
 
+	void IncreaseBoardSize();
+	void DecreaseBoardSize();
+
 	LRESULT CALLBACK AppProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam);
 
 	void RenderThreadFunc();

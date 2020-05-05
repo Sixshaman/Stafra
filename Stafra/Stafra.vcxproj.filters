@@ -280,5 +280,8 @@
     <FxCompile Include="Shaders\ClearBoard\ClearCenterCS.hlsl">
       <Filter>Shaders\ClearBoard</Filter>
     </FxCompile>
+    <FxCompile Include="Shaders\StateTransform\InitialStateSizeTransformCS.hlsl">
+      <Filter>Shaders\StateTransform</Filter>
+    </FxCompile>
   </ItemGroup>
 </Project>

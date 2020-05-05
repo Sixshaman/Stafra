@@ -60,6 +60,11 @@ void FractalGen::SetUseSmooth(bool smooth)
 	mbUseSmoothTransform = smooth;
 }
 
+void FractalGen::ChangeSize(uint32_t newWidth, uint32_t newHeight)
+{
+	mBoards->ChangeBoardSize(mRenderer->GetDevice(), mRenderer->GetDeviceContext(), newWidth, newHeight);
+}
+
 void FractalGen::InitDefaultClickRule()
 {
 	mClickRules->InitDefault(mRenderer->GetDevice());

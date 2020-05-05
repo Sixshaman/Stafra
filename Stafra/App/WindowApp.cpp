@@ -443,6 +443,25 @@ void WindowApp::RenderThreadFunc()
 			ComputeFractalTick();
 			break;
 		}
+		case RENDER_THREAD_RESIZE_BOARD:
+		{
+			uint32_t width  = (uint32_t)(threadMsg.wParam);
+			uint32_t height = (uint32_t)(threadMsg.lParam);
+
+			if(mResetMode == ResetBoardModeApp::RESET_CUSTOM_IMAGE)
+			{
+				mFractalGen->ChangeSize(width, height);
+			}
+			else
+			{
+				InitBoard(width, height);
+			}
+
+			std::wstring wndTitle = L"Stability fractal " + std::to_wstring(mFractalGen->GetWidth()) + L"x" + std::to_wstring(mFractalGen->GetHeight());
+			SetWindowText(mMainWindowHandle, wndTitle.c_str());
+
+			break;
+		}
 		case RENDER_THREAD_SYNC:
 		{
 			PostThreadMessage(mTickThreadID, TICK_THREAD_SYNC, 0, 0);
@@ -894,6 +913,16 @@ int WindowApp::OnHotkey(uint32_t hotkey)
 		OnCommandStop();
 		break;
 	}
+	case VK_OEM_PLUS:
+	{
+		IncreaseBoardSize();
+		break;
+	}
+	case VK_OEM_MINUS:
+	{
+		DecreaseBoardSize();
+		break;
+	}
 	case '1':
 	{
 		mResetMode = ResetBoardModeApp::RESET_4_CORNERS;
@@ -958,5 +987,61 @@ void WindowApp::OnCommandNextFrame()
 	if(mPlayMode == PlayMode::MODE_PAUSED)
 	{
 		mPlayMode = PlayMode::MODE_SINGLE_FRAME;
+	}
+}
+
+void WindowApp::IncreaseBoardSize()
+{
+	if(mPlayMode == PlayMode::MODE_STOP)
+	{
+		const uint32_t maxSize = (1 << 14) - 1;
+
+		uint32_t currWidth  = mFractalGen->GetWidth();
+		uint32_t currHeight = mFractalGen->GetHeight();
+
+		//W = H = 2^p - 1. We need to increase p
+		uint32_t newWidth  = (currWidth  + 1) * 2 - 1;
+		uint32_t newHeight = (currHeight + 1) * 2 - 1;
+
+		//Clamp the values
+		if(newWidth > maxSize)
+		{
+			newWidth = maxSize;
+		}
+
+		if(newHeight > maxSize)
+		{
+			newHeight = maxSize;
+		}
+
+		PostThreadMessage(mRenderThreadID, RENDER_THREAD_RESIZE_BOARD, newWidth, newHeight);
+	}
+}
+
+void WindowApp::DecreaseBoardSize()
+{
+	if(mPlayMode == PlayMode::MODE_STOP)
+	{
+		const uint32_t minSize = (1 << 2) - 1;
+
+		uint32_t currWidth  = mFractalGen->GetWidth();
+		uint32_t currHeight = mFractalGen->GetHeight();
+
+		//W = H = 2^p - 1. We need to decrease p
+		uint32_t newWidth  = (currWidth  + 1) / 2 - 1;
+		uint32_t newHeight = (currHeight + 1) / 2 - 1;
+
+		//Clamp the values
+		if(newWidth < minSize)
+		{
+			newWidth = minSize;
+		}
+
+		if(newHeight < minSize)
+		{
+			newHeight = minSize;
+		}
+
+		PostThreadMessage(mRenderThreadID, RENDER_THREAD_RESIZE_BOARD, newWidth, newHeight);
 	}
 }
