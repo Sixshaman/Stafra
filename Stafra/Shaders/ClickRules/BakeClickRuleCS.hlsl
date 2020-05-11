@@ -1,4 +1,4 @@
-//Writes non-zero element coordinates from the input texture into the buffer
+//Writes non-zero element coordinates from gClickRuleTex into gClickRuleCoordBuf
 
 Texture2D<uint>              gClickRuleTex:      register(t0);
 AppendStructuredBuffer<int2> gClickRuleCoordBuf: register(u0);
@@ -7,10 +7,11 @@ AppendStructuredBuffer<int2> gClickRuleCoordBuf: register(u0);
 void main(uint3 DTid: SV_DispatchThreadID)
 {
 	uint val = gClickRuleTex[DTid.xy];
-	if(val > 0)
+
+	if(val > 0) //Only write non-zero entries
 	{
-		uint clickRuleWidth;
-		uint clickRuleHeight;
+		uint clickRuleWidth  = 0;
+		uint clickRuleHeight = 0;
 		gClickRuleTex.GetDimensions(clickRuleWidth, clickRuleHeight);
 
 		int2 clickOffset = (int2)(DTid.xy) - int2((clickRuleWidth - 1) / 2, (clickRuleHeight - 1) / 2);

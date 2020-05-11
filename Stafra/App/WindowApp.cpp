@@ -43,6 +43,9 @@ namespace
 
 	const int gMinRightSideWidth  = gMinLogAreaWidth;
 	const int gMinRightSideHeight = gClickRuleAreaHeight + gSpacing + gMinLogAreaHeight;
+
+	const int gMinTrackBarWidth = gButtonWidth * 4 + gSpacing * 3;
+	const int gTrackBarHeight   = 48;
 }
 
 WindowApp::WindowApp(HINSTANCE hInstance, const CommandLineArguments& cmdArgs): mMainWindowHandle(nullptr), mPreviewAreaHandle(nullptr), mClickRuleAreaHandle(nullptr), mLogAreaHandle(nullptr),
@@ -60,11 +63,19 @@ WindowApp::WindowApp(HINSTANCE hInstance, const CommandLineArguments& cmdArgs): 
 WindowApp::~WindowApp()
 {
 	DeleteObject(mLogAreaFont);
+	DeleteObject(mButtonsFont);
 
 	DestroyWindow(mLogAreaHandle);
 	DestroyWindow(mPreviewAreaHandle);
 	DestroyWindow(mClickRuleAreaHandle);
 	DestroyWindow(mMainWindowHandle);
+
+	DestroyWindow(mButtonNextFrame);
+	DestroyWindow(mButtonPausePlay);
+	DestroyWindow(mButtonReset);
+	DestroyWindow(mButtonStop);
+
+	DestroyWindow(mSizeTrackbar);
 }
 
 int WindowApp::Run()
@@ -96,6 +107,9 @@ void WindowApp::Init(HINSTANCE hInstance, const CommandLineArguments& cmdArgs)
 
 	std::wstring wndTitle = L"Stability fractal " + std::to_wstring(mFractalGen->GetWidth()) + L"x" + std::to_wstring(mFractalGen->GetHeight());
 	SetWindowText(mMainWindowHandle, wndTitle.c_str());
+
+	int psize = (int)log2f((mFractalGen->GetWidth() + 1));
+	SendMessage(mSizeTrackbar, TBM_SETPOS, TRUE, psize);
 }
 
 LRESULT CALLBACK WindowApp::AppProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam)
@@ -295,6 +309,60 @@ LRESULT CALLBACK WindowApp::AppProc(HWND hwnd, UINT message, WPARAM wparam, LPAR
 		{
 			return DefWindowProc(hwnd, message, wparam, lparam);
 		}
+	}
+	case WM_HSCROLL: //Trackbar slide
+	{
+		if((HWND)lparam == mSizeTrackbar)
+		{
+			int sliderPos = SendMessage(mSizeTrackbar, TBM_GETPOS, 0, 0);
+
+			int minSize = (1 << 2)  - 1;
+			int maxSize = (1 << 14) - 1;
+
+			int chosenSize = (1 << sliderPos) - 1;
+			
+			if(chosenSize < minSize)
+			{
+				chosenSize = minSize;
+			}
+
+			if(chosenSize > maxSize)
+			{
+				chosenSize = maxSize;
+			}
+
+			std::wstring wndTitle = L"Stability fractal " + std::to_wstring(chosenSize) + L"x" + std::to_wstring(chosenSize);
+			SetWindowText(mMainWindowHandle, wndTitle.c_str());
+		}
+
+		return 0;
+	}
+	case WM_NOTIFY:
+	{
+		NMHDR* notificationInfo = (NMHDR*)(lparam);
+		if(notificationInfo->hwndFrom == mSizeTrackbar && notificationInfo->code == NM_RELEASEDCAPTURE) //Trackbar mouse released
+		{
+			int sliderPos = SendMessage(mSizeTrackbar, TBM_GETPOS, 0, 0);
+
+			int minSize = (1 << 2) - 1;
+			int maxSize = (1 << 14) - 1;
+
+			int chosenSize = (1 << sliderPos) - 1;
+
+			if (chosenSize < minSize)
+			{
+				chosenSize = minSize;
+			}
+
+			if (chosenSize > maxSize)
+			{
+				chosenSize = maxSize;
+			}
+
+			PostThreadMessage(mRenderThreadID, RENDER_THREAD_RESIZE_BOARD, chosenSize, chosenSize);
+		}
+
+		break;
 	}
 	case MAIN_THREAD_APPEND_TO_LOG:
 	{
@@ -595,6 +663,7 @@ void WindowApp::CreateChildWindows(HINSTANCE hInstance)
 	DWORD clickRuleStyle = 0;
 	DWORD logStyle       = ES_AUTOHSCROLL | ES_AUTOVSCROLL | ES_LEFT | ES_MULTILINE | ES_READONLY /* | ES_UPPERCASE /*The best one!*/ | ES_WANTRETURN;
 	DWORD buttonStyle    = BS_TEXT | BS_FLAT | BS_PUSHBUTTON;
+	DWORD trackbarStyle  = TBS_AUTOTICKS | TBS_HORZ | TBS_BOTTOM;
 
 	mPreviewAreaHandle   = CreateWindowEx(0, WC_STATIC, L"Preview",   WS_CHILD |              previewStyle,   0, 0, gPreviewAreaMinWidth, gPreviewAreaMinHeight, mMainWindowHandle, nullptr, hInstance, nullptr);
 	mClickRuleAreaHandle = CreateWindowEx(0, WC_STATIC, L"ClickRule", WS_CHILD |              clickRuleStyle, 0, 0, gClickRuleAreaWidth,  gClickRuleAreaHeight,  mMainWindowHandle, nullptr, hInstance, nullptr);
@@ -604,6 +673,8 @@ void WindowApp::CreateChildWindows(HINSTANCE hInstance)
 	mButtonPausePlay = CreateWindowEx(0, WC_BUTTON, L"⏸", WS_CHILD | buttonStyle, 0, 0, gButtonWidth, gButtonHeight, mMainWindowHandle, (HMENU)(MENU_PAUSE),      hInstance, nullptr);
 	mButtonStop      = CreateWindowEx(0, WC_BUTTON, L"⏹", WS_CHILD | buttonStyle, 0, 0, gButtonWidth, gButtonHeight, mMainWindowHandle, (HMENU)(MENU_STOP),       hInstance, nullptr);
 	mButtonNextFrame = CreateWindowEx(0, WC_BUTTON, L"⏭️", WS_CHILD | buttonStyle, 0, 0, gButtonWidth, gButtonHeight, mMainWindowHandle, (HMENU)(MENU_NEXT_FRAME), hInstance, nullptr);
+
+	mSizeTrackbar = CreateWindowEx(0, TRACKBAR_CLASS, L"Size", WS_CHILD | trackbarStyle, 0, 0, gMinLogAreaWidth, gMinLogAreaHeight, mMainWindowHandle, nullptr, hInstance, nullptr);
 
 	UpdateWindow(mPreviewAreaHandle);
 	ShowWindow(mPreviewAreaHandle, SW_SHOW);
@@ -624,8 +695,13 @@ void WindowApp::CreateChildWindows(HINSTANCE hInstance)
 	ShowWindow(mButtonStop,      SW_SHOW);
 	ShowWindow(mButtonNextFrame, SW_SHOW);
 
-	//We need to redirect WM_KEYUP messages from the logger window to the main window
-	auto loggerSubclassProc = [](HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData)
+	UpdateWindow(mSizeTrackbar);
+	ShowWindow(mSizeTrackbar, SW_SHOW);
+
+	EnableWindow(mSizeTrackbar, FALSE);
+
+	//We need to redirect WM_KEYUP messages from the logger window and buttons to the main window
+	auto keyUpSubclassProc = [](HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData)
 	{
 		if(message == WM_KEYUP)
 		{
@@ -636,8 +712,15 @@ void WindowApp::CreateChildWindows(HINSTANCE hInstance)
 		return DefSubclassProc(hwnd, message, wparam, lparam);
 	};
 
-	//Subclass the logger window procedure to redirect WM_KEYUP messages
-	SetWindowSubclass(mLogAreaHandle, loggerSubclassProc, 0, 0);
+	//Subclass the window procedure to redirect WM_KEYUP messages
+	SetWindowSubclass(mLogAreaHandle, keyUpSubclassProc, 0, 0);
+
+	SetWindowSubclass(mButtonNextFrame, keyUpSubclassProc, 0, 0);
+	SetWindowSubclass(mButtonPausePlay, keyUpSubclassProc, 0, 0);
+	SetWindowSubclass(mButtonStop,      keyUpSubclassProc, 0, 0);
+	SetWindowSubclass(mButtonNextFrame, keyUpSubclassProc, 0, 0);
+
+	SetWindowSubclass(mSizeTrackbar, keyUpSubclassProc, 0, 0);
 
 	//Set logger area font
 	std::wstring logFontName = L"Lucida Console";
@@ -682,6 +765,12 @@ void WindowApp::CreateChildWindows(HINSTANCE hInstance)
 		SendMessage(mButtonStop,      WM_SETFONT, (WPARAM)mButtonsFont, TRUE);
 		SendMessage(mButtonNextFrame, WM_SETFONT, (WPARAM)mButtonsFont, TRUE);
 	}
+
+	//Change the trackbar range. The actual size of the image is given by (2^p - 1)
+	UINT16 minPSize = 2;
+	UINT16 maxPSize = 14;
+
+	SendMessage(mSizeTrackbar, TBM_SETRANGE, TRUE, MAKELPARAM(minPSize, maxPSize));
 
 	SetFocus(mMainWindowHandle);
 }
@@ -771,6 +860,7 @@ void WindowApp::LayoutChildWindows()
 	previewWidth    = sizePreview;
 	previewHeight   = sizePreview;
 
+	//Log: placed right of the preview, stretching to the far right of the window
 	int logWidth  = wndWidth  - gSpacing - previewWidth - gMarginLeft - gMarginRight;
 	int logHeight = wndHeight - gSpacing - gClickRuleAreaHeight - gMarginTop - gMarginBottom;
 	
@@ -785,6 +875,14 @@ void WindowApp::LayoutChildWindows()
 	int buttonStopPosX      = buttonPausePlayPosX + gButtonWidth + gSpacing;
 	int buttonNextFramePosX = buttonStopPosX      + gButtonWidth + gSpacing;
 
+	//Trackbar: horizontally aligned with buttons, vertically placed below them, fills the entire right side of the screen horizontally
+	int trackbarPosX = gMarginLeft + previewWidth + gSpacing + gClickRuleAreaWidth + gSpacing;
+	int trackbarPosY = buttonsPosY + gButtonHeight + gSpacing;
+
+	int trackbarWidth  = logWidth - gClickRuleAreaWidth - gSpacing * 2;
+	int trackbarHeight = gTrackBarHeight;
+
+	//Finally layout the elements
 	SetWindowPos(mPreviewAreaHandle,   HWND_TOP, gMarginLeft,                           gMarginTop,                                      sizePreview,         sizePreview,          0);
 	SetWindowPos(mClickRuleAreaHandle, HWND_TOP, gMarginLeft + previewWidth + gSpacing, gMarginTop + sizePreview - gClickRuleAreaHeight, gClickRuleAreaWidth, gClickRuleAreaHeight, 0);
 	SetWindowPos(mLogAreaHandle,       HWND_TOP, gMarginLeft + previewWidth + gSpacing, gMarginTop,                                      logWidth,            logHeight,            0);
@@ -793,6 +891,8 @@ void WindowApp::LayoutChildWindows()
 	SetWindowPos(mButtonPausePlay, HWND_TOP, buttonPausePlayPosX, buttonsPosY, gButtonWidth, gButtonHeight, 0);
 	SetWindowPos(mButtonStop,      HWND_TOP, buttonStopPosX,      buttonsPosY, gButtonWidth, gButtonHeight, 0);
 	SetWindowPos(mButtonNextFrame, HWND_TOP, buttonNextFramePosX, buttonsPosY, gButtonWidth, gButtonHeight, 0);
+
+	SetWindowPos(mSizeTrackbar, HWND_TOP, trackbarPosX, trackbarPosY, trackbarWidth, gTrackBarHeight, 0);
 }
 
 void WindowApp::CalculateMinWindowSize()
@@ -949,9 +1049,13 @@ int WindowApp::OnHotkey(uint32_t hotkey)
 
 void WindowApp::OnCommandReset()
 {
+	//Start the simulation again
+
 	mPlayMode = PlayMode::MODE_CONTINUOUS_FRAMES;
 	PostThreadMessage(mRenderThreadID, RENDER_THREAD_REINIT, 0, 0);
 	mRenderer->NeedRedraw();
+
+	EnableWindow(mSizeTrackbar, FALSE);
 }
 
 void WindowApp::OnCommandPause()
@@ -960,25 +1064,56 @@ void WindowApp::OnCommandPause()
 	{
 		if(mPlayMode == PlayMode::MODE_PAUSED)
 		{
+			//The simulation is paused, run it
+
 			mPlayMode = PlayMode::MODE_CONTINUOUS_FRAMES;
+
+			SetWindowText(mButtonPausePlay, L"⏸");
 		}
 		else
 		{
+			//The simulation is running, pause it
+
 			mPlayMode = PlayMode::MODE_PAUSED;
+
+			SetWindowText(mButtonPausePlay, L"▶");
 		}
+	}
+	else
+	{
+		//The simulation is stopped, start it again
+
+		PostThreadMessage(mRenderThreadID, RENDER_THREAD_REINIT, 0, 0);
+		mPlayMode = PlayMode::MODE_CONTINUOUS_FRAMES;
+
+		SetWindowText(mButtonPausePlay, L"⏸");
+
+		EnableWindow(mSizeTrackbar, FALSE);
 	}
 }
 
 void WindowApp::OnCommandStop()
 {
-	if (mPlayMode == PlayMode::MODE_STOP)
+	if(mPlayMode == PlayMode::MODE_STOP)
 	{
+		//The simulation is stopped, start it again
+
 		PostThreadMessage(mRenderThreadID, RENDER_THREAD_REINIT, 0, 0);
 		mPlayMode = PlayMode::MODE_CONTINUOUS_FRAMES;
+
+		EnableWindow(mSizeTrackbar, FALSE);
+
+		SetWindowText(mButtonPausePlay, L"⏸");
 	}
 	else
 	{
+		//The simulation is running or paused, stop it
+
 		mPlayMode = PlayMode::MODE_STOP;
+
+		EnableWindow(mSizeTrackbar, TRUE);
+
+		SetWindowText(mButtonPausePlay, L"▶");
 	}
 }
 
@@ -986,6 +1121,8 @@ void WindowApp::OnCommandNextFrame()
 {
 	if(mPlayMode == PlayMode::MODE_PAUSED)
 	{
+		//The simulation is paused, calculate just one frame
+
 		mPlayMode = PlayMode::MODE_SINGLE_FRAME;
 	}
 }
@@ -1014,6 +1151,9 @@ void WindowApp::IncreaseBoardSize()
 			newHeight = maxSize;
 		}
 
+		int psize = (int)log2f((newWidth + 1));
+		PostMessage(mSizeTrackbar, TBM_SETPOS, TRUE, psize);
+
 		PostThreadMessage(mRenderThreadID, RENDER_THREAD_RESIZE_BOARD, newWidth, newHeight);
 	}
 }
@@ -1041,6 +1181,9 @@ void WindowApp::DecreaseBoardSize()
 		{
 			newHeight = minSize;
 		}
+
+		int psize = (int)log2f((newWidth + 1));
+		PostMessage(mSizeTrackbar, TBM_SETPOS, TRUE, psize);
 
 		PostThreadMessage(mRenderThreadID, RENDER_THREAD_RESIZE_BOARD, newWidth, newHeight);
 	}

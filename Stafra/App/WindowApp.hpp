@@ -67,6 +67,8 @@ private:
 	HWND mButtonReset;
 	HWND mButtonNextFrame;
 
+	HWND mSizeTrackbar;
+
 	HFONT mLogAreaFont;
 	HFONT mButtonsFont;
 
