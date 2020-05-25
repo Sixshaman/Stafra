@@ -46,6 +46,13 @@ namespace
 
 	const int gMinTrackBarWidth = gButtonWidth * 4 + gSpacing * 3;
 	const int gTrackBarHeight   = 48;
+
+	const int gCheckBoxHeight = 20;
+
+	const int gLastFrameLayoutHeight = 20;
+
+	const int gLastFrameTextBoxWidth  = 100;
+	const int gLastFrameLabelMinWidth = gMinTrackBarWidth - gLastFrameTextBoxWidth - gSpacing;
 }
 
 WindowApp::WindowApp(HINSTANCE hInstance, const CommandLineArguments& cmdArgs): mMainWindowHandle(nullptr), mPreviewAreaHandle(nullptr), mClickRuleAreaHandle(nullptr), mLogAreaHandle(nullptr),
@@ -303,6 +310,11 @@ LRESULT CALLBACK WindowApp::AppProc(HWND hwnd, UINT message, WPARAM wparam, LPAR
 		if((HWND)lparam == mLogAreaHandle)
 		{
 			HBRUSH whiteBrush = GetSysColorBrush(COLOR_WINDOW);
+			return (LRESULT)(whiteBrush);
+		}
+		else if((HWND)lparam == mLastFrameTextBox) //Paint the last frame text box differently
+		{
+			HBRUSH whiteBrush = GetSysColorBrush(COLOR_WINDOWFRAME);
 			return (LRESULT)(whiteBrush);
 		}
 		else
@@ -659,11 +671,14 @@ void WindowApp::CreateMainWindow(HINSTANCE hInstance)
 
 void WindowApp::CreateChildWindows(HINSTANCE hInstance)
 {
-	DWORD previewStyle   = 0;
-	DWORD clickRuleStyle = 0;
-	DWORD logStyle       = ES_AUTOHSCROLL | ES_AUTOVSCROLL | ES_LEFT | ES_MULTILINE | ES_READONLY /* | ES_UPPERCASE /*The best one!*/ | ES_WANTRETURN;
-	DWORD buttonStyle    = BS_TEXT | BS_FLAT | BS_PUSHBUTTON;
-	DWORD trackbarStyle  = TBS_AUTOTICKS | TBS_HORZ | TBS_BOTTOM;
+	DWORD previewStyle          = 0;
+	DWORD clickRuleStyle        = 0;
+	DWORD logStyle              = ES_AUTOHSCROLL | ES_AUTOVSCROLL | ES_LEFT | ES_MULTILINE | ES_READONLY /* | ES_UPPERCASE /*The best one!*/ | ES_WANTRETURN;
+	DWORD buttonStyle           = BS_TEXT | BS_FLAT | BS_PUSHBUTTON;
+	DWORD trackbarStyle         = TBS_AUTOTICKS | TBS_HORZ | TBS_BOTTOM;
+	DWORD checkboxStyle         = BS_TEXT | BS_FLAT | BS_CHECKBOX;
+	DWORD labelStyle            = SS_LEFTNOWORDWRAP;
+	DWORD textBoxLastFrameStyle = ES_LEFT | ES_NUMBER;
 
 	mPreviewAreaHandle   = CreateWindowEx(0, WC_STATIC, L"Preview",   WS_CHILD |              previewStyle,   0, 0, gPreviewAreaMinWidth, gPreviewAreaMinHeight, mMainWindowHandle, nullptr, hInstance, nullptr);
 	mClickRuleAreaHandle = CreateWindowEx(0, WC_STATIC, L"ClickRule", WS_CHILD |              clickRuleStyle, 0, 0, gClickRuleAreaWidth,  gClickRuleAreaHeight,  mMainWindowHandle, nullptr, hInstance, nullptr);
@@ -674,8 +689,13 @@ void WindowApp::CreateChildWindows(HINSTANCE hInstance)
 	mButtonStop      = CreateWindowEx(0, WC_BUTTON, L"⏹", WS_CHILD | buttonStyle, 0, 0, gButtonWidth, gButtonHeight, mMainWindowHandle, (HMENU)(MENU_STOP),       hInstance, nullptr);
 	mButtonNextFrame = CreateWindowEx(0, WC_BUTTON, L"⏭️", WS_CHILD | buttonStyle, 0, 0, gButtonWidth, gButtonHeight, mMainWindowHandle, (HMENU)(MENU_NEXT_FRAME), hInstance, nullptr);
 
-	mSizeTrackbar = CreateWindowEx(0, TRACKBAR_CLASS, L"Size", WS_CHILD | trackbarStyle, 0, 0, gMinLogAreaWidth, gMinLogAreaHeight, mMainWindowHandle, nullptr, hInstance, nullptr);
+	mSizeTrackbar = CreateWindowEx(0, TRACKBAR_CLASS, L"Size", WS_CHILD | trackbarStyle, 0, 0, gMinLogAreaWidth, gTrackBarHeight, mMainWindowHandle, nullptr, hInstance, nullptr);
 
+	mVideoFramesCheckBox = CreateWindowEx(0, WC_BUTTON, L"Save video frames", WS_CHILD | checkboxStyle, 0, 0, gMinLogAreaWidth, gCheckBoxHeight, mMainWindowHandle, nullptr, hInstance, nullptr);
+
+	mLastFrameLabel   = CreateWindowEx(0, WC_STATIC, L"Last frame: ", WS_CHILD | labelStyle,            0, 0, gLastFrameLabelMinWidth, gLastFrameLayoutHeight, mMainWindowHandle, nullptr, hInstance, nullptr);
+	mLastFrameTextBox = CreateWindowEx(0, WC_EDIT,   L"",             WS_CHILD | textBoxLastFrameStyle, 0, 0, gLastFrameTextBoxWidth,  gLastFrameLayoutHeight, mMainWindowHandle, nullptr, hInstance, nullptr);
+	
 	UpdateWindow(mPreviewAreaHandle);
 	ShowWindow(mPreviewAreaHandle, SW_SHOW);
 
@@ -700,6 +720,15 @@ void WindowApp::CreateChildWindows(HINSTANCE hInstance)
 
 	EnableWindow(mSizeTrackbar, FALSE);
 
+	UpdateWindow(mVideoFramesCheckBox);
+	ShowWindow(mVideoFramesCheckBox, SW_SHOW);
+
+	UpdateWindow(mLastFrameLabel);
+	UpdateWindow(mLastFrameTextBox);
+
+	ShowWindow(mLastFrameLabel,   SW_SHOW);
+	ShowWindow(mLastFrameTextBox, SW_SHOW);
+
 	//We need to redirect WM_KEYUP messages from the logger window and buttons to the main window
 	auto keyUpSubclassProc = [](HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData)
 	{
@@ -721,6 +750,10 @@ void WindowApp::CreateChildWindows(HINSTANCE hInstance)
 	SetWindowSubclass(mButtonNextFrame, keyUpSubclassProc, 0, 0);
 
 	SetWindowSubclass(mSizeTrackbar, keyUpSubclassProc, 0, 0);
+
+	SetWindowSubclass(mVideoFramesCheckBox, keyUpSubclassProc, 0, 0);
+	SetWindowSubclass(mLastFrameLabel,      keyUpSubclassProc, 0, 0);
+	SetWindowSubclass(mLastFrameTextBox,    keyUpSubclassProc, 0, 0);
 
 	//Set logger area font
 	std::wstring logFontName = L"Lucida Console";
@@ -882,6 +915,23 @@ void WindowApp::LayoutChildWindows()
 	int trackbarWidth  = logWidth - gClickRuleAreaWidth - gSpacing * 2;
 	int trackbarHeight = gTrackBarHeight;
 
+	//Save video frames checkbox: horizontally aligned with buttons, vertically placed below the trackbar, fills the entire right side of the screen horizontally
+	int checkBoxPosX = trackbarPosX;
+	int checkBoxPosY = trackbarPosY + trackbarHeight + gSpacing;
+
+	int checkBoxWidth  = logWidth - gClickRuleAreaWidth - gSpacing * 2;
+	int checkBoxHeight = gCheckBoxHeight;
+
+	//Last frame layout: horizontally aligned with buttons, vertically placed below the save video frames checkbox. The text box is fixed width and placed on the right, the label fills the remaining space
+	int lastFrameLayoutPosY   = checkBoxPosY + checkBoxHeight + gSpacing;
+	int lastFrameLayoutHeight = gLastFrameLayoutHeight;
+
+	int labelLastFramePosX   = trackbarPosX;
+	int textBoxLastFramePosX = labelLastFramePosX + trackbarWidth - gLastFrameTextBoxWidth;
+
+	int textBoxLastFrameWidth = gLastFrameTextBoxWidth;
+	int labelLastFrameWidth   = trackbarWidth - textBoxLastFrameWidth - gSpacing;
+
 	//Finally layout the elements
 	SetWindowPos(mPreviewAreaHandle,   HWND_TOP, gMarginLeft,                           gMarginTop,                                      sizePreview,         sizePreview,          0);
 	SetWindowPos(mClickRuleAreaHandle, HWND_TOP, gMarginLeft + previewWidth + gSpacing, gMarginTop + sizePreview - gClickRuleAreaHeight, gClickRuleAreaWidth, gClickRuleAreaHeight, 0);
@@ -893,6 +943,11 @@ void WindowApp::LayoutChildWindows()
 	SetWindowPos(mButtonNextFrame, HWND_TOP, buttonNextFramePosX, buttonsPosY, gButtonWidth, gButtonHeight, 0);
 
 	SetWindowPos(mSizeTrackbar, HWND_TOP, trackbarPosX, trackbarPosY, trackbarWidth, gTrackBarHeight, 0);
+
+	SetWindowPos(mVideoFramesCheckBox, HWND_TOP, checkBoxPosX, checkBoxPosY, checkBoxWidth, checkBoxHeight, 0);
+
+	SetWindowPos(mLastFrameLabel,   HWND_TOP, labelLastFramePosX,   lastFrameLayoutPosY, labelLastFrameWidth,   lastFrameLayoutHeight, 0);
+	SetWindowPos(mLastFrameTextBox, HWND_TOP, textBoxLastFramePosX, lastFrameLayoutPosY, textBoxLastFrameWidth, lastFrameLayoutHeight, 0);
 }
 
 void WindowApp::CalculateMinWindowSize()

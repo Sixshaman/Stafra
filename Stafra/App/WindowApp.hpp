@@ -69,6 +69,10 @@ private:
 
 	HWND mSizeTrackbar;
 
+	HWND mVideoFramesCheckBox;
+	HWND mLastFrameLabel;
+	HWND mLastFrameTextBox;
+
 	HFONT mLogAreaFont;
 	HFONT mButtonsFont;
 
