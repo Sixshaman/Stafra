@@ -92,9 +92,9 @@ uint32_t FractalGen::GetLastFrameNumber() const
 	return mStabilityCalculator->GetCurrentStep();
 }
 
-uint32_t FractalGen::GetSolutionPeriod() const
+uint32_t FractalGen::GetDefaultSolutionPeriod(uint32_t boardSize) const
 {
-	return mStabilityCalculator->GetDefaultSolutionPeriod();
+	return mStabilityCalculator->GetDefaultSolutionPeriod(boardSize);
 }
 
 uint32_t FractalGen::GetWidth() const

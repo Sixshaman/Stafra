@@ -54,8 +54,8 @@ public:
 	void SaveCurrentStep(const std::wstring& stabilityFile);        //Saves full image, without downscaling
 	void SaveClickRule(const std::wstring& clickRuleFile);          //Saves click rule
 
-	uint32_t GetLastFrameNumber() const; //Returns the number of the last frame
-	uint32_t GetSolutionPeriod()  const; //Returns the (fake) solution period (if the board size is 2^p - 1, then this function retuns 2^(p-1))
+	uint32_t GetLastFrameNumber()                         const; //Returns the number of the last frame
+	uint32_t GetDefaultSolutionPeriod(uint32_t boardSize) const; //Returns the (fake) solution period (if boardSize is 2^p - 1, then this function retuns 2^(p-1))
 
 	uint32_t GetWidth()  const; //Returns the width of the board
 	uint32_t GetHeight() const; //Returns the height of the board

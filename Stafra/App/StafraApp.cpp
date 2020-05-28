@@ -20,7 +20,7 @@ void StafraApp::Init(const CommandLineArguments& cmdArgs)
 
 	if(mFinalFrameNumber == 0)
 	{
-		mFinalFrameNumber = mFractalGen->GetSolutionPeriod();
+		mFinalFrameNumber = mFractalGen->GetDefaultSolutionPeriod(mFractalGen->GetWidth());
 	}
 }
 

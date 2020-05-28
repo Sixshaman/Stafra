@@ -56,6 +56,8 @@ private:
 	void RenderThreadFunc();
 	void TickThreadFunc();
 
+	uint32_t ParseFinalFrame();
+
 private:
 	HWND mMainWindowHandle;
 	HWND mPreviewAreaHandle;

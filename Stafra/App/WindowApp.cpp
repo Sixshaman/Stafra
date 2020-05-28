@@ -117,6 +117,14 @@ void WindowApp::Init(HINSTANCE hInstance, const CommandLineArguments& cmdArgs)
 
 	int psize = (int)log2f((mFractalGen->GetWidth() + 1));
 	SendMessage(mSizeTrackbar, TBM_SETPOS, TRUE, psize);
+
+	if(cmdArgs.SaveVideoFrames())
+	{
+		SendMessage(mVideoFramesCheckBox, BM_SETCHECK, BST_CHECKED, 0);
+	}
+
+	std::wstring finalFrameStr = std::to_wstring(mFinalFrameNumber);
+	SendMessage(mLastFrameTextBox, WM_SETTEXT, 0, (LPARAM)finalFrameStr.c_str());
 }
 
 LRESULT CALLBACK WindowApp::AppProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam)
@@ -439,7 +447,6 @@ void WindowApp::RenderThreadFunc()
 			InitBoard(mFractalGen->GetWidth(), mFractalGen->GetHeight());
 
 			mFractalGen->ResetComputingParameters();
-			mFinalFrameNumber = mFractalGen->GetSolutionPeriod();
 
 			std::wstring wndTitle = L"Stability fractal " + std::to_wstring(mFractalGen->GetWidth()) + L"x" + std::to_wstring(mFractalGen->GetHeight());
 			SetWindowText(mMainWindowHandle, wndTitle.c_str());
@@ -540,6 +547,10 @@ void WindowApp::RenderThreadFunc()
 			std::wstring wndTitle = L"Stability fractal " + std::to_wstring(mFractalGen->GetWidth()) + L"x" + std::to_wstring(mFractalGen->GetHeight());
 			SetWindowText(mMainWindowHandle, wndTitle.c_str());
 
+			uint32_t finalFrame = mFractalGen->GetDefaultSolutionPeriod(mFractalGen->GetWidth());
+			std::wstring finalFrameStr = std::to_wstring(finalFrame);
+			SendMessage(mLastFrameTextBox, WM_SETTEXT, 0, (LPARAM)finalFrameStr.c_str());
+
 			break;
 		}
 		case RENDER_THREAD_SYNC:
@@ -605,6 +616,40 @@ void WindowApp::TickThreadFunc()
 			PostThreadMessage(mRenderThreadID, RENDER_THREAD_SYNC, 0, 0); //Don't produce next commands until renderer finishes with these
 		}
 	}	
+}
+
+uint32_t WindowApp::ParseFinalFrame()
+{
+	uint32_t finalFrameTextLength = SendMessage(mLastFrameTextBox, WM_GETTEXTLENGTH, 0, 0);
+	if(finalFrameTextLength == 0)
+	{
+		uint32_t finalFrame = mFractalGen->GetDefaultSolutionPeriod(mFractalGen->GetWidth());
+
+		std::wstring finalFrameStr = std::to_wstring(finalFrame);
+		SendMessage(mLastFrameTextBox, WM_SETTEXT, 0, (LPARAM)finalFrameStr.c_str());
+
+		return finalFrame;
+	}
+	else
+	{
+		std::wstring finalFrameStr;
+		finalFrameStr.resize(finalFrameTextLength);
+
+		SendMessage(mLastFrameTextBox, WM_GETTEXT, finalFrameTextLength + 1, (LPARAM)finalFrameStr.data());
+
+		uint32_t finalFrame = 0;
+		std::wistringstream iss(finalFrameStr);
+
+		if(!(iss >> finalFrame)) //The string cannot be parsed
+		{
+			finalFrame = mFractalGen->GetDefaultSolutionPeriod(mFractalGen->GetWidth());
+
+			finalFrameStr = std::to_wstring(finalFrame);
+			SendMessage(mLastFrameTextBox, WM_SETTEXT, 0, (LPARAM)finalFrameStr.c_str());
+		}
+
+		return finalFrame;
+	}
 }
 
 void WindowApp::CreateMainWindow(HINSTANCE hInstance)
@@ -719,6 +764,8 @@ void WindowApp::CreateChildWindows(HINSTANCE hInstance)
 	ShowWindow(mSizeTrackbar, SW_SHOW);
 
 	EnableWindow(mSizeTrackbar, FALSE);
+	EnableWindow(mVideoFramesCheckBox, FALSE);
+	EnableWindow(mLastFrameTextBox, FALSE);
 
 	UpdateWindow(mVideoFramesCheckBox);
 	ShowWindow(mVideoFramesCheckBox, SW_SHOW);
@@ -1106,11 +1153,15 @@ void WindowApp::OnCommandReset()
 {
 	//Start the simulation again
 
+	mFinalFrameNumber = ParseFinalFrame();
+
 	mPlayMode = PlayMode::MODE_CONTINUOUS_FRAMES;
 	PostThreadMessage(mRenderThreadID, RENDER_THREAD_REINIT, 0, 0);
 	mRenderer->NeedRedraw();
 
 	EnableWindow(mSizeTrackbar, FALSE);
+	EnableWindow(mVideoFramesCheckBox, FALSE);
+	EnableWindow(mLastFrameTextBox, FALSE);
 }
 
 void WindowApp::OnCommandPause()
@@ -1119,7 +1170,7 @@ void WindowApp::OnCommandPause()
 	{
 		if(mPlayMode == PlayMode::MODE_PAUSED)
 		{
-			//The simulation is paused, run it
+			//The simulation is paused, continue it
 
 			mPlayMode = PlayMode::MODE_CONTINUOUS_FRAMES;
 
@@ -1138,12 +1189,16 @@ void WindowApp::OnCommandPause()
 	{
 		//The simulation is stopped, start it again
 
+		mFinalFrameNumber = ParseFinalFrame();
+
 		PostThreadMessage(mRenderThreadID, RENDER_THREAD_REINIT, 0, 0);
 		mPlayMode = PlayMode::MODE_CONTINUOUS_FRAMES;
 
 		SetWindowText(mButtonPausePlay, L"⏸");
 
 		EnableWindow(mSizeTrackbar, FALSE);
+		EnableWindow(mVideoFramesCheckBox, FALSE);
+		EnableWindow(mLastFrameTextBox, FALSE);
 	}
 }
 
@@ -1153,10 +1208,14 @@ void WindowApp::OnCommandStop()
 	{
 		//The simulation is stopped, start it again
 
+		mFinalFrameNumber = ParseFinalFrame();
+
 		PostThreadMessage(mRenderThreadID, RENDER_THREAD_REINIT, 0, 0);
 		mPlayMode = PlayMode::MODE_CONTINUOUS_FRAMES;
 
 		EnableWindow(mSizeTrackbar, FALSE);
+		EnableWindow(mVideoFramesCheckBox, FALSE);
+		EnableWindow(mLastFrameTextBox, FALSE);
 
 		SetWindowText(mButtonPausePlay, L"⏸");
 	}
@@ -1167,6 +1226,8 @@ void WindowApp::OnCommandStop()
 		mPlayMode = PlayMode::MODE_STOP;
 
 		EnableWindow(mSizeTrackbar, TRUE);
+		EnableWindow(mVideoFramesCheckBox, TRUE);
+		EnableWindow(mLastFrameTextBox, TRUE);
 
 		SetWindowText(mButtonPausePlay, L"▶");
 	}

@@ -118,13 +118,13 @@ uint32_t StabilityCalculator::GetCurrentStep() const
 	return mCurrentStep;
 }
 
-uint32_t StabilityCalculator::GetDefaultSolutionPeriod() const
+uint32_t StabilityCalculator::GetDefaultSolutionPeriod(uint32_t boardSize) const
 {
 	//For any normal Lights Out game of size (2^n - 1) x (2^n - 1), the solution period is 2^(n - 1).  
 	//For example, for the normal 127 x 127 Lights Out the period is 64, for the normal 255 x 255 Lights Out the period is 128 and so on.
 	//However, for the custom click rules, spawn stability and many other things this formula doesn't work anymore. 
 	//But since we need the default solution period anyway, part of it stays. To control the larger periods, I added enlonging multiplier.
-	return ((mBoardWidth + 1) / 2);
+	return ((boardSize + 1) / 2);
 }
 
 ID3D11ShaderResourceView* StabilityCalculator::GetLastStabilityState() const

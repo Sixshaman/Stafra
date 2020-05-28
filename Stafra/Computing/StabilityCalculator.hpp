@@ -28,8 +28,8 @@ public:
 	uint32_t GetBoardWidth()  const;
 	uint32_t GetBoardHeight() const;
 
-	uint32_t GetCurrentStep()           const;
-	uint32_t GetDefaultSolutionPeriod() const;
+	uint32_t GetCurrentStep()                             const;
+	uint32_t GetDefaultSolutionPeriod(uint32_t boardSize) const;
 
 	ID3D11ShaderResourceView* GetLastStabilityState() const;
 	ID3D11ShaderResourceView* GetLastBoardState()     const;
