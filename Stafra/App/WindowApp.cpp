@@ -498,6 +498,13 @@ void WindowApp::RenderThreadFunc()
 			std::wstring wndTitle = L"Stability fractal " + std::to_wstring(mFractalGen->GetWidth()) + L"x" + std::to_wstring(mFractalGen->GetHeight());
 			SetWindowText(mMainWindowHandle, wndTitle.c_str());
 
+			int psize = (int)log2f((mFractalGen->GetWidth() + 1));
+			PostMessage(mSizeTrackbar, TBM_SETPOS, TRUE, psize);
+
+			uint32_t finalFrame = mFractalGen->GetDefaultSolutionPeriod(mFractalGen->GetWidth());
+			std::wstring finalFrameStr = std::to_wstring(finalFrame);
+			SendMessage(mLastFrameTextBox, WM_SETTEXT, 0, (LPARAM)finalFrameStr.c_str());
+
 			mResetMode = ResetBoardModeApp::RESET_CUSTOM_IMAGE;
 			break;
 		}
