@@ -196,6 +196,20 @@ LRESULT CALLBACK WindowApp::AppProc(HWND hwnd, UINT message, WPARAM wparam, LPAR
 			{
 				OnCommandNextFrame();
 			}
+			else if(btnHandle == mVideoFramesCheckBox)
+			{
+				bool checked = (SendMessage(mVideoFramesCheckBox, BM_GETCHECK, 0, 0) == BST_CHECKED);
+				if(checked)
+				{
+					SendMessage(mVideoFramesCheckBox, BM_SETCHECK, BST_UNCHECKED, 0);
+					mSaveVideoFrames = false;
+				}
+				else
+				{
+					SendMessage(mVideoFramesCheckBox, BM_SETCHECK, BST_CHECKED, 0);
+					mSaveVideoFrames = true;
+				}
+			}
 		}
 
 		break;
