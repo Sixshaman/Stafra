@@ -11,8 +11,19 @@ int main(int argc, char* argv[])
 
 	if(cmdArgs.SilentMode())
 	{
-		ConsoleApp app(cmdArgs);
-		app.ComputeFractal();
+		if(cmdArgs.HelpOnly())
+		{
+			std::cout << cmdArgs.GetHelpMessage() << std::endl;
+		}
+		else
+		{
+			ConsoleApp app(cmdArgs);
+			if (!cmdArgs.HelpOnly())
+			{
+				app.ComputeFractal();
+			}
+		}
+
 		return 0;
 	}
 	else
@@ -22,8 +33,16 @@ int main(int argc, char* argv[])
 		fclose(stderr);
 
 		FreeConsole();
-
-		WindowApp app((HINSTANCE)GetModuleHandle(nullptr), cmdArgs);
-		return app.Run();
+		
+		if(cmdArgs.HelpOnly())
+		{
+			MessageBoxA(nullptr, cmdArgs.GetHelpMessage().c_str(), "Help", MB_OK);
+			return 0;
+		}
+		else
+		{
+			WindowApp app((HINSTANCE)GetModuleHandle(nullptr), cmdArgs);
+			return app.Run();
+		}
 	}
 }

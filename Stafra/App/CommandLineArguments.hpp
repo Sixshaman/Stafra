@@ -39,6 +39,7 @@ public:
 	uint32_t FinalFrame()  const;
 	uint32_t SpawnPeriod() const;
 
+	bool HelpOnly()        const;
 	bool SaveVideoFrames() const;
 	bool SmoothTransform() const;
 	bool SilentMode()      const;
@@ -57,6 +58,7 @@ private:
 	uint32_t mFinalFrame;
 	uint32_t mSpawnPeriod;
 
+	bool mHelpOnly;
 	bool mSaveVideoFrames;
 	bool mSmoothTransform;
 	bool mSilentMode;

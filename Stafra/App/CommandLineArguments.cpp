@@ -46,7 +46,9 @@ CommandLineArguments::CommandLineArguments(const std::string& cmdArgs): CommandL
 	mCmdLineArgs.push_back(std::string(prevArgEnd, cmdArgs.end()));
 }
 
-CommandLineArguments::CommandLineArguments(): mPowSize(gDefaultPSize), mSaveVideoFrames(gDefaultSaveVframes), mSmoothTransform(gDefaultSmooth), mFinalFrame(gDefaultFinalFrame), mSpawnPeriod(gDefaultSpawn), mSilentMode(false), mResetMode(CmdResetMode::RESET_4_CORNERS)
+CommandLineArguments::CommandLineArguments(): mPowSize(gDefaultPSize), mSaveVideoFrames(gDefaultSaveVframes), mSmoothTransform(gDefaultSmooth), 
+                                              mFinalFrame(gDefaultFinalFrame), mSpawnPeriod(gDefaultSpawn), 
+	                                          mSilentMode(false), mResetMode(CmdResetMode::RESET_4_CORNERS), mHelpOnly(false)
 {
 }
 
@@ -67,6 +69,11 @@ uint32_t CommandLineArguments::FinalFrame() const
 uint32_t CommandLineArguments::SpawnPeriod() const
 {
 	return mSpawnPeriod;
+}
+
+bool CommandLineArguments::HelpOnly() const
+{
+	return mHelpOnly;
 }
 
 bool CommandLineArguments::SaveVideoFrames() const
@@ -107,8 +114,8 @@ CmdParseResult CommandLineArguments::ParseArgs()
 	{
 		if(mCmdLineArgs[i] == "-help")
 		{
-			res = CmdParseResult::PARSE_HELP;
-			break;
+			res       = CmdParseResult::PARSE_HELP;
+			mHelpOnly = true;
 		}
 		else if(mCmdLineArgs[i] == "-save_vframes")
 		{
