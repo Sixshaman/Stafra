@@ -13,7 +13,7 @@ class DisplayRenderer final: public Renderer
 	};
 
 public:
-	DisplayRenderer(HWND previewWnd, HWND clickRuleWnd);
+	DisplayRenderer(int gpuIndex, HWND previewWnd, HWND clickRuleWnd);
 	~DisplayRenderer();
 
 	void ResizePreviewArea(uint32_t newWidth, uint32_t newHeight) override;

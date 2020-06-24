@@ -1,9 +1,10 @@
 #include "Renderer.hpp"
 #include "..\Util.hpp"
+#include <vector>
 
-Renderer::Renderer(): mNeedRedraw(false), mNeedRedrawClickRule(false)
+Renderer::Renderer(int gpuIndex): mNeedRedraw(false), mNeedRedrawClickRule(false)
 {
-	CreateDevice();
+	CreateDevice(gpuIndex);
 }
 
 Renderer::~Renderer()
@@ -88,6 +89,11 @@ ID3D11DeviceContext* Renderer::GetDeviceContext() const
 	return mDeviceContext.Get();
 }
 
+std::wstring Renderer::GetAdapterName() const
+{
+	return mAdapterName;
+}
+
 void Renderer::SetCurrentBoard(ID3D11ShaderResourceView* srv)
 {
 }
@@ -96,7 +102,7 @@ void Renderer::SetCurrentClickRule(ID3D11ShaderResourceView* srv)
 {
 }
 
-void Renderer::CreateDevice()
+void Renderer::CreateDevice(int gpuIndex)
 {
 	UINT flags = 0;
 #if defined(DEBUG) || defined(_DEBUG)
@@ -105,10 +111,37 @@ void Renderer::CreateDevice()
 
 	ThrowIfFailed(CreateDXGIFactory1(__uuidof(IDXGIFactory1), (void**)(mDXGIFactory.GetAddressOf())));
 
-	Microsoft::WRL::ComPtr<IDXGIAdapter1> pAdapter = nullptr;
-	ThrowIfFailed(mDXGIFactory->EnumAdapters1(0, pAdapter.GetAddressOf()));
+	if(gpuIndex < 0) //WARP
+	{
+		ThrowIfFailed(D3D11CreateDevice(nullptr, D3D_DRIVER_TYPE_WARP, nullptr, flags, nullptr, 0, D3D11_SDK_VERSION, mDevice.GetAddressOf(), nullptr, mDeviceContext.GetAddressOf()));
 
-	ThrowIfFailed(D3D11CreateDevice(pAdapter.Get(), D3D_DRIVER_TYPE_UNKNOWN, nullptr, flags, nullptr, 0, D3D11_SDK_VERSION, mDevice.GetAddressOf(), nullptr, mDeviceContext.GetAddressOf()));
+		mAdapterName = L"WARP";
+	}
+	else
+	{
+		std::vector<Microsoft::WRL::ComPtr<IDXGIAdapter1>> adapters;
+
+		Microsoft::WRL::ComPtr<IDXGIAdapter1> pAdapter = nullptr;
+		for(int index = 0; mDXGIFactory->EnumAdapters1(index, pAdapter.GetAddressOf()) != DXGI_ERROR_NOT_FOUND; index++)
+		{
+			adapters.push_back(pAdapter);
+			pAdapter.Reset();
+		}
+
+		//Clamp the value
+		if(gpuIndex >= adapters.size())
+		{
+			gpuIndex = adapters.size() - 1;
+		}
+
+		Microsoft::WRL::ComPtr<IDXGIAdapter1> pSelectedAdapter = adapters[gpuIndex];
+		ThrowIfFailed(D3D11CreateDevice(pSelectedAdapter.Get(), D3D_DRIVER_TYPE_UNKNOWN, nullptr, flags, nullptr, 0, D3D11_SDK_VERSION, mDevice.GetAddressOf(), nullptr, mDeviceContext.GetAddressOf()));
+
+		DXGI_ADAPTER_DESC1 selectedAdapterDesc;
+		ThrowIfFailed(pSelectedAdapter->GetDesc1(&selectedAdapterDesc));
+
+		mAdapterName = selectedAdapterDesc.Description;
+	}
 
 	ThrowIfFailed(mDevice->SetExceptionMode(D3D11_RAISE_FLAG_DRIVER_INTERNAL_ERROR));
 }

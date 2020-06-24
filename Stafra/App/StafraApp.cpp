@@ -13,9 +13,15 @@ StafraApp::~StafraApp()
 
 void StafraApp::Init(const CommandLineArguments& cmdArgs)
 {
+	InitRenderer(cmdArgs);
+	InitLogger(cmdArgs);
+
+	mLogger->WriteToLog(L"GPU Adapter: " + mRenderer->GetAdapterName());
+
 	mFractalGen = std::make_unique<FractalGen>(mRenderer.get());
-	
+
 	ParseCmdArgs(cmdArgs);
+
 	mFractalGen->ResetComputingParameters();
 
 	if(mFinalFrameNumber == 0)

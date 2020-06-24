@@ -28,6 +28,9 @@ public:
 protected:
 	void Init(HINSTANCE hInstance, const CommandLineArguments& cmdArgs);
 
+	void InitRenderer(const CommandLineArguments& args) override;
+	void InitLogger(const CommandLineArguments& args)   override;
+
 private:
 	void CreateMainWindow(HINSTANCE hInstance);
 	void CreateChildWindows(HINSTANCE hInstance);

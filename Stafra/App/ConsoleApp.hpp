@@ -16,4 +16,7 @@ public:
 
 private:
 	void Init(const CommandLineArguments& cmdArgs);
+
+	void InitRenderer(const CommandLineArguments& args) override;
+	void InitLogger(const CommandLineArguments& args)   override;
 };

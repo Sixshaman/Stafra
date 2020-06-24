@@ -36,7 +36,15 @@ void ConsoleApp::ComputeFractal()
 
 void ConsoleApp::Init(const CommandLineArguments& cmdArgs)
 {
-	mRenderer = std::make_unique<Renderer>();
-	mLogger   = std::make_unique<ConsoleLogger>();
 	StafraApp::Init(cmdArgs);
+}
+
+void ConsoleApp::InitRenderer(const CommandLineArguments& args)
+{
+	mRenderer = std::make_unique<Renderer>(args.GpuIndex());
+}
+
+void ConsoleApp::InitLogger(const CommandLineArguments& args)
+{
+	mLogger = std::make_unique<ConsoleLogger>();
 }

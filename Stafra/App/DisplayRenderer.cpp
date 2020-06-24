@@ -3,7 +3,7 @@
 
 #define FLAG_CLICK_RULE_GRID_VISIBLE 0x01
 
-DisplayRenderer::DisplayRenderer(HWND previewWnd, HWND clickRuleWnd): mCurrentBoardSRV(nullptr), mCurrentClickRuleSRV(nullptr)
+DisplayRenderer::DisplayRenderer(int gpuIndex, HWND previewWnd, HWND clickRuleWnd): Renderer(gpuIndex), mCurrentBoardSRV(nullptr), mCurrentClickRuleSRV(nullptr)
 {
 	mCBufferParamsClickRuleCopy.Flags = FLAG_CLICK_RULE_GRID_VISIBLE;
 

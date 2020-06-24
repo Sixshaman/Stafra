@@ -39,6 +39,8 @@ public:
 	uint32_t FinalFrame()  const;
 	uint32_t SpawnPeriod() const;
 
+	int GpuIndex() const; //Returns a gpu index selected by the u
+
 	bool HelpOnly()        const;
 	bool SaveVideoFrames() const;
 	bool SmoothTransform() const;
@@ -57,6 +59,8 @@ private:
 	uint32_t mPowSize;
 	uint32_t mFinalFrame;
 	uint32_t mSpawnPeriod;
+
+	int mGpuIndex;
 
 	bool mHelpOnly;
 	bool mSaveVideoFrames;

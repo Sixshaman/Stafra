@@ -26,6 +26,9 @@ public:
 protected:
 	void Init(const CommandLineArguments& cmdArgs);
 
+	virtual void InitRenderer(const CommandLineArguments& args) = 0;
+	virtual void InitLogger(const CommandLineArguments& args)   = 0;
+
 	std::wstring IntermediateStateString(uint32_t frameNumber) const;
 
 	void ComputeFractalTick();

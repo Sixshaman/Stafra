@@ -71,6 +71,11 @@ uint32_t CommandLineArguments::SpawnPeriod() const
 	return mSpawnPeriod;
 }
 
+int CommandLineArguments::GpuIndex() const
+{
+	return mGpuIndex;
+}
+
 bool CommandLineArguments::HelpOnly() const
 {
 	return mHelpOnly;
@@ -211,6 +216,26 @@ CmdParseResult CommandLineArguments::ParseArgs()
 				mSpawnPeriod = spawn;
 			}
 		}
+		else if(mCmdLineArgs[i] == "-gpu")
+		{
+			if((i + 1) >= mCmdLineArgs.size())
+			{
+				mGpuIndex = 0;
+				break;
+			}
+			else
+			{
+				std::string argValue = mCmdLineArgs[++i];
+				if(std::regex_match(argValue, std::regex("(W|w)(A|a)(R|r)(P|p)")))
+				{
+					mGpuIndex = -1; //Negative number for warp device
+				}
+				else
+				{
+					mGpuIndex = (int)ParseInt(argValue, gMinimumSpawn, gMaximumSpawn);
+				}
+			}
+		}
 		else
 		{
 			//It's fine, don't finish
@@ -224,14 +249,15 @@ CmdParseResult CommandLineArguments::ParseArgs()
 
 std::string CommandLineArguments::GetHelpMessage() const
 {
-	return "Options:                                                                 \r\n"
-		   "                                                                         \r\n"
-		   "-save_vframes: Save all intermediate states to the ./DiffStabil folder;  \r\n"
-		   "-smooth:       Use smooth transformation for the spawn-stability;        \r\n"
-		   "-psize:        The log2 of size of the board. Acceptable range: 2-14;    \r\n"
-		   "-final_frame:  The frame number that will be saved.                      \r\n"
-		   "-spawn:        Spawn stability period. Enter 0 for no spawn at all.      \r\n"
-		   "-reset_mode:   Reset mode. Available values: 4corners | 4sides | center. \r\n";
+	return "Options:                                                                                         \r\n"
+		   "                                                                                                 \r\n"
+		   "-save_vframes: Save all intermediate states to the ./DiffStabil folder;                          \r\n"
+		   "-smooth:       Use smooth transformation for the spawn-stability;                                \r\n"
+		   "-psize:        The log2 of size of the board. Acceptable range: 2-14;                            \r\n"
+		   "-final_frame:  The frame number that will be saved.                                              \r\n"
+		   "-spawn:        Spawn stability period. Enter 0 for no spawn at all.                              \r\n"
+		   "-reset_mode:   Reset mode. Available values: 4corners | 4sides | center.                         \r\n"
+		   "-gpu:          GPU adapter index for computations. Available values: WARP | Any positive number. \r\n";
 }
 
 std::string CommandLineArguments::GetErrorMessage(CmdParseResult parseRes) const

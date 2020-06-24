@@ -107,9 +107,6 @@ void WindowApp::Init(HINSTANCE hInstance, const CommandLineArguments& cmdArgs)
 	CreateMainWindow(hInstance);
 	CreateChildWindows(hInstance);
 
-	mRenderer = std::make_unique<DisplayRenderer>(mPreviewAreaHandle, mClickRuleAreaHandle);
-	mLogger   = std::make_unique<WindowLogger>(mMainWindowHandle);
-
 	StafraApp::Init(cmdArgs);
 
 	std::wstring wndTitle = L"Stability fractal " + std::to_wstring(mFractalGen->GetWidth()) + L"x" + std::to_wstring(mFractalGen->GetHeight());
@@ -125,6 +122,16 @@ void WindowApp::Init(HINSTANCE hInstance, const CommandLineArguments& cmdArgs)
 
 	std::wstring finalFrameStr = std::to_wstring(mFinalFrameNumber);
 	SendMessage(mLastFrameTextBox, WM_SETTEXT, 0, (LPARAM)finalFrameStr.c_str());
+}
+
+void WindowApp::InitRenderer(const CommandLineArguments& args)
+{
+	mRenderer = std::make_unique<DisplayRenderer>(args.GpuIndex(), mPreviewAreaHandle, mClickRuleAreaHandle);
+}
+
+void WindowApp::InitLogger(const CommandLineArguments& args)
+{
+	mLogger = std::make_unique<WindowLogger>(mMainWindowHandle);
 }
 
 LRESULT CALLBACK WindowApp::AppProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam)
