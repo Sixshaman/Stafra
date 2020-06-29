@@ -49,10 +49,10 @@ namespace
 
 	const int gCheckBoxHeight = 20;
 
-	const int gLastFrameLayoutHeight = 20;
+	const int gInputLayoutHeight = 20;
 
-	const int gLastFrameTextBoxWidth  = 100;
-	const int gLastFrameLabelMinWidth = gMinTrackBarWidth - gLastFrameTextBoxWidth - gSpacing;
+	const int gInputTextBoxWidth  = 100;
+	const int gInputLabelMinWidth = gMinTrackBarWidth - gInputTextBoxWidth - gSpacing;
 }
 
 WindowApp::WindowApp(HINSTANCE hInstance, const CommandLineArguments& cmdArgs): mMainWindowHandle(nullptr), mPreviewAreaHandle(nullptr), mClickRuleAreaHandle(nullptr), mLogAreaHandle(nullptr),
@@ -122,6 +122,9 @@ void WindowApp::Init(HINSTANCE hInstance, const CommandLineArguments& cmdArgs)
 
 	std::wstring finalFrameStr = std::to_wstring(mFinalFrameNumber);
 	SendMessage(mLastFrameTextBox, WM_SETTEXT, 0, (LPARAM)finalFrameStr.c_str());
+
+	std::wstring spawnStr = std::to_wstring(mSpawnPeriod);
+	SendMessage(mSpawnTextBox, WM_SETTEXT, 0, (LPARAM)spawnStr.c_str());
 }
 
 void WindowApp::InitRenderer(const CommandLineArguments& args)
@@ -267,7 +270,7 @@ LRESULT CALLBACK WindowApp::AppProc(HWND hwnd, UINT message, WPARAM wparam, LPAR
 
 			if(mPlayMode != PlayMode::MODE_STOP)
 			{
-				clickRuleMenuFileFlags = clickRuleMenuFlags | MF_DISABLED;
+				clickRuleMenuFileFlags = clickRuleMenuFlags | MF_DISABLED | MF_GRAYED;
 			}
 
 			HMENU popupMenu = CreatePopupMenu();
@@ -293,16 +296,34 @@ LRESULT CALLBACK WindowApp::AppProc(HWND hwnd, UINT message, WPARAM wparam, LPAR
 			UINT boardSaveMenuFlags = MF_BYCOMMAND | MF_STRING;
 			if(mPlayMode != PlayMode::MODE_STOP)
 			{
-				boardLoadMenuFlags = boardLoadMenuFlags | MF_DISABLED;
+				boardLoadMenuFlags = boardLoadMenuFlags | MF_DISABLED | MF_GRAYED;
 				if(mPlayMode != PlayMode::MODE_PAUSED)
 				{
-					boardSaveMenuFlags = boardSaveMenuFlags | MF_DISABLED;
+					boardSaveMenuFlags = boardSaveMenuFlags | MF_DISABLED | MF_GRAYED;
 				}
 			}
 
 			HMENU popupMenu = CreatePopupMenu();
 			InsertMenu(popupMenu, 0, boardLoadMenuFlags, MENU_OPEN_BOARD, L"Open board...");
 			InsertMenu(popupMenu, 0, boardSaveMenuFlags, MENU_SAVE_BOARD, L"Save stability...");
+
+			      UINT              initialStateMenuIDs[3]    = {MENU_INITIAL_STATE_CORNERS,         MENU_INITIAL_STATE_SIDES,         MENU_INITIAL_STATE_CENTER};
+			const WCHAR*            initialStateMenuLabels[3] = {L"Corners" ,                        L"Sides" ,                        L"Center"};
+                  ResetBoardModeApp initialStateResetModes[3] = {ResetBoardModeApp::RESET_4_CORNERS, ResetBoardModeApp::RESET_4_SIDES, ResetBoardModeApp::RESET_CENTER};
+
+			HMENU initialStatesMenu = CreatePopupMenu();
+			for(int i = 0; i < 3; i++)
+			{
+				UINT currFlags = boardSaveMenuFlags;
+				if(mResetMode == initialStateResetModes[i])
+				{
+					currFlags = currFlags | MF_CHECKED;
+				}
+
+				InsertMenu(initialStatesMenu, 0, currFlags, initialStateMenuIDs[i], initialStateMenuLabels[i]);
+			}
+
+			AppendMenu(popupMenu, MF_POPUP, (UINT_PTR)initialStatesMenu, L"Initial state");
 			TrackPopupMenu(popupMenu, TPM_LEFTALIGN | TPM_TOPALIGN | TPM_LEFTBUTTON | TPM_NOANIMATION, pt.x, pt.y, 0, mMainWindowHandle, nullptr);
 		}
 		return 0;
@@ -342,6 +363,11 @@ LRESULT CALLBACK WindowApp::AppProc(HWND hwnd, UINT message, WPARAM wparam, LPAR
 			return (LRESULT)(whiteBrush);
 		}
 		else if((HWND)lparam == mLastFrameTextBox) //Paint the last frame text box differently
+		{
+			HBRUSH whiteBrush = GetSysColorBrush(COLOR_WINDOWFRAME);
+			return (LRESULT)(whiteBrush);
+		}
+		else if((HWND)lparam == mSpawnTextBox) //Paint the last frame text box differently
 		{
 			HBRUSH whiteBrush = GetSysColorBrush(COLOR_WINDOWFRAME);
 			return (LRESULT)(whiteBrush);
@@ -680,6 +706,40 @@ uint32_t WindowApp::ParseFinalFrame()
 	}
 }
 
+uint32_t WindowApp::ParseSpawnPeriod()
+{
+	uint32_t spawnTextLength = SendMessage(mSpawnTextBox, WM_GETTEXTLENGTH, 0, 0);
+	if(spawnTextLength == 0)
+	{
+		uint32_t spawnPeriod = 0;
+
+		std::wstring spawnStr = std::to_wstring(spawnPeriod);
+		SendMessage(mSpawnTextBox, WM_SETTEXT, 0, (LPARAM)spawnStr.c_str());
+
+		return spawnPeriod;
+	}
+	else
+	{
+		std::wstring spawnStr;
+		spawnStr.resize(spawnTextLength);
+
+		SendMessage(mSpawnTextBox, WM_GETTEXT, spawnTextLength + 1, (LPARAM)spawnStr.data());
+
+		uint32_t spawnPeriod = 0;
+		std::wistringstream iss(spawnStr);
+
+		if(!(iss >> spawnPeriod)) //The string cannot be parsed
+		{
+			spawnPeriod = 0;
+
+			spawnStr = std::to_wstring(spawnPeriod);
+			SendMessage(mSpawnTextBox, WM_SETTEXT, 0, (LPARAM)spawnStr.c_str());
+		}
+
+		return spawnPeriod;
+	}
+}
+
 void WindowApp::CreateMainWindow(HINSTANCE hInstance)
 {
 	LPCWSTR windowClassName = L"StabilityFractalClass";
@@ -766,9 +826,12 @@ void WindowApp::CreateChildWindows(HINSTANCE hInstance)
 
 	mVideoFramesCheckBox = CreateWindowEx(0, WC_BUTTON, L"Save video frames", WS_CHILD | checkboxStyle, 0, 0, gMinLogAreaWidth, gCheckBoxHeight, mMainWindowHandle, nullptr, hInstance, nullptr);
 
-	mLastFrameLabel   = CreateWindowEx(0, WC_STATIC, L"Last frame: ", WS_CHILD | labelStyle,            0, 0, gLastFrameLabelMinWidth, gLastFrameLayoutHeight, mMainWindowHandle, nullptr, hInstance, nullptr);
-	mLastFrameTextBox = CreateWindowEx(0, WC_EDIT,   L"",             WS_CHILD | textBoxLastFrameStyle, 0, 0, gLastFrameTextBoxWidth,  gLastFrameLayoutHeight, mMainWindowHandle, nullptr, hInstance, nullptr);
+	mLastFrameLabel   = CreateWindowEx(0, WC_STATIC, L"Last frame: ", WS_CHILD | labelStyle,            0, 0, gInputLabelMinWidth, gInputLayoutHeight, mMainWindowHandle, nullptr, hInstance, nullptr);
+	mLastFrameTextBox = CreateWindowEx(0, WC_EDIT,   L"",             WS_CHILD | textBoxLastFrameStyle, 0, 0, gInputTextBoxWidth,  gInputLayoutHeight, mMainWindowHandle, nullptr, hInstance, nullptr);
 	
+	mSpawnLabel   = CreateWindowEx(0, WC_STATIC, L"Spawn: ", WS_CHILD | labelStyle,            0, 0, gInputLabelMinWidth, gInputLayoutHeight, mMainWindowHandle, nullptr, hInstance, nullptr);
+	mSpawnTextBox = CreateWindowEx(0, WC_EDIT,   L"0",       WS_CHILD | textBoxLastFrameStyle, 0, 0, gInputTextBoxWidth,  gInputLayoutHeight, mMainWindowHandle, nullptr, hInstance, nullptr);
+
 	UpdateWindow(mPreviewAreaHandle);
 	ShowWindow(mPreviewAreaHandle, SW_SHOW);
 
@@ -793,7 +856,10 @@ void WindowApp::CreateChildWindows(HINSTANCE hInstance)
 
 	EnableWindow(mSizeTrackbar, FALSE);
 	EnableWindow(mVideoFramesCheckBox, FALSE);
+	EnableWindow(mLastFrameLabel, FALSE);
 	EnableWindow(mLastFrameTextBox, FALSE);
+	EnableWindow(mSpawnLabel, FALSE);
+	EnableWindow(mSpawnTextBox, FALSE);
 
 	UpdateWindow(mVideoFramesCheckBox);
 	ShowWindow(mVideoFramesCheckBox, SW_SHOW);
@@ -804,6 +870,12 @@ void WindowApp::CreateChildWindows(HINSTANCE hInstance)
 	ShowWindow(mLastFrameLabel,   SW_SHOW);
 	ShowWindow(mLastFrameTextBox, SW_SHOW);
 
+	UpdateWindow(mSpawnLabel);
+	UpdateWindow(mSpawnTextBox);
+
+	ShowWindow(mSpawnLabel, SW_SHOW);
+	ShowWindow(mSpawnTextBox, SW_SHOW);
+
 	//We need to redirect WM_KEYUP messages from the logger window and buttons to the main window
 	auto keyUpSubclassProc = [](HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData)
 	{
@@ -811,6 +883,11 @@ void WindowApp::CreateChildWindows(HINSTANCE hInstance)
 		{
 			HWND parentWnd = GetParent(hwnd);
 			SendMessage(parentWnd, message, wparam, lparam);
+
+			if(wparam == 'S')
+			{
+				SetFocus(parentWnd);
+			}
 		}
 
 		return DefSubclassProc(hwnd, message, wparam, lparam);
@@ -829,6 +906,9 @@ void WindowApp::CreateChildWindows(HINSTANCE hInstance)
 	SetWindowSubclass(mVideoFramesCheckBox, keyUpSubclassProc, 0, 0);
 	SetWindowSubclass(mLastFrameLabel,      keyUpSubclassProc, 0, 0);
 	SetWindowSubclass(mLastFrameTextBox,    keyUpSubclassProc, 0, 0);
+
+	SetWindowSubclass(mSpawnLabel,   keyUpSubclassProc, 0, 0);
+	SetWindowSubclass(mSpawnTextBox, keyUpSubclassProc, 0, 0);
 
 	//Set logger area font
 	std::wstring logFontName = L"Lucida Console";
@@ -999,13 +1079,23 @@ void WindowApp::LayoutChildWindows()
 
 	//Last frame layout: horizontally aligned with buttons, vertically placed below the save video frames checkbox. The text box is fixed width and placed on the right, the label fills the remaining space
 	int lastFrameLayoutPosY   = checkBoxPosY + checkBoxHeight + gSpacing;
-	int lastFrameLayoutHeight = gLastFrameLayoutHeight;
+	int lastFrameLayoutHeight = gInputLayoutHeight;
 
 	int labelLastFramePosX   = trackbarPosX;
-	int textBoxLastFramePosX = labelLastFramePosX + trackbarWidth - gLastFrameTextBoxWidth;
+	int textBoxLastFramePosX = labelLastFramePosX + trackbarWidth - gInputTextBoxWidth;
 
-	int textBoxLastFrameWidth = gLastFrameTextBoxWidth;
+	int textBoxLastFrameWidth = gInputTextBoxWidth;
 	int labelLastFrameWidth   = trackbarWidth - textBoxLastFrameWidth - gSpacing;
+
+	//Spawn period layout: the same alignment as last frame layout, but placed below it
+	int spawnLayoutPosY   = lastFrameLayoutPosY + lastFrameLayoutHeight + gSpacing;
+	int spawnLayoutHeight = gInputLayoutHeight;
+
+	int labelSpawnPosX   = trackbarPosX;
+	int textBoxSpawnPosX = labelSpawnPosX + trackbarWidth - gInputTextBoxWidth;
+
+	int textBoxSpawnWidth = gInputTextBoxWidth;
+	int labelSpawnWidth   = trackbarWidth - textBoxSpawnWidth - gSpacing;
 
 	//Finally layout the elements
 	SetWindowPos(mPreviewAreaHandle,   HWND_TOP, gMarginLeft,                           gMarginTop,                                      sizePreview,         sizePreview,          0);
@@ -1023,6 +1113,9 @@ void WindowApp::LayoutChildWindows()
 
 	SetWindowPos(mLastFrameLabel,   HWND_TOP, labelLastFramePosX,   lastFrameLayoutPosY, labelLastFrameWidth,   lastFrameLayoutHeight, 0);
 	SetWindowPos(mLastFrameTextBox, HWND_TOP, textBoxLastFramePosX, lastFrameLayoutPosY, textBoxLastFrameWidth, lastFrameLayoutHeight, 0);
+
+	SetWindowPos(mSpawnLabel,   HWND_TOP, labelSpawnPosX,   spawnLayoutPosY, labelSpawnWidth,   spawnLayoutHeight, 0);
+	SetWindowPos(mSpawnTextBox, HWND_TOP, textBoxSpawnPosX, spawnLayoutPosY, textBoxSpawnWidth, spawnLayoutHeight, 0);
 }
 
 void WindowApp::CalculateMinWindowSize()
@@ -1110,6 +1203,21 @@ int WindowApp::OnMenuItem(uint32_t menuItem)
 		mFractalGen->InitDefaultClickRule();
 		break;
 	}
+	case MENU_INITIAL_STATE_CORNERS:
+	{
+		mResetMode = ResetBoardModeApp::RESET_4_CORNERS;
+		break;
+	}
+	case MENU_INITIAL_STATE_SIDES:
+	{
+		mResetMode = ResetBoardModeApp::RESET_4_SIDES;
+		break;
+	}
+	case MENU_INITIAL_STATE_CENTER:
+	{
+		mResetMode = ResetBoardModeApp::RESET_CENTER;
+		break;
+	}
 	default:
 	{
 		break;
@@ -1182,6 +1290,11 @@ void WindowApp::OnCommandReset()
 	//Start the simulation again
 
 	mFinalFrameNumber = ParseFinalFrame();
+	mSpawnPeriod      = ParseSpawnPeriod();
+
+	mLogger->WriteToLog(L"Spawn period: " + std::to_wstring(mSpawnPeriod));
+
+	mFractalGen->SetSpawnPeriod(mSpawnPeriod);
 
 	mPlayMode = PlayMode::MODE_CONTINUOUS_FRAMES;
 	PostThreadMessage(mRenderThreadID, RENDER_THREAD_REINIT, 0, 0);
@@ -1189,7 +1302,10 @@ void WindowApp::OnCommandReset()
 
 	EnableWindow(mSizeTrackbar, FALSE);
 	EnableWindow(mVideoFramesCheckBox, FALSE);
+	EnableWindow(mLastFrameLabel, FALSE);
 	EnableWindow(mLastFrameTextBox, FALSE);
+	EnableWindow(mSpawnLabel, FALSE);
+	EnableWindow(mSpawnTextBox, FALSE);
 }
 
 void WindowApp::OnCommandPause()
@@ -1218,15 +1334,23 @@ void WindowApp::OnCommandPause()
 		//The simulation is stopped, start it again
 
 		mFinalFrameNumber = ParseFinalFrame();
+		mSpawnPeriod      = ParseSpawnPeriod();
+
+		mLogger->WriteToLog(L"Spawn period: " + std::to_wstring(mSpawnPeriod));
+
+		mFractalGen->SetSpawnPeriod(mSpawnPeriod);
 
 		PostThreadMessage(mRenderThreadID, RENDER_THREAD_REINIT, 0, 0);
 		mPlayMode = PlayMode::MODE_CONTINUOUS_FRAMES;
 
 		SetWindowText(mButtonPausePlay, L"⏸");
 
-		EnableWindow(mSizeTrackbar, FALSE);
+		EnableWindow(mSizeTrackbar,        FALSE);
 		EnableWindow(mVideoFramesCheckBox, FALSE);
-		EnableWindow(mLastFrameTextBox, FALSE);
+		EnableWindow(mLastFrameLabel,      FALSE);
+		EnableWindow(mLastFrameTextBox,    FALSE);
+		EnableWindow(mSpawnLabel,          FALSE);
+		EnableWindow(mSpawnTextBox,        FALSE);
 	}
 }
 
@@ -1237,13 +1361,21 @@ void WindowApp::OnCommandStop()
 		//The simulation is stopped, start it again
 
 		mFinalFrameNumber = ParseFinalFrame();
+		mSpawnPeriod      = ParseSpawnPeriod();
+
+		mLogger->WriteToLog(L"Spawn period: " + std::to_wstring(mSpawnPeriod));
+
+		mFractalGen->SetSpawnPeriod(mSpawnPeriod);
 
 		PostThreadMessage(mRenderThreadID, RENDER_THREAD_REINIT, 0, 0);
 		mPlayMode = PlayMode::MODE_CONTINUOUS_FRAMES;
 
-		EnableWindow(mSizeTrackbar, FALSE);
+		EnableWindow(mSizeTrackbar,        FALSE);
 		EnableWindow(mVideoFramesCheckBox, FALSE);
-		EnableWindow(mLastFrameTextBox, FALSE);
+		EnableWindow(mLastFrameLabel,      FALSE);
+		EnableWindow(mLastFrameTextBox,    FALSE);
+		EnableWindow(mSpawnLabel,          FALSE);
+		EnableWindow(mSpawnTextBox,        FALSE);
 
 		SetWindowText(mButtonPausePlay, L"⏸");
 	}
@@ -1253,9 +1385,12 @@ void WindowApp::OnCommandStop()
 
 		mPlayMode = PlayMode::MODE_STOP;
 
-		EnableWindow(mSizeTrackbar, TRUE);
+		EnableWindow(mSizeTrackbar,        TRUE);
 		EnableWindow(mVideoFramesCheckBox, TRUE);
-		EnableWindow(mLastFrameTextBox, TRUE);
+		EnableWindow(mLastFrameLabel,      TRUE);
+		EnableWindow(mLastFrameTextBox,    TRUE);
+		EnableWindow(mSpawnLabel,          TRUE);
+		EnableWindow(mSpawnTextBox,        TRUE);
 
 		SetWindowText(mButtonPausePlay, L"▶");
 	}

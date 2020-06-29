@@ -60,6 +60,7 @@ private:
 	void TickThreadFunc();
 
 	uint32_t ParseFinalFrame();
+	uint32_t ParseSpawnPeriod();
 
 private:
 	HWND mMainWindowHandle;
@@ -77,6 +78,9 @@ private:
 	HWND mVideoFramesCheckBox;
 	HWND mLastFrameLabel;
 	HWND mLastFrameTextBox;
+
+	HWND mSpawnLabel;
+	HWND mSpawnTextBox;
 
 	HFONT mLogAreaFont;
 	HFONT mButtonsFont;

@@ -54,4 +54,5 @@ protected:
 	bool mSaveVideoFrames;
 
 	uint32_t mFinalFrameNumber;
+	uint32_t mSpawnPeriod;
 };

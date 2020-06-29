@@ -2,7 +2,7 @@
 #include <sstream>
 #include "..\Util.hpp"
 
-StafraApp::StafraApp(): mSaveVideoFrames(false), mFinalFrameNumber(1), mResetMode(ResetBoardModeApp::RESET_4_CORNERS)
+StafraApp::StafraApp(): mSaveVideoFrames(false), mFinalFrameNumber(1), mSpawnPeriod(0), mResetMode(ResetBoardModeApp::RESET_4_CORNERS)
 {
 	ThrowIfFailed(CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED)); //Shell functions (file save/open dialogs) don't like multithreaded environment, so use COINIT_APARTMENTTHREADED instead of COINIT_MULTITHREADED
 }
@@ -67,6 +67,7 @@ void StafraApp::ParseCmdArgs(const CommandLineArguments& cmdArgs)
 	}
 
 	mFinalFrameNumber = cmdArgs.FinalFrame();
+	mSpawnPeriod      = cmdArgs.SpawnPeriod();
 
 	mSaveVideoFrames = cmdArgs.SaveVideoFrames();
 	if(mSaveVideoFrames)
