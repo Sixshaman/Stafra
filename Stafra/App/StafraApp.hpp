@@ -52,6 +52,7 @@ protected:
 	ResetBoardModeApp mResetMode;
 
 	bool mSaveVideoFrames;
+	bool mUseSmoothTransform;
 
 	uint32_t mFinalFrameNumber;
 	uint32_t mSpawnPeriod;

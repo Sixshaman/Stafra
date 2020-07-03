@@ -81,6 +81,7 @@ private:
 
 	HWND mSpawnLabel;
 	HWND mSpawnTextBox;
+	HWND mSmoothCheckBox;
 
 	HFONT mLogAreaFont;
 	HFONT mButtonsFont;

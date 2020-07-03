@@ -19,6 +19,8 @@ void StafraApp::Init(const CommandLineArguments& cmdArgs)
 	mLogger->WriteToLog(L"GPU Adapter: " + mRenderer->GetAdapterName());
 
 	mFractalGen = std::make_unique<FractalGen>(mRenderer.get());
+	mFractalGen->SetVideoFrameWidth(1024);
+	mFractalGen->SetVideoFrameHeight(1024);
 
 	ParseCmdArgs(cmdArgs);
 
@@ -47,12 +49,6 @@ void StafraApp::ParseCmdArgs(const CommandLineArguments& cmdArgs)
 	uint32_t powSize   = cmdArgs.PowSize();
 	uint32_t boardSize = (1 << powSize) - 1;
 
-	mFractalGen->SetVideoFrameWidth(1024);
-	mFractalGen->SetVideoFrameHeight(1024);
-
-	mFractalGen->SetSpawnPeriod(cmdArgs.SpawnPeriod());
-	mFractalGen->SetUseSmooth(cmdArgs.SmoothTransform());
-
 	switch (cmdArgs.ResetMode())
 	{
 	case CmdResetMode::RESET_4_CORNERS:
@@ -69,7 +65,9 @@ void StafraApp::ParseCmdArgs(const CommandLineArguments& cmdArgs)
 	mFinalFrameNumber = cmdArgs.FinalFrame();
 	mSpawnPeriod      = cmdArgs.SpawnPeriod();
 
-	mSaveVideoFrames = cmdArgs.SaveVideoFrames();
+	mSaveVideoFrames    = cmdArgs.SaveVideoFrames();
+	mUseSmoothTransform = cmdArgs.SmoothTransform();
+
 	if(mSaveVideoFrames)
 	{
 		CreateDirectory(L"DiffStabil", nullptr);

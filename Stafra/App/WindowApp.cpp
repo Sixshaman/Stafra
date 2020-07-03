@@ -125,6 +125,11 @@ void WindowApp::Init(HINSTANCE hInstance, const CommandLineArguments& cmdArgs)
 
 	std::wstring spawnStr = std::to_wstring(mSpawnPeriod);
 	SendMessage(mSpawnTextBox, WM_SETTEXT, 0, (LPARAM)spawnStr.c_str());
+
+	if(cmdArgs.SmoothTransform())
+	{
+		SendMessage(mSmoothCheckBox, BM_SETCHECK, BST_CHECKED, 0);
+	}
 }
 
 void WindowApp::InitRenderer(const CommandLineArguments& args)
@@ -181,7 +186,7 @@ LRESULT CALLBACK WindowApp::AppProc(HWND hwnd, UINT message, WPARAM wparam, LPAR
 		UpdateRendererForPreview();
 		break;
 	}
-	case WM_COMMAND:
+	case WM_COMMAND: //Button, textbox, etc. events
 	{
 		if(lparam == 0)
 		{
@@ -189,24 +194,24 @@ LRESULT CALLBACK WindowApp::AppProc(HWND hwnd, UINT message, WPARAM wparam, LPAR
 		}
 		else
 		{
-			HWND btnHandle = (HWND)lparam;
-			if(btnHandle == mButtonReset)
+			HWND itmeHandle = (HWND)lparam;
+			if(itmeHandle == mButtonReset)
 			{
 				OnCommandReset();
 			}
-			else if(btnHandle == mButtonPausePlay)
+			else if(itmeHandle == mButtonPausePlay)
 			{
 				OnCommandPause();
 			}
-			else if(btnHandle == mButtonStop)
+			else if(itmeHandle == mButtonStop)
 			{
 				OnCommandStop();
 			}
-			else if(btnHandle == mButtonNextFrame)
+			else if(itmeHandle == mButtonNextFrame)
 			{
 				OnCommandNextFrame();
 			}
-			else if(btnHandle == mVideoFramesCheckBox)
+			else if(itmeHandle == mVideoFramesCheckBox)
 			{
 				bool checked = (SendMessage(mVideoFramesCheckBox, BM_GETCHECK, 0, 0) == BST_CHECKED);
 				if(checked)
@@ -218,6 +223,35 @@ LRESULT CALLBACK WindowApp::AppProc(HWND hwnd, UINT message, WPARAM wparam, LPAR
 				{
 					SendMessage(mVideoFramesCheckBox, BM_SETCHECK, BST_CHECKED, 0);
 					mSaveVideoFrames = true;
+				}
+			}
+			else if(itmeHandle == mSpawnTextBox)
+			{
+				if(HIWORD(wparam) == EN_CHANGE) //Spawn period textbox contents changed
+				{
+					uint32_t spawnPeriod = ParseSpawnPeriod();
+					if(spawnPeriod != 0 && mPlayMode == PlayMode::MODE_STOP)
+					{
+						EnableWindow(mSmoothCheckBox, TRUE);
+					}
+					else
+					{
+						EnableWindow(mSmoothCheckBox, FALSE);
+					}
+				}
+			}
+			else if(itmeHandle == mSmoothCheckBox)
+			{
+				bool checked = (SendMessage(mSmoothCheckBox, BM_GETCHECK, 0, 0) == BST_CHECKED);
+				if(checked)
+				{
+					SendMessage(mSmoothCheckBox, BM_SETCHECK, BST_UNCHECKED, 0);
+					mUseSmoothTransform = false;
+				}
+				else
+				{
+					SendMessage(mSmoothCheckBox, BM_SETCHECK, BST_CHECKED, 0);
+					mUseSmoothTransform = true;
 				}
 			}
 		}
@@ -404,7 +438,7 @@ LRESULT CALLBACK WindowApp::AppProc(HWND hwnd, UINT message, WPARAM wparam, LPAR
 
 		return 0;
 	}
-	case WM_NOTIFY:
+	case WM_NOTIFY: //Trackbar released
 	{
 		NMHDR* notificationInfo = (NMHDR*)(lparam);
 		if(notificationInfo->hwndFrom == mSizeTrackbar && notificationInfo->code == NM_RELEASEDCAPTURE) //Trackbar mouse released
@@ -832,6 +866,8 @@ void WindowApp::CreateChildWindows(HINSTANCE hInstance)
 	mSpawnLabel   = CreateWindowEx(0, WC_STATIC, L"Spawn: ", WS_CHILD | labelStyle,            0, 0, gInputLabelMinWidth, gInputLayoutHeight, mMainWindowHandle, nullptr, hInstance, nullptr);
 	mSpawnTextBox = CreateWindowEx(0, WC_EDIT,   L"0",       WS_CHILD | textBoxLastFrameStyle, 0, 0, gInputTextBoxWidth,  gInputLayoutHeight, mMainWindowHandle, nullptr, hInstance, nullptr);
 
+	mSmoothCheckBox = CreateWindowEx(0, WC_BUTTON, L"Use smooth visuals", WS_CHILD | checkboxStyle, 0, 0, gMinLogAreaWidth, gCheckBoxHeight, mMainWindowHandle, nullptr, hInstance, nullptr);
+
 	UpdateWindow(mPreviewAreaHandle);
 	ShowWindow(mPreviewAreaHandle, SW_SHOW);
 
@@ -860,6 +896,7 @@ void WindowApp::CreateChildWindows(HINSTANCE hInstance)
 	EnableWindow(mLastFrameTextBox, FALSE);
 	EnableWindow(mSpawnLabel, FALSE);
 	EnableWindow(mSpawnTextBox, FALSE);
+	EnableWindow(mSmoothCheckBox, FALSE);
 
 	UpdateWindow(mVideoFramesCheckBox);
 	ShowWindow(mVideoFramesCheckBox, SW_SHOW);
@@ -875,6 +912,9 @@ void WindowApp::CreateChildWindows(HINSTANCE hInstance)
 
 	ShowWindow(mSpawnLabel, SW_SHOW);
 	ShowWindow(mSpawnTextBox, SW_SHOW);
+
+	UpdateWindow(mSmoothCheckBox);
+	ShowWindow(mSmoothCheckBox, SW_SHOW);
 
 	//We need to redirect WM_KEYUP messages from the logger window and buttons to the main window
 	auto keyUpSubclassProc = [](HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData)
@@ -909,6 +949,8 @@ void WindowApp::CreateChildWindows(HINSTANCE hInstance)
 
 	SetWindowSubclass(mSpawnLabel,   keyUpSubclassProc, 0, 0);
 	SetWindowSubclass(mSpawnTextBox, keyUpSubclassProc, 0, 0);
+
+	SetWindowSubclass(mSmoothCheckBox, keyUpSubclassProc, 0, 0);
 
 	//Set logger area font
 	std::wstring logFontName = L"Lucida Console";
@@ -1071,14 +1113,14 @@ void WindowApp::LayoutChildWindows()
 	int trackbarHeight = gTrackBarHeight;
 
 	//Save video frames checkbox: horizontally aligned with buttons, vertically placed below the trackbar, fills the entire right side of the screen horizontally
-	int checkBoxPosX = trackbarPosX;
-	int checkBoxPosY = trackbarPosY + trackbarHeight + gSpacing;
+	int checkBoxVideoPosX = trackbarPosX;
+	int checkBoxVideoPosY = trackbarPosY + trackbarHeight + gSpacing;
 
-	int checkBoxWidth  = logWidth - gClickRuleAreaWidth - gSpacing * 2;
-	int checkBoxHeight = gCheckBoxHeight;
+	int checkBoxVideoWidth  = logWidth - gClickRuleAreaWidth - gSpacing * 2;
+	int checkBoxVideoHeight = gCheckBoxHeight;
 
 	//Last frame layout: horizontally aligned with buttons, vertically placed below the save video frames checkbox. The text box is fixed width and placed on the right, the label fills the remaining space
-	int lastFrameLayoutPosY   = checkBoxPosY + checkBoxHeight + gSpacing;
+	int lastFrameLayoutPosY   = checkBoxVideoPosY + checkBoxVideoHeight + gSpacing;
 	int lastFrameLayoutHeight = gInputLayoutHeight;
 
 	int labelLastFramePosX   = trackbarPosX;
@@ -1097,6 +1139,13 @@ void WindowApp::LayoutChildWindows()
 	int textBoxSpawnWidth = gInputTextBoxWidth;
 	int labelSpawnWidth   = trackbarWidth - textBoxSpawnWidth - gSpacing;
 
+	//Smooth checkbox: the same alignment as save video frames checkbox, but placed below spawn period layout
+	int checkBoxSmoothPosX = checkBoxVideoPosX;
+	int checkBoxSmoothPosY = spawnLayoutPosY + spawnLayoutHeight + gSpacing;
+
+	int checkBoxSmoothWidth  = checkBoxVideoWidth;
+	int checkBoxSmoothHeight = gCheckBoxHeight;
+
 	//Finally layout the elements
 	SetWindowPos(mPreviewAreaHandle,   HWND_TOP, gMarginLeft,                           gMarginTop,                                      sizePreview,         sizePreview,          0);
 	SetWindowPos(mClickRuleAreaHandle, HWND_TOP, gMarginLeft + previewWidth + gSpacing, gMarginTop + sizePreview - gClickRuleAreaHeight, gClickRuleAreaWidth, gClickRuleAreaHeight, 0);
@@ -1109,13 +1158,15 @@ void WindowApp::LayoutChildWindows()
 
 	SetWindowPos(mSizeTrackbar, HWND_TOP, trackbarPosX, trackbarPosY, trackbarWidth, gTrackBarHeight, 0);
 
-	SetWindowPos(mVideoFramesCheckBox, HWND_TOP, checkBoxPosX, checkBoxPosY, checkBoxWidth, checkBoxHeight, 0);
+	SetWindowPos(mVideoFramesCheckBox, HWND_TOP, checkBoxVideoPosX, checkBoxVideoPosY, checkBoxVideoWidth, checkBoxVideoHeight, 0);
 
 	SetWindowPos(mLastFrameLabel,   HWND_TOP, labelLastFramePosX,   lastFrameLayoutPosY, labelLastFrameWidth,   lastFrameLayoutHeight, 0);
 	SetWindowPos(mLastFrameTextBox, HWND_TOP, textBoxLastFramePosX, lastFrameLayoutPosY, textBoxLastFrameWidth, lastFrameLayoutHeight, 0);
 
 	SetWindowPos(mSpawnLabel,   HWND_TOP, labelSpawnPosX,   spawnLayoutPosY, labelSpawnWidth,   spawnLayoutHeight, 0);
 	SetWindowPos(mSpawnTextBox, HWND_TOP, textBoxSpawnPosX, spawnLayoutPosY, textBoxSpawnWidth, spawnLayoutHeight, 0);
+
+	SetWindowPos(mSmoothCheckBox, HWND_TOP, checkBoxSmoothPosX, checkBoxSmoothPosY, checkBoxSmoothWidth, checkBoxSmoothHeight, 0);
 }
 
 void WindowApp::CalculateMinWindowSize()
@@ -1295,17 +1346,19 @@ void WindowApp::OnCommandReset()
 	mLogger->WriteToLog(L"Spawn period: " + std::to_wstring(mSpawnPeriod));
 
 	mFractalGen->SetSpawnPeriod(mSpawnPeriod);
+	mFractalGen->SetUseSmooth(mUseSmoothTransform);
 
 	mPlayMode = PlayMode::MODE_CONTINUOUS_FRAMES;
 	PostThreadMessage(mRenderThreadID, RENDER_THREAD_REINIT, 0, 0);
 	mRenderer->NeedRedraw();
 
-	EnableWindow(mSizeTrackbar, FALSE);
+	EnableWindow(mSizeTrackbar,        FALSE);
 	EnableWindow(mVideoFramesCheckBox, FALSE);
-	EnableWindow(mLastFrameLabel, FALSE);
-	EnableWindow(mLastFrameTextBox, FALSE);
-	EnableWindow(mSpawnLabel, FALSE);
-	EnableWindow(mSpawnTextBox, FALSE);
+	EnableWindow(mLastFrameLabel,      FALSE);
+	EnableWindow(mLastFrameTextBox,    FALSE);
+	EnableWindow(mSpawnLabel,          FALSE);
+	EnableWindow(mSpawnTextBox,        FALSE);
+	EnableWindow(mSmoothCheckBox,      FALSE);
 }
 
 void WindowApp::OnCommandPause()
@@ -1339,6 +1392,7 @@ void WindowApp::OnCommandPause()
 		mLogger->WriteToLog(L"Spawn period: " + std::to_wstring(mSpawnPeriod));
 
 		mFractalGen->SetSpawnPeriod(mSpawnPeriod);
+		mFractalGen->SetUseSmooth(mUseSmoothTransform);
 
 		PostThreadMessage(mRenderThreadID, RENDER_THREAD_REINIT, 0, 0);
 		mPlayMode = PlayMode::MODE_CONTINUOUS_FRAMES;
@@ -1351,6 +1405,7 @@ void WindowApp::OnCommandPause()
 		EnableWindow(mLastFrameTextBox,    FALSE);
 		EnableWindow(mSpawnLabel,          FALSE);
 		EnableWindow(mSpawnTextBox,        FALSE);
+		EnableWindow(mSmoothCheckBox,      FALSE);
 	}
 }
 
@@ -1366,6 +1421,7 @@ void WindowApp::OnCommandStop()
 		mLogger->WriteToLog(L"Spawn period: " + std::to_wstring(mSpawnPeriod));
 
 		mFractalGen->SetSpawnPeriod(mSpawnPeriod);
+		mFractalGen->SetUseSmooth(mUseSmoothTransform);
 
 		PostThreadMessage(mRenderThreadID, RENDER_THREAD_REINIT, 0, 0);
 		mPlayMode = PlayMode::MODE_CONTINUOUS_FRAMES;
@@ -1376,6 +1432,7 @@ void WindowApp::OnCommandStop()
 		EnableWindow(mLastFrameTextBox,    FALSE);
 		EnableWindow(mSpawnLabel,          FALSE);
 		EnableWindow(mSpawnTextBox,        FALSE);
+		EnableWindow(mSmoothCheckBox,      FALSE);
 
 		SetWindowText(mButtonPausePlay, L"⏸");
 	}
@@ -1391,6 +1448,16 @@ void WindowApp::OnCommandStop()
 		EnableWindow(mLastFrameTextBox,    TRUE);
 		EnableWindow(mSpawnLabel,          TRUE);
 		EnableWindow(mSpawnTextBox,        TRUE);
+
+		uint32_t spawn = ParseSpawnPeriod();
+		if(spawn != 0)
+		{
+			EnableWindow(mSmoothCheckBox, TRUE);
+		}
+		else
+		{
+			EnableWindow(mSmoothCheckBox, FALSE);
+		}
 
 		SetWindowText(mButtonPausePlay, L"▶");
 	}

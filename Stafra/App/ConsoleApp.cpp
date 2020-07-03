@@ -15,6 +15,8 @@ ConsoleApp::~ConsoleApp()
 void ConsoleApp::ComputeFractal()
 {
 	mFractalGen->SetSpawnPeriod(mSpawnPeriod);
+	mFractalGen->SetUseSmooth(mUseSmoothTransform);
+
 	mLogger->WriteToLog(L"Spawn period: " + std::to_wstring(mSpawnPeriod));
 
 	while(mFractalGen->GetLastFrameNumber() != mFinalFrameNumber)
