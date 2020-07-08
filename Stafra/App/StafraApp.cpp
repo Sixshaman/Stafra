@@ -82,6 +82,11 @@ void StafraApp::ParseCmdArgs(const CommandLineArguments& cmdArgs)
 	{
 		InitBoard(boardSize, boardSize);
 	}
+
+	if(!LoadRestrictionFromFile(L"Restriction.png"))
+	{
+		InitDefaultRestriction();
+	}
 }
 
 void StafraApp::ComputeFractalTick()
@@ -193,4 +198,39 @@ void StafraApp::InitDefaultClickRule()
 {
 	mLogger->WriteToLog(L"Initializing default click rule...");
 	mFractalGen->InitDefaultClickRule();
+}
+
+bool StafraApp::LoadRestrictionFromFile(const std::wstring& filename)
+{
+	mLogger->WriteToLog(L"Loading the restriction from " + filename + L"...");
+
+	Utils::BoardLoadError loadErr = mFractalGen->LoadRestrictionFromFile(filename);
+	switch (loadErr)
+	{
+	case Utils::BoardLoadError::ERROR_CANT_READ_FILE:
+	{
+		mLogger->WriteToLog(L"Cannot read file!");
+		return false;
+	}
+	case Utils::BoardLoadError::ERROR_WRONG_SIZE:
+	{
+		mLogger->WriteToLog(L"Incorrect restriction dimensions! The dimensions should be the same as the board dimensions(" + std::to_wstring(mFractalGen->GetWidth()) + L"x" + std::to_wstring(mFractalGen->GetHeight()) + L").");
+		return false;
+	}
+	case Utils::BoardLoadError::ERROR_INVALID_ARGUMENT:
+	{
+		mLogger->WriteToLog(L"Unknown error!");
+		return false;
+	}
+	default:
+	{
+		return true;
+	}
+	}
+}
+
+void StafraApp::InitDefaultRestriction()
+{
+	mLogger->WriteToLog(L"Initializing default restriction...");
+	mFractalGen->InitDefaultRestriction();
 }

@@ -204,7 +204,7 @@
       <Filter>App</Filter>
     </ClInclude>
     <ClInclude Include="App\WindowConstants.hpp">
-      <Filter>Header Files</Filter>
+      <Filter>App</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

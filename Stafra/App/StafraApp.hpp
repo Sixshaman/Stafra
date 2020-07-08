@@ -41,6 +41,9 @@ protected:
 	bool LoadClickRuleFromFile(const std::wstring& filename);
 	void InitDefaultClickRule();
 
+	bool LoadRestrictionFromFile(const std::wstring& filename);
+	void InitDefaultRestriction();
+
 private:
 	void ParseCmdArgs(const CommandLineArguments& cmdArgs);
 

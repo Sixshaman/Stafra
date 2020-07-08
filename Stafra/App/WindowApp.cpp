@@ -338,8 +338,10 @@ LRESULT CALLBACK WindowApp::AppProc(HWND hwnd, UINT message, WPARAM wparam, LPAR
 			}
 
 			HMENU popupMenu = CreatePopupMenu();
-			InsertMenu(popupMenu, 0, boardLoadMenuFlags, MENU_OPEN_BOARD, L"Open board...");
-			InsertMenu(popupMenu, 0, boardSaveMenuFlags, MENU_SAVE_BOARD, L"Save stability...");
+			InsertMenu(popupMenu, 0, boardLoadMenuFlags, MENU_OPEN_BOARD,        L"Open board...");
+			InsertMenu(popupMenu, 0, boardSaveMenuFlags, MENU_SAVE_BOARD,        L"Save stability...");
+			InsertMenu(popupMenu, 0, boardLoadMenuFlags, MENU_OPEN_RESTRICTION,  L"Open restriction...");
+			InsertMenu(popupMenu, 0, boardLoadMenuFlags, MENU_RESET_RESTRICTION, L"Reset restriction...");
 
 			      UINT              initialStateMenuIDs[3]    = {MENU_INITIAL_STATE_CORNERS,         MENU_INITIAL_STATE_SIDES,         MENU_INITIAL_STATE_CENTER};
 			const WCHAR*            initialStateMenuLabels[3] = {L"Corners" ,                        L"Sides" ,                        L"Center"};
@@ -601,6 +603,18 @@ void WindowApp::RenderThreadFunc()
 			//Catch the pointer
 			std::unique_ptr<std::wstring> frameFilenamePtr(reinterpret_cast<std::wstring*>(threadMsg.lParam));
 			SaveCurrentVideoFrame(*frameFilenamePtr);
+			break;
+		}
+		case RENDER_THREAD_LOAD_RESTRICTION:
+		{
+			//Catch the pointer
+			std::unique_ptr<std::wstring> restrictionFilenamePtr(reinterpret_cast<std::wstring*>(threadMsg.lParam));
+			LoadRestrictionFromFile(*restrictionFilenamePtr);
+			break;
+		}
+		case RENDER_THREAD_RESET_RESTRICTION:
+		{
+			InitDefaultRestriction();
 			break;
 		}
 		case RENDER_THREAD_REDRAW:
@@ -1237,6 +1251,23 @@ int WindowApp::OnMenuItem(uint32_t menuItem)
 			std::unique_ptr<std::wstring> boardFilenamePtr = std::make_unique<std::wstring>(boardFilename);
 			PostThreadMessage(mRenderThreadID, RENDER_THREAD_LOAD_BOARD, 0, reinterpret_cast<LPARAM>(boardFilenamePtr.release()));
 		}
+		break;
+	}
+	case MENU_OPEN_RESTRICTION:
+	{ 
+		std::wstring boardFilename = L"Restriction.png";
+
+		FileDialog fileDialog;
+		if(fileDialog.GetFilenameToOpen(mMainWindowHandle, boardFilename))
+		{
+			std::unique_ptr<std::wstring> boardFilenamePtr = std::make_unique<std::wstring>(boardFilename);
+			PostThreadMessage(mRenderThreadID, RENDER_THREAD_LOAD_RESTRICTION, 0, reinterpret_cast<LPARAM>(boardFilenamePtr.release()));
+		}
+		break;
+	}
+	case MENU_RESET_RESTRICTION:
+	{
+		PostThreadMessage(mRenderThreadID, RENDER_THREAD_RESET_RESTRICTION, 0, 0);
 		break;
 	}
 	case MENU_HIDE_CLICK_RULE_GRID:

@@ -2,7 +2,7 @@
 #include "DefaultBoards.hpp"
 #include "..\Util.hpp"
 
-Boards::Boards(ID3D11Device* device): mBoardWidth(1023), mBoardHeight(1023)
+Boards::Boards(ID3D11Device* device): mBoardWidth(1023), mBoardHeight(1023), mRestrictionWidth(0), mRestrictionHeight(0)
 {
 	mDefaultBoards = std::make_unique<DefaultBoards>(device);
 
@@ -25,7 +25,13 @@ uint32_t Boards::GetHeight() const
 
 void Boards::Init4CornersBoard(ID3D11Device* device, ID3D11DeviceContext* context, uint32_t width, uint32_t height)
 {
-	mRestrictionSRV.Reset(); //Restriction may be invalid for the new size
+	if(width != mRestrictionWidth || height != mRestrictionHeight)
+	{
+		mRestrictionSRV.Reset(); //Restriction is invalid for the new size
+		mRestrictionWidth  = 0;
+		mRestrictionHeight = 0;
+	}
+
 	mInitialBoardTex.Reset();
 	mInitialBoardSRV.Reset();
 
@@ -48,7 +54,13 @@ void Boards::Init4CornersBoard(ID3D11Device* device, ID3D11DeviceContext* contex
 
 void Boards::Init4SidesBoard(ID3D11Device* device, ID3D11DeviceContext* context, uint32_t width, uint32_t height)
 {
-	mRestrictionSRV.Reset(); //Restriction may be invalid for the new size
+	if(width != mRestrictionWidth || height != mRestrictionHeight)
+	{
+		mRestrictionSRV.Reset(); //Restriction is invalid for the new size
+		mRestrictionWidth  = 0;
+		mRestrictionHeight = 0;
+	}
+
 	mInitialBoardTex.Reset();
 	mInitialBoardSRV.Reset();
 
@@ -71,7 +83,13 @@ void Boards::Init4SidesBoard(ID3D11Device* device, ID3D11DeviceContext* context,
 
 void Boards::InitCenterBoard(ID3D11Device* device, ID3D11DeviceContext* context, uint32_t width, uint32_t height)
 {
-	mRestrictionSRV.Reset(); //Restriction may be invalid for the new size
+	if(width != mRestrictionWidth || height != mRestrictionHeight)
+	{
+		mRestrictionSRV.Reset(); //Restriction is invalid for the new size
+		mRestrictionWidth  = 0;
+		mRestrictionHeight = 0;
+	}
+
 	mInitialBoardTex.Reset();
 	mInitialBoardSRV.Reset();
 
@@ -94,14 +112,20 @@ void Boards::InitCenterBoard(ID3D11Device* device, ID3D11DeviceContext* context,
 
 void Boards::InitBoardFromTexture(ID3D11Device* device, ID3D11DeviceContext* context, ID3D11Texture2D* boardTex)
 {
-	mRestrictionSRV.Reset(); //Restriction may be invalid for the new size
+	D3D11_TEXTURE2D_DESC boardDesc;
+	boardTex->GetDesc(&boardDesc);
+
+	if(boardDesc.Width != mRestrictionWidth || boardDesc.Height != mRestrictionHeight)
+	{
+		mRestrictionSRV.Reset(); //Restriction is invalid for the new size
+		mRestrictionWidth  = 0;
+		mRestrictionHeight = 0;
+	}
+
 	mInitialBoardTex.Reset();
 	mInitialBoardSRV.Reset();
 
 	mInitialBoardTex = Microsoft::WRL::ComPtr<ID3D11Texture2D>(boardTex);
-
-	D3D11_TEXTURE2D_DESC boardDesc;
-	boardTex->GetDesc(&boardDesc);
 
 	mBoardWidth  = boardDesc.Width;
 	mBoardHeight = boardDesc.Height;
@@ -117,7 +141,7 @@ void Boards::InitBoardFromTexture(ID3D11Device* device, ID3D11DeviceContext* con
 
 void Boards::ChangeBoardSize(ID3D11Device* device, ID3D11DeviceContext* dc, uint32_t newWidth, uint32_t newHeight)
 {
-	mRestrictionSRV.Reset(); //Restriction may be invalid for the new size
+	mRestrictionSRV.Reset(); //Restriction is invalid for the new size
 
 	//------------------------------------------------------------------------------------------------------------------------------
 	// Step 1: Create new empty texture with size newWidth x newHeight and UNORDERED_ACCESS bind flag set, also create an UAV for it
@@ -203,6 +227,9 @@ void Boards::InitRestrictionFromTexture(ID3D11Device* device, ID3D11DeviceContex
 	restrictionTex->GetDesc(&restrictionDesc);
 	if(restrictionDesc.Width == mBoardWidth && restrictionDesc.Height == mBoardHeight)
 	{
+		mRestrictionWidth  = restrictionDesc.Width;
+		mRestrictionHeight = restrictionDesc.Height;
+
 		D3D11_SHADER_RESOURCE_VIEW_DESC restrictionSrvDesc;
 		restrictionSrvDesc.Format                    = restrictionDesc.Format;
 		restrictionSrvDesc.ViewDimension             = D3D11_SRV_DIMENSION_TEXTURE2D;

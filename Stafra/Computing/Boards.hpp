@@ -46,4 +46,7 @@ private:
 
 	uint32_t mBoardWidth;
 	uint32_t mBoardHeight;
+
+	uint32_t mRestrictionWidth;
+	uint32_t mRestrictionHeight;
 };

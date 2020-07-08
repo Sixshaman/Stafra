@@ -47,6 +47,9 @@ public:
 	void                  InitCenterBoard(uint32_t width, uint32_t height);   //Resets the system with "center" initial board
 	Utils::BoardLoadError LoadBoardFromFile(const std::wstring& boardFile);   //Resets the system with the initial board loaded from file
 
+	void                  InitDefaultRestriction();                                     //Changes the restriction to the default one (non-restricted)
+	Utils::BoardLoadError LoadRestrictionFromFile(const std::wstring& restrictionFile); //Loads a restriction from file
+
 	void ResetComputingParameters(); //Prepares all data for the simulation
 	void Tick();                     //A single step of the simulation
 

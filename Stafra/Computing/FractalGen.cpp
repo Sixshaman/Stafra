@@ -145,6 +145,32 @@ Utils::BoardLoadError FractalGen::LoadBoardFromFile(const std::wstring& boardFil
 	return loadErr;
 }
 
+void FractalGen::InitDefaultRestriction()
+{
+	mBoards->InitDefaultRestriction(mRenderer->GetDevice(), mRenderer->GetDeviceContext());
+}
+
+Utils::BoardLoadError FractalGen::LoadRestrictionFromFile(const std::wstring& restrictionFile)
+{
+	Microsoft::WRL::ComPtr<ID3D11Texture2D> restrictionTex;
+	Utils::BoardLoadError loadErr = mBoardLoader->LoadBoardFromFile(mRenderer->GetDevice(), mRenderer->GetDeviceContext(), restrictionFile, restrictionTex.GetAddressOf());
+	
+	if(loadErr == Utils::BoardLoadError::LOAD_SUCCESS)
+	{
+		D3D11_TEXTURE2D_DESC restrictionTexDesc;
+		restrictionTex->GetDesc(&restrictionTexDesc);
+
+		if(restrictionTexDesc.Width != GetWidth() || restrictionTexDesc.Height != GetHeight()) //Restriction size is more restricted (Ha!), it should be the same size as board 
+		{
+			return Utils::BoardLoadError::ERROR_WRONG_SIZE;
+		}
+
+		mBoards->InitRestrictionFromTexture(mRenderer->GetDevice(), mRenderer->GetDeviceContext(), restrictionTex.Get());
+	}
+
+	return loadErr;
+}
+
 void FractalGen::ResetComputingParameters()
 {
 	mClickRules->Bake(mRenderer->GetDeviceContext());
