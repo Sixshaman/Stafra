@@ -7,4 +7,4 @@ The app supports the console mode and the windowed mode. The app uses windowed m
 
 ## Build
 
-You can build the application by opening the solution in Visual Studio 2019. To built it, libpng is required. 
+You can build the application by opening the solution in Visual Studio 2019. To build it, libpng is required. 
